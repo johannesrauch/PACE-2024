@@ -1,4 +1,8 @@
 # PACE2024
+## Prerequisites
+- Your compiler must be able to handle c++17.
+- We use make for compile scripts.
+When both is installed properly, make should handle the rest.
 
 ## Make
 The command
@@ -6,12 +10,23 @@ The command
 make test.instance
 ```
 runs the instance.hpp test, for instance.
+Run 
+```
+make test.all
+```
+for all tests.
+The command
+```
+make clean
+```
+deletes all executables in the test folder.
 
 ## Formatting
-Please use clang with
+Please use clang-format with
 ```
 { BasedOnStyle: Google, IndentWidth: 4 }
 ```
+options.
 
 # Git stuff
 
