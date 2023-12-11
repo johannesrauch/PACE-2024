@@ -29,6 +29,18 @@ Please use clang-format with
 ```
 options.
 
+## Preprocessor directives
+Please use 
+```
+#ifndef PACE2024::[YOUR FILE NAME IN CAPS WITH UNDERSCORES]_HPP
+#define PACE2024::[YOUR FILE NAME IN CAPS WITH UNDERSCORES]_HPP
+
+// your code here
+
+#endif
+```
+to avoid multiple header inclusions.
+
 # Git stuff
 
 ## Getting started
