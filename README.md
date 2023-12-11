@@ -1,6 +1,19 @@
 # PACE2024
 
+## Make
+The command
+```
+make test.instance
+```
+runs the instance.hpp test, for instance.
 
+## Formatting
+Please use clang with
+```
+{ BasedOnStyle: Google, IndentWidth: 4 }
+```
+
+# Git stuff
 
 ## Getting started
 
