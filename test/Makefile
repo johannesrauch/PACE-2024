@@ -1,3 +1,3 @@
-instance:
-	$(CXX) $(CXXFLAGS) -o instance.exe instance.cpp
-	./instance.exe
+%:
+	$(CXX) $(CXXFLAGS) -o $*.exe $*.cpp
+	./$*.exe

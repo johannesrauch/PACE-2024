@@ -1,4 +1,4 @@
-CXX = g++ -std=c++11 -Wall
+CXX = g++ -std=c++17 -Wall
 CXXFLAGS = -I ../src
 
 ifdef PRODUCTION

@@ -10,10 +10,6 @@ namespace pace2024 {
 
 class instance {
    private:
-    instance(const instance &rhs) = delete;
-    instance &operator=(const instance &rhs) = delete;
-    instance &operator=(instance &&rhs) = delete;
-
     std::string problem_descriptor;
     std::uint64_t n0,  // number of vertices in A, the fixed partite set
         n1,            // number of vertices in B
@@ -21,15 +17,19 @@ class instance {
     std::vector<std::pair<uint64_t, uint64_t>> edges;
 
    public:
+    instance(const instance &rhs) = delete;
+    instance &operator=(const instance &rhs) = delete;
+    instance &operator=(instance &&rhs) = delete;
+
     instance() {}
 
-    uint64_t get_n0() { return n0; }
+    uint64_t get_n0() const { return n0; }
 
-    uint64_t get_n1() { return n1; }
+    uint64_t get_n1() const { return n1; }
 
-    uint64_t get_m() { return m; }
+    uint64_t get_m() const { return m; }
 
-    const std::vector<std::pair<uint64_t, uint64_t>> &get_edges() {
+    const std::vector<std::pair<uint64_t, uint64_t>> &get_edges() const {
         return edges;
     }
 
