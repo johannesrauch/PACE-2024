@@ -1,3 +1,7 @@
+all: instance bipartite_graph crossing_number_matrix
+
 %:
-	$(CXX) $(CXXFLAGS) -o $*.exe $*.cpp
-	./$*.exe
+	@if [ $* != "all" ]; then\
+		$(CXX) $(CXXFLAGS) -o $*.exe $*.cpp; \
+		./$*.exe; \
+	fi
