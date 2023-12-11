@@ -22,24 +22,24 @@ make clean
 ```
 deletes all executables in the test folder.
 
-## Formatting
+## Style
 Please use clang-format with
 ```
 { BasedOnStyle: Google, IndentWidth: 4 }
 ```
 options.
 
-## Preprocessor directives
 Please use 
 ```
-#ifndef PACE2024::[YOUR FILE NAME IN CAPS WITH UNDERSCORES]_HPP
-#define PACE2024::[YOUR FILE NAME IN CAPS WITH UNDERSCORES]_HPP
+#ifndef PACE2024_[YOUR FILE NAME IN CAPS WITH UNDERSCORES]_HPP
+#define PACE2024_[YOUR FILE NAME IN CAPS WITH UNDERSCORES]_HPP
 
 // your code here
 
 #endif
 ```
 to avoid multiple header inclusions.
+Please use the namespace `pace2024` to avoid duplicate variable names.
 
 # Git stuff
 
