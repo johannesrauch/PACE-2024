@@ -13,11 +13,7 @@ std::vector<std::pair<uint64_t, uint64_t>> ref_edges = {
     {1, 5}, {2, 5}, {2, 6}, {4, 6}, {1, 7}, {3, 7}, {3, 8}, {4, 8}};
 
 int main() {
-    std::ifstream input("tiny_test_set/cycle_8_sorted.gr", std::ios::in);
-    // input >> std::cout.rdbuf();
-
-    pace2024::instance instance;
-    instance.parse(input);
+    pace2024::instance instance("tiny_test_set/cycle_8_sorted.gr");
     pace2024::bipartite_graph graph(instance);
 
     assert(ref_n0 == graph.get_n0());
@@ -36,7 +32,6 @@ int main() {
         }
     }
 
-    input.close();
-    std::cout << "TEST::PACE2024::INSTANCE: OKAY" << std::endl;
+    std::cout << "TEST::PACE2024::BIPARTITE_GRAPH: OKAY" << std::endl;
     return 0;
 }

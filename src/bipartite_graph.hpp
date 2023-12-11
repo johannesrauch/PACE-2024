@@ -1,6 +1,7 @@
 #ifndef PACE2024_BIPARTITE_GRAPH_HPP
 #define PACE2024_BIPARTITE_GRAPH_HPP
 
+#include <algorithm>
 #include <cstdint>
 #include <vector>
 
@@ -42,6 +43,12 @@ class bipartite_graph {
 
     const std::vector<std::vector<uint64_t>> &get_adjacency_lists() const {
         return adjacency_lists;
+    }
+
+    void sort_adjacency_lists() {
+        for (auto &adjacency_list : adjacency_lists) {
+            std::sort(adjacency_list.begin(), adjacency_list.end());
+        }
     }
 };
 
