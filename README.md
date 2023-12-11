@@ -2,6 +2,7 @@
 ## Prerequisites
 - Your compiler must be able to handle c++17.
 - We use make for compile scripts.
+
 When both is installed properly, make should handle the rest.
 
 ## Make
