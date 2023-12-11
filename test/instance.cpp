@@ -12,11 +12,7 @@ std::vector<std::pair<uint64_t, uint64_t>> ref_edges = {{1, 3}, {2, 4}, {1, 5},
                                                         {2, 6}, {1, 7}, {2, 8}};
 
 int main() {
-    std::ifstream input("tiny_test_set/star_6.gr", std::ios::in);
-    // input >> std::cout.rdbuf();
-
-    pace2024::instance instance;
-    instance.parse(input);
+    pace2024::instance instance("tiny_test_set/star_6.gr");
 
     assert(ref_n0 == instance.get_n0());
     assert(ref_n1 == instance.get_n1());
@@ -27,7 +23,6 @@ int main() {
         assert(ref_edges[i].second == edges[i].second);
     }
 
-    input.close();
     std::cout << "TEST::PACE2024::INSTANCE: OKAY" << std::endl;
     return 0;
 }

@@ -2,6 +2,7 @@
 #define PACE2024_INSTANCE_HPP
 
 #include <cstdint>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -21,7 +22,13 @@ class instance {
     instance &operator=(const instance &rhs) = delete;
     instance &operator=(instance &&rhs) = delete;
 
-    instance() {}
+    instance() { parse(); }
+
+    instance(std::string filename) {
+        std::ifstream input(filename, std::ios::in);
+        parse(input);
+        input.close();
+    }
 
     uint64_t get_n0() const { return n0; }
 
