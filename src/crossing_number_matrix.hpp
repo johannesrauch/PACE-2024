@@ -75,7 +75,7 @@ void fill_naivly(bipartite_graph &graph, crossing_number_matrix &matrix) {
     assert(graph.get_n1() == matrix.get_n1());
     uint64_t n1 = matrix.get_n1();
     auto adjacency_lists = graph.get_adjacency_lists();
-
+    // not cache friendly
     for (uint64_t i = 0; i < n1 - 1; ++i) {
         for (uint64_t j = i + 1; j < n1; ++j) {
             for (uint64_t x : adjacency_lists[i]) {
