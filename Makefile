@@ -1,5 +1,6 @@
-CXX = g++ -std=c++17 -Wall
-CXXFLAGS = -I ../src
+CXX = gcc -std=c++17 -Wall
+CXXFLAGS = -I../src
+LFLAGS = -lglpk -lstdc++
 
 ifdef PRODUCTION
 	CXXFLAGS += -O3
@@ -12,7 +13,10 @@ endif
 all:
 
 clean:
-	rm test/*.exe
+	$(MAKE) -C test clean
+
+test:
+	$(MAKE) -C test test.all CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS)" LFLAGS="$(LFLAGS)"
 
 test.%:
-	$(MAKE) -C test $* CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS)"
+	$(MAKE) -C test $* CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS)" LFLAGS="$(LFLAGS)"

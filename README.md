@@ -41,6 +41,9 @@ Please use
 to avoid multiple header inclusions.
 Please use the namespace `pace2024` to avoid duplicate variable names.
 
+## GLPK
+The makefile is configured such that the glpk library is in the standard folder `/usr/local/include`.
+
 # Git stuff
 
 ## Getting started

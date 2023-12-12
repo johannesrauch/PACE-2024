@@ -1,7 +1,14 @@
-all: instance bipartite_graph crossing_number_matrix
+.PHONY: all
+
+all: bipartite_graph crossing_number_matrix instance glpk
+
+clean:
+	rm *.exe
+	rm *.o
 
 %:
 	@if [ $* != "all" ]; then\
-		$(CXX) $(CXXFLAGS) -o $*.exe $*.cpp; \
+		$(CXX) $(CXXFLAGS) -c $*.cpp; \
+		$(CXX) $*.o $(LFLAGS) -o $*.exe; \
 		./$*.exe; \
 	fi
