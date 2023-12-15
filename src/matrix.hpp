@@ -124,8 +124,6 @@ void fill2(bipartite_graph &graph, matrix &cr_matrix, bool clear = true) {
             for (uint64_t wp : adjacency_lists[w]) {
                 if (wp >= rv) break;
 
-                // returns it to the first element such that *it >= wp + 1
-                // using binary search
                 cr_matrix(v, w) += nbors(v, wp);
             }
         }
