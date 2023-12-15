@@ -12,7 +12,7 @@ namespace pace2024 {
 class bipartite_graph {
    private:
     uint64_t n0,  // number of vertices in A, the fixed partite set
-        n1,       // number of vertices in B
+        n1,       // number of vertices in B, the free partite set
         m;        // number of edges
     std::vector<std::vector<uint64_t>> adjacency_lists;
 
