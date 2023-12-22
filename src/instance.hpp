@@ -5,38 +5,40 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace pace2024 {
 
-class instance {
+template<typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
+class general_instance {
    private:
     std::string problem_descriptor;
-    std::uint64_t n0,  // number of vertices in A, the fixed partite set
+    T n0,  // number of vertices in A, the fixed partite set
         n1,            // number of vertices in B
         m;             // number of edges
-    std::vector<std::pair<uint64_t, uint64_t>> edges;
+    std::vector<std::pair<T, T>> edges;
 
    public:
-    instance(const instance &rhs) = delete;
-    instance &operator=(const instance &rhs) = delete;
-    instance &operator=(instance &&rhs) = delete;
+    general_instance(const general_instance &rhs) = delete;
+    general_instance &operator=(const general_instance &rhs) = delete;
+    general_instance &operator=(general_instance &&rhs) = delete;
 
-    instance() { parse(); }
+    general_instance() { parse(); }
 
-    instance(std::string filename) {
+    general_instance(std::string filename) {
         std::ifstream input(filename, std::ios::in);
         parse(input);
         input.close();
     }
 
-    uint64_t get_n0() const { return n0; }
+    T get_n0() const { return n0; }
 
-    uint64_t get_n1() const { return n1; }
+    T get_n1() const { return n1; }
 
-    uint64_t get_m() const { return m; }
+    T get_m() const { return m; }
 
-    const std::vector<std::pair<uint64_t, uint64_t>> &get_edges() const {
+    const std::vector<std::pair<T, T>> &get_edges() const {
         return edges;
     }
 
@@ -44,7 +46,7 @@ class instance {
     void parse(ISTREAM &input) {
         char type_of_line;
         std::string comment;
-        uint64_t x, y;
+        T x, y;
 
         do {
             input >> type_of_line;
@@ -76,6 +78,9 @@ class instance {
 
     void parse() { parse(std::cin); }
 };
+
+using uint64_instance = general_instance<std::uint64_t>;
+using uint32_instance = general_instance<std::uint32_t>;
 
 };  // namespace pace2024
 

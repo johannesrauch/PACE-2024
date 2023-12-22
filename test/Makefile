@@ -1,6 +1,6 @@
 .PHONY: all
 
-all: instance bipartite_graph crossing_number_matrix glpk
+all: instance bipartite_graph matrix glpk
 
 clean:
 	rm *.exe
