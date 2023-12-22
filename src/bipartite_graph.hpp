@@ -9,13 +9,13 @@
 
 namespace pace2024 {
 
-template<typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
+template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
 class general_bipartite_graph {
    private:
-    T n0,  // number of vertices in A, the fixed partite set
-        n1,       // number of vertices in B, the free partite set
-        m;        // number of edges
-    std::vector<std::vector<T>> adjacency_lists; // each adjacency list is sorted
+    T n0,                                         // number of vertices in A, the fixed partite set
+        n1,                                       // number of vertices in B, the free partite set
+        m;                                        // number of edges
+    std::vector<std::vector<T>> adjacency_lists;  // each adjacency list is sorted
 
    public:
     using datatype = T;

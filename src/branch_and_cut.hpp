@@ -37,14 +37,14 @@ class branch_and_cut {
                 T c_ij = cr_matrix(i, j), c_ji = cr_matrix(j, i), c = c_ij - c_ji;
 
                 if (c_ij == 0) {
-                    glp_set_col_bnds(lp, k, GLP_FX, 1, 1); // fix i < j
+                    glp_set_col_bnds(lp, k, GLP_FX, 1, 1);  // fix i < j
                 } else if (c_ji == 0) {
-                    glp_set_col_bnds(lp, k, GLP_FX, 0, 0); // fix j < i
+                    glp_set_col_bnds(lp, k, GLP_FX, 0, 0);  // fix j < i
                 } else {
-                    glp_set_col_bnds(lp, k, GLP_DB, 0, 1); // set 0 <= x_ij <= 1
+                    glp_set_col_bnds(lp, k, GLP_DB, 0, 1);  // set 0 <= x_ij <= 1
                 }
 
-                glp_set_obj_coef(lp, k, (double) c);
+                glp_set_obj_coef(lp, k, (double)c);
                 ++k;
             }
         }
