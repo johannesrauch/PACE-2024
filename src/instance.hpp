@@ -65,7 +65,7 @@ class instance {
                         << std::endl;
                     return;
             }
-        } while (type_of_line != 'p');
+        } while (type_of_line != 'p' && type_of_line != 'P');
 
         edges.reserve(m);
         for (uint64_t i = 0; i < m; ++i) {
