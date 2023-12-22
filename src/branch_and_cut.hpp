@@ -13,12 +13,12 @@ template <typename T>
 class branch_and_cut {
    private:
     // instance
-    bipartite_graph graph;
-    const uint64_t n1, n1_choose_2;
-    folded_square_matrix<T> cr_matrix;
+    const general_bipartite_graph<T> graph;
+    const T n1, n1_choose_2;
+    const folded_square_matrix<T> cr_matrix;
 
     // lp
-    glp_prob* lp;
+    glp_prob* const lp;
 
    public:
     branch_and_cut(const instance& instance)
@@ -28,18 +28,23 @@ class branch_and_cut {
           cr_matrix(graph),
           lp(glp_create_prob()) {
         glp_set_obj_dir(lp, GLP_MIN);
+
         // add n1(n1-1)/2 variables
         glp_add_cols(lp, n1_choose_2);
-        for (uint64_t j = 1; j <= n1_choose_2; ++j) {
-            // set 0 <= x_ij <= 1 for all variables
-            glp_set_col_bnds(lp, j, GLP_FX, 0, 1);
-        }
+        int k = 1;
+        for (uint32_t i = 0; i < n1; ++i) {
+            for (uint32_t j = i + 1; j < n1; ++j) {
+                T c_ij = cr_matrix(i, j), c_ji = cr_matrix(j, i), c = c_ij - c_ji;
 
-        // set objective coefficients
-        uint64_t k = 1;
-        for (uint64_t i = 0; i < n1; ++i) {
-            for (uint64_t j = i + 1; j < n1; ++j) {
-                glp_set_obj_coef(lp, k, cr_matrix(i, j) - cr_matrix(j, i));
+                if (c_ij == 0) {
+                    glp_set_col_bnds(lp, k, GLP_FX, 1, 1); // fix i < j
+                } else if (c_ji == 0) {
+                    glp_set_col_bnds(lp, k, GLP_FX, 0, 0); // fix j < i
+                } else {
+                    glp_set_col_bnds(lp, k, GLP_DB, 0, 1); // set 0 <= x_ij <= 1
+                }
+
+                glp_set_obj_coef(lp, k, (double) c);
                 ++k;
             }
         }
