@@ -13,7 +13,7 @@ namespace pace2024 {
  * @brief computes a linear ordering with the median heuristic
  *
  * @tparam T an unsigned integer type
- * @param graph the bipartite graph instance
+ * @param graph
  * @param ordering an empty array serving as output
  */
 template <typename T>
@@ -43,20 +43,21 @@ std::mt19937 generator(std::random_device{}());
 std::uniform_real_distribution<> distribution(0.0957, 0.9043);
 
 /**
- * @brief
+ * @brief first calls median_heuristic for an initial solution
+ * after that, we try to find a better solution with a randomized median heuristic
  *
- * @tparam T
+ * @tparam T an unsigned integer type
  * @param graph
- * @param ordering
+ * @param ordering an empty array serving as output
  */
 template <typename T>
-void prob_median_heuristic(const general_bipartite_graph<T>& graph,
-                           const folded_square_matrix<T> cr_matrix,
+T prob_median_heuristic(const general_bipartite_graph<T>& graph,
+                           const folded_square_matrix<T>& cr_matrix,
                            std::vector<T>& ordering,
                            std::size_t nof_iterations = 1000) {
     // compute a solution with the normal median heuristic
     median_heuristic(graph, ordering);
-    T best = compute_crossings(graph, cr_matrix, ordering);
+    T best = compute_crossings(cr_matrix, ordering);
 
     const T n1 = graph.get_n1();
     std::vector<T> another_ordering(n1);
@@ -81,12 +82,14 @@ void prob_median_heuristic(const general_bipartite_graph<T>& graph,
             return medians[a] < medians[b];
         });
 
-        T candidate = compute_crossings(graph, cr_matrix, another_ordering);
+        T candidate = compute_crossings(cr_matrix, another_ordering);
         if (candidate < best) {
             best = candidate;
             ordering = another_ordering;
         }
     }
+
+    return best;
 }
 
 };  // namespace pace2024

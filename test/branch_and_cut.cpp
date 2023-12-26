@@ -1,7 +1,8 @@
 #include "branch_and_cut.hpp"
 
 int main() {
-    pace2024::instance instance("tiny_test_set/matching_4_4.gr");
+    pace2024::general_instance<uint16_t> instance(
+        "tiny_test_set/matching_4_4.gr");
     pace2024::branch_and_cut<uint16_t> solver(instance);
 
     assert(solver.get_variable_index(0, 1) == 1);

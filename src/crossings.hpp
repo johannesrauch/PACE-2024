@@ -9,11 +9,10 @@
 namespace pace2024 {
 
 template <typename T>
-T compute_crossings(const general_bipartite_graph<T>& graph,
-                    const folded_square_matrix<T>& cr_matrix,
+T compute_crossings(const folded_square_matrix<T>& cr_matrix,
                     const std::vector<T>& ordering) {
-    const T n1 = graph.get_n1();
-    assert(n1 == cr_matrix.get_m() && n1 == cr_matrix.get_n() && n1 == ordering.size());
+    const T n1 = cr_matrix.get_m();
+    assert(n1 == ordering.size());
     std::vector<T> positions(n1);
 
     // we compute the positions first such that
@@ -24,7 +23,7 @@ T compute_crossings(const general_bipartite_graph<T>& graph,
 
     T nof_crossings = 0;
     for (std::size_t i = 0; i < n1; ++i) {
-        for (std::size_t j = i + 1, j < n1; ++j) {
+        for (std::size_t j = i + 1; j < n1; ++j) {
             if (positions[i] < positions[j])
                 nof_crossings += cr_matrix(i, j);
             else
