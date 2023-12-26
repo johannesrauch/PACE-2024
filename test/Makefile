@@ -1,6 +1,6 @@
 .PHONY: all
 
-all: instance bipartite_graph matrix glpk
+all: instance bipartite_graph matrix glpk median_heuristic branch_and_cut
 
 clean:
 	rm *.exe
@@ -8,7 +8,7 @@ clean:
 
 %:
 	@if [ $* != "all" ]; then\
-		$(CXX) $(CXXFLAGS) -c $*.cpp; \
-		$(CXX) $*.o $(LFLAGS) -o $*.exe; \
+		$(CXX) $(CXXFLAGS) -c $*.cpp && \
+		$(CXX) $*.o $(LFLAGS) -o $*.exe && \
 		./$*.exe; \
 	fi
