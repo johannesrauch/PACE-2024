@@ -6,6 +6,7 @@
 
 #include "bipartite_graph.hpp"
 #include "crossings.hpp"
+#include "random.hpp"
 
 namespace pace2024 {
 
@@ -17,7 +18,8 @@ namespace pace2024 {
  * @param ordering an empty array serving as output
  */
 template <typename T>
-void median_heuristic(const general_bipartite_graph<T>& graph, std::vector<T>& ordering) {
+void median_heuristic(const general_bipartite_graph<T>& graph,
+                      std::vector<T>& ordering) {
     const T n1 = graph.get_n1();
     ordering.resize(n1);
     std::vector<T> medians(n1);
@@ -39,12 +41,10 @@ void median_heuristic(const general_bipartite_graph<T>& graph, std::vector<T>& o
     });
 }
 
-std::mt19937 generator(std::random_device{}());
-std::uniform_real_distribution<> distribution(0.0957, 0.9043);
-
 /**
  * @brief first calls median_heuristic for an initial solution
- * after that, we try to find a better solution with a randomized median heuristic
+ * after that, we try to find a better solution with a randomized median
+ * heuristic
  *
  * @tparam T an unsigned integer type
  * @param graph
@@ -52,17 +52,18 @@ std::uniform_real_distribution<> distribution(0.0957, 0.9043);
  */
 template <typename T>
 T prob_median_heuristic(const general_bipartite_graph<T>& graph,
-                           const folded_square_matrix<T>& cr_matrix,
-                           std::vector<T>& ordering,
-                           std::size_t nof_iterations = 1000) {
+                        const folded_square_matrix<T>& cr_matrix,
+                        std::vector<T>& ordering,
+                        std::size_t nof_iterations = 1000) {
     // compute a solution with the normal median heuristic
     median_heuristic(graph, ordering);
     T best = compute_crossings(cr_matrix, ordering);
+    std::uniform_real_distribution<> distribution(0.0957, 0.9043);
 
     const T n1 = graph.get_n1();
     std::vector<T> another_ordering(n1);
     for (std::size_t i = 0; i < n1; ++i) {
-            another_ordering[i] = i;
+        another_ordering[i] = i;
     }
     std::vector<T> medians(n1);
     auto adjacency_lists = graph.get_adjacency_lists();
@@ -74,13 +75,15 @@ T prob_median_heuristic(const general_bipartite_graph<T>& graph,
             if (nof_neighbors == 0) {
                 medians[i] = 0;
             } else {
-                medians[i] = adjacency_lists[i][(std::size_t)(distribution(generator) * nof_neighbors)];
+                medians[i] = adjacency_lists[i][(std::size_t)(
+                    distribution(generator) * nof_neighbors)];
             }
         }
 
-        sort(another_ordering.begin(), another_ordering.end(), [&](const T& a, const T& b) -> bool {
-            return medians[a] < medians[b];
-        });
+        sort(another_ordering.begin(), another_ordering.end(),
+             [&](const T& a, const T& b) -> bool {
+                 return medians[a] < medians[b];
+             });
 
         T candidate = compute_crossings(cr_matrix, another_ordering);
         if (candidate < best) {
