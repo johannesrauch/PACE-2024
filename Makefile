@@ -1,6 +1,6 @@
 CXX = gcc -std=c++17 -Wall
 CXXFLAGS = -I../src
-LFLAGS = -lglpk -lstdc++
+LFLAGS = -lglpk -lstdc++ -lm
 
 ifdef PRODUCTION
 	CXXFLAGS += -O3
