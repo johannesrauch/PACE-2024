@@ -1,6 +1,6 @@
 .PHONY: all
 
-all: instance bipartite_graph matrix glpk median_heuristic branch_and_cut
+all: instance bipartite_graph matrix glpk median_heuristic topological_sort branch_and_cut
 
 clean:
 	rm *.exe
