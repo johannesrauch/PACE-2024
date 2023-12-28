@@ -14,6 +14,8 @@ int main() {
     assert(solver.get_variable_index(2, 3) == 6);
     // assert(solver.get_variable_index(3, 2) == 6);
 
+    solver.solve();
+
     std::cout << "TEST::PACE2024::BRANCH_AND_CUT: OKAY" << std::endl;
     return 0;
 }
