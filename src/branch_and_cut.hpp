@@ -71,7 +71,7 @@ class branch_and_cut {
         for (std::size_t i = 0; i < n1; ++i) {
             for (std::size_t j = i + 1; j < n1; ++j) {
                 // just a test
-                assert(k == get_variable_index(i, j));
+                assert((unsigned int)k == get_variable_index(i, j));
 
                 T c_ij = cr_matrix(i, j), c_ji = cr_matrix(j, i),
                   c = c_ij - c_ji;
@@ -143,7 +143,7 @@ class branch_and_cut {
             glp_set_row_bnds(lp, row, GLP_UP, 0., 1.);
             const int indices[4] = {0, index_ij, index_jk, index_ik};
             const double coefficients[4] = {0, 1., 1., -1.};
-            glp_set_mat_row(lp, row, 3, indices, coefficients)
+            glp_set_mat_row(lp, row, 3, indices, coefficients);
         }
 
         // cycle ikj
@@ -153,7 +153,7 @@ class branch_and_cut {
             glp_set_row_bnds(lp, row, GLP_UP, 0., 0.);
             const int indices[4] = {0, index_ij, index_jk, index_ik};
             const double coefficients[4] = {0, -1., -1., 1.};
-            glp_set_mat_row(lp, row, 3, indices, coefficients)
+            glp_set_mat_row(lp, row, 3, indices, coefficients);
         }
 
         return nof_new_cycle_constraints;
@@ -209,7 +209,6 @@ class branch_and_cut {
         double val = glp_get_obj_val(lp);
 
         if (lower_bound >= val) {
-
         }
     }
 };
