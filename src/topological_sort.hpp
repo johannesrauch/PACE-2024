@@ -43,6 +43,7 @@ bool topological_sort(const general_graph<T>& graph, std::vector<T>& ordering) {
     }
 
     std::reverse(ordering.begin(), ordering.end());
+    assert(graph.get_n() == ordering.size());
     return true;
 }
 
