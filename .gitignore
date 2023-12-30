@@ -39,3 +39,4 @@
 
 .vscode/*
 *.sol
+.gdb_history
