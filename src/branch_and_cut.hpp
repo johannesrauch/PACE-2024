@@ -21,6 +21,7 @@
 #include "matrix.hpp"
 #include "median_heuristic.hpp"
 #include "topological_sort.hpp"
+#include "output.hpp"
 
 namespace pace2024 {
 
@@ -54,7 +55,7 @@ class branch_and_cut {
      *
      * @param instance input
      */
-    branch_and_cut(const general_instance<T>& instance)
+    branch_and_cut(const general_instance<T>& instance, int msg_level = GLP_MSG_OFF)
         : graph(instance),
           n1(graph.get_n1()),
           n1_choose_2(n1 * (n1 - 1) / 2),
@@ -64,6 +65,7 @@ class branch_and_cut {
           upper_bound(0),
           ordering(n1) {
         glp_init_smcp(&params);
+        params.msg_lev = msg_level;
         glp_set_obj_dir(lp, GLP_MIN);
 
         // add n1(n1-1)/2 variables
@@ -110,7 +112,7 @@ class branch_and_cut {
         assert(i < j);
         int offset = n1_choose_2 - (n1 - i) * (n1 - i - 1) / 2;
         int index = offset + j - i;
-        assert(index <= n1_choose_2);
+        assert(1 <= index && index <= n1_choose_2);
         return index;
     }
 
@@ -169,8 +171,8 @@ class branch_and_cut {
         T nof_cycle_constraints = 0;
 
         for (int i = 0; i < n1; ++i) {
-            for (int j = 0; j < n1; ++j) {
-                for (int k = 0; k < n1; ++k) {
+            for (int j = i + 1; j < n1; ++j) {
+                for (int k = j + 1; k < n1; ++k) {
                     nof_cycle_constraints += check_cycle_constraint(i, j, k);
 
                     if (nof_cycle_constraints >
@@ -218,10 +220,10 @@ class branch_and_cut {
 
     void compute_ordering() {
         // build the constraint graph
-        general_graph<T> graph(n1_choose_2);
+        general_graph<T> graph(n1);
         int k = 1;
-        for (T i = 0; i < n1; ++i) {
-            for (T j = 0; j < n1; ++j) {
+        for (int i = 0; i < n1; ++i) {
+            for (int j = i + 1; j < n1; ++j) {
                 assert(is_column_integral(k));
                 double x = glp_get_col_prim(lp, k);
                 if (x < PACE2024_CONST_EPSILON) {
@@ -272,7 +274,7 @@ class branch_and_cut {
     }
 
    public:
-    void solve() {
+    void solve(bool do_print = true) {
         for (;;) {
             glp_simplex(lp, &params);
             int status = glp_get_status(lp);
@@ -280,7 +282,7 @@ class branch_and_cut {
 
             double value = glp_get_obj_val(lp);
             if ((double)upper_bound <= value) {
-                if (backtrack()) return;
+                if (backtrack()) break;
             } else {
                 if (!try_to_generate_cutting_planes()) {
                     int j = is_solution_integral();
@@ -296,6 +298,10 @@ class branch_and_cut {
                     }
                 }
             }
+        }
+
+        if (do_print) {
+            print_output(graph.get_n0(), ordering);
         }
     }
 };
