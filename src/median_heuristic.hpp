@@ -12,9 +12,10 @@ namespace pace2024 {
 
 /**
  * @brief computes a linear ordering with the median heuristic
+ * we brake ties arbitrarily; this can be improved (todo)
  *
  * @tparam T an unsigned integer type
- * @param graph
+ * @param graph the bipartite input graph
  * @param ordering an empty array serving as output
  */
 template <typename T>
