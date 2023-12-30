@@ -6,8 +6,9 @@ if __name__ == "__main__":
 
     edges = []
     for i in range(n0):
+        threshold = random.random()
         for j in range(n1):
-            if random.random() < 0.8:
+            if random.random() < threshold:
                 edges.append((i + 1, j + n0 + 1))
     
     print(f"p ocr {n0} {n1} {len(edges)}")
