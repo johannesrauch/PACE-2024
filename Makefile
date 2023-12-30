@@ -3,7 +3,7 @@ CXXFLAGS = -I../src
 LFLAGS = -lglpk -lstdc++ -lm
 
 ifdef PRODUCTION
-	CXXFLAGS += -O3
+	CXXFLAGS += -O3 -DNDEBUG
 else
 	CXXFLAGS += -g
 endif
