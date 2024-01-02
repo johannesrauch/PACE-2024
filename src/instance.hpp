@@ -10,13 +10,13 @@
 
 namespace pace2024 {
 
-template<typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
+template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
 class general_instance {
    private:
     std::string problem_descriptor;
-    T n0,  // number of vertices in A, the fixed partite set
-        n1,            // number of vertices in B
-        m;             // number of edges
+    std::size_t n0,  // number of vertices in A, the fixed partite set
+        n1,          // number of vertices in B
+        m;           // number of edges
     std::vector<std::pair<T, T>> edges;
 
    public:
@@ -32,11 +32,11 @@ class general_instance {
         input.close();
     }
 
-    T get_n0() const { return n0; }
+    std::size_t get_n0() const { return n0; }
 
-    T get_n1() const { return n1; }
+    std::size_t get_n1() const { return n1; }
 
-    T get_m() const { return m; }
+    std::size_t get_m() const { return m; }
 
     const std::vector<std::pair<T, T>> &get_edges() const {
         return edges;
@@ -44,7 +44,7 @@ class general_instance {
 
     template <class ISTREAM>
     void parse(ISTREAM &input) {
-        char type_of_line;
+        char type_of_line = 0;
         std::string comment;
         T x, y;
 

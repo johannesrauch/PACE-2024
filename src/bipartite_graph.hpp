@@ -2,6 +2,7 @@
 #define PACE2024_BIPARTITE_GRAPH_HPP
 
 #include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <vector>
 
@@ -12,7 +13,7 @@ namespace pace2024 {
 template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
 class general_bipartite_graph {
    private:
-    T n0,                                         // number of vertices in A, the fixed partite set
+    std::size_t n0,                               // number of vertices in A, the fixed partite set
         n1,                                       // number of vertices in B, the free partite set
         m;                                        // number of edges
     std::vector<std::vector<T>> adjacency_lists;  // each adjacency list is sorted
@@ -33,19 +34,21 @@ class general_bipartite_graph {
         auto edges = instance.get_edges();
 
         for (auto [x, y] : edges) {
-            --x;          // normalize to 0, ..., n0-1
+            --x;  // normalize to 0, ..., n0-1
+            assert(x < n0);
             y -= n0 + 1;  // normalize to 0, ..., n1-1
+            assert(y < n1);
             adjacency_lists[y].emplace_back(x);
         }
 
         sort_adjacency_lists();
     }
 
-    T get_n0() const { return n0; }
+    std::size_t get_n0() const { return n0; }
 
-    T get_n1() const { return n1; }
+    std::size_t get_n1() const { return n1; }
 
-    T get_m() const { return m; }
+    std::size_t get_m() const { return m; }
 
     const std::vector<std::vector<T>> &get_adjacency_lists() const {
         return adjacency_lists;
