@@ -38,7 +38,13 @@ void median_heuristic(const general_bipartite_graph<T>& graph,
     }
 
     sort(ordering.begin(), ordering.end(), [&](const T& a, const T& b) -> bool {
-        return medians[a] < medians[b];
+        if (medians[a] < medians[b]) {
+            return true;
+        } else if (medians[a] == medians[b]) {
+            return adjacency_lists[a].size() % 2 == 1;
+        } else {
+            return false;
+        }
     });
 }
 
