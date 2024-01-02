@@ -292,7 +292,6 @@ void compute_crossing_numbers_naivly(const general_bipartite_graph<T> &graph, fo
     assert(graph.get_n1() == matrix.get_m());
     uint64_t n1 = matrix.get_m();
     auto adjacency_lists = graph.get_adjacency_lists();
-    // not cache friendly for matrix<T>
     for (uint64_t i = 0; i < n1 - 1; ++i) {
         for (uint64_t j = i + 1; j < n1; ++j) {
             for (uint64_t x : adjacency_lists[i]) {
