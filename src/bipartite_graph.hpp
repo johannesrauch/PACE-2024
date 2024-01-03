@@ -54,6 +54,7 @@ class general_bipartite_graph {
         return adjacency_lists;
     }
 
+   private:
     void sort_adjacency_lists() {
         for (auto &adjacency_list : adjacency_lists) {
             std::sort(adjacency_list.begin(), adjacency_list.end());
