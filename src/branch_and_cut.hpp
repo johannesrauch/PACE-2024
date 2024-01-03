@@ -100,8 +100,12 @@ class branch_and_cut {
         }
 
         median_heuristic(graph, ordering);
-        upper_bound = compute_crossings(cr_matrix, ordering);
+        upper_bound = nof_crossings(cr_matrix, ordering);
     }
+
+    branch_and_cut(const branch_and_cut &rhs) = delete;
+    branch_and_cut &operator=(const branch_and_cut &rhs) = delete;
+    branch_and_cut &operator=(branch_and_cut &&rhs) = delete;
 
     ~branch_and_cut() {
         glp_delete_prob(lp);
