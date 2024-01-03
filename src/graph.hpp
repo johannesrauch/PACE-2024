@@ -18,7 +18,7 @@ class general_graph {
     general_graph &operator=(const general_graph &rhs) = delete;
     general_graph &operator=(general_graph &&rhs) = delete;
 
-    general_graph(const T n) : adjacency_lists(n) {}
+    general_graph(const std::size_t n) : adjacency_lists(n) {}
 
     /**
      * @brief add arc (u,v)
