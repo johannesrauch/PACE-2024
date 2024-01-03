@@ -8,9 +8,16 @@
 
 namespace pace2024 {
 
+/**
+ * @brief returns the number of crossings in the given ordering
+ * 
+ * @tparam T 
+ * @param cr_matrix crossing number matrix
+ * @param ordering ordering of the free layer
+ * @return T 
+ */
 template <typename T>
-T compute_crossings(const folded_square_matrix<T>& cr_matrix,
-                    const std::vector<T>& ordering) {
+T nof_crossings(const folded_square_matrix<T>& cr_matrix, const std::vector<T>& ordering) {
     const T n1 = cr_matrix.get_m();
     assert(n1 == ordering.size());
     std::vector<T> positions(n1);
