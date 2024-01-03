@@ -1,4 +1,6 @@
 #include "branch_and_cut.hpp"
+
+#include "crossings.hpp"
 #include "output.hpp"
 
 int main() {
@@ -19,9 +21,16 @@ int main() {
         solver.solve(false);
     }
 
-    pace2024::uint32_instance instance("my_tests/random_threshold.gr");
-    pace2024::branch_and_cut<uint32_t> solver(instance);
-    solver.solve();
+    {
+        pace2024::uint32_instance instance("my_tests/random_threshold.gr");
+        pace2024::branch_and_cut<uint32_t> solver(instance);
+        solver.solve(false);
+        uint32_t nof_crossings = solver.get_nof_crossings();
+        // std::cout << nof_crossings << std::endl;
+        assert(nof_crossings == 414);
+        assert(nof_crossings ==
+               pace2024::compute_crossings(solver.get_crossing_matrix(), solver.get_ordering()));
+    }
 
     std::cout << "TEST::PACE2024::BRANCH_AND_CUT: OKAY" << std::endl;
     return 0;

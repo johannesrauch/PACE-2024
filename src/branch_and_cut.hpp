@@ -11,17 +11,19 @@
 #endif
 
 #include <glpk.h>
+#include <math.h>
 
 #include <stack>
-#include <math.h>
+#include <type_traits>
 
 #include "bipartite_graph.hpp"
 #include "crossings.hpp"
+#include "debug.hpp"
 #include "instance.hpp"
 #include "matrix.hpp"
 #include "median_heuristic.hpp"
-#include "topological_sort.hpp"
 #include "output.hpp"
+#include "topological_sort.hpp"
 
 namespace pace2024 {
 
@@ -38,8 +40,9 @@ class branch_and_cut {
     glp_smcp params;
 
     // solution
-    uint64_t lower_bound;
-    uint64_t upper_bound;  // current best solution
+    T lower_bound,
+        upper_bound,     // current best solution
+        obj_val_offset;  // this + the obj_val of the lp = #crossings
     std::vector<T> ordering;
 
     // internal variables
@@ -63,6 +66,7 @@ class branch_and_cut {
           lp(glp_create_prob()),
           lower_bound(0),
           upper_bound(0),
+          obj_val_offset(0),
           ordering(n1) {
         glp_init_smcp(&params);
         params.msg_lev = msg_level;
@@ -76,9 +80,10 @@ class branch_and_cut {
                 // just a test
                 assert(k == get_variable_index(i, j));
 
-                T c_ij = cr_matrix(i, j), c_ji = cr_matrix(j, i),
-                  c = c_ij - c_ji;
+                T c_ij = cr_matrix(i, j), c_ji = cr_matrix(j, i);
+                double c = (double)c_ij - (double)c_ji;
                 lower_bound += c_ij < c_ji ? c_ij : c_ji;  // min(c_ij, c_ji)
+                obj_val_offset += c_ji;
 
                 if (c_ij == 0) {
                     glp_set_col_bnds(lp, k, GLP_FX, 1, 1);  // fix i < j
@@ -89,7 +94,7 @@ class branch_and_cut {
                     glp_set_col_bnds(lp, k, GLP_DB, 0, 1);
                 }
 
-                glp_set_obj_coef(lp, k, (double)c);
+                glp_set_obj_coef(lp, k, c);
                 ++k;
             }
         }
@@ -98,7 +103,9 @@ class branch_and_cut {
         upper_bound = compute_crossings(cr_matrix, ordering);
     }
 
-    ~branch_and_cut() { glp_delete_prob(lp); }
+    ~branch_and_cut() {
+        glp_delete_prob(lp);
+    }
 
     /**
      * @brief converts an index pair i, j, i < j, to the lp column (variable)
@@ -216,7 +223,10 @@ class branch_and_cut {
         return 0;
     }
 
-    bool try_to_generate_cutting_planes() { return check_cycle_constraints(); }
+    bool try_to_generate_cutting_planes() {
+        bool success = check_cycle_constraints();
+        return success;
+    }
 
     void compute_ordering() {
         // build the constraint graph
@@ -237,7 +247,9 @@ class branch_and_cut {
 
         // the ordering computed by the lp is the topological sort
         assert(topological_sort(graph, ordering));
-        upper_bound = llround(glp_get_obj_val(lp));
+        double value = glp_get_obj_val(lp) + obj_val_offset;
+        assert(value >= 0);
+        upper_bound = llround(value);
     }
 
     /**
@@ -263,8 +275,8 @@ class branch_and_cut {
 
     /**
      * @brief temporarily fixes column j
-     * 
-     * @param j 
+     *
+     * @param j
      */
     void fix_column(int j) {
         // todo: more sophisticated fixing
@@ -275,12 +287,14 @@ class branch_and_cut {
 
    public:
     void solve(bool do_print = true) {
-        for (;;) {
+        for (std::size_t iteration = 0;; ++iteration) {
             glp_simplex(lp, &params);
             int status = glp_get_status(lp);
             assert(status == GLP_OPT);
 
-            double value = glp_get_obj_val(lp);
+            double value = glp_get_obj_val(lp) + (double)obj_val_offset;
+            assert(iteration > 0 || llround(value) == lower_bound);
+
             if ((double)upper_bound <= value) {
                 if (backtrack()) break;
             } else {
@@ -303,6 +317,18 @@ class branch_and_cut {
         if (do_print) {
             print_output(graph.get_n0(), ordering);
         }
+    }
+
+    T get_nof_crossings() {
+        return upper_bound;
+    }
+
+    const folded_square_matrix<T>& get_crossing_matrix() const {
+        return cr_matrix;
+    }
+
+    const std::vector<T> get_ordering() const {
+        return ordering;
     }
 };
 
