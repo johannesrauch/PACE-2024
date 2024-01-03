@@ -8,7 +8,6 @@
 #include "crossings.hpp"
 #include "debug.hpp"
 #include "random.hpp"
-#include "sort.hpp"
 
 namespace pace2024 {
 
