@@ -1,4 +1,4 @@
-CXX = gcc -std=c++17 -Wall
+CXX = gcc -std=c++17 -Wall -Werror
 CXXFLAGS = -I../src
 LFLAGS = -lglpk -lstdc++ -lm
 
