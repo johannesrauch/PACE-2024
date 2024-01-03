@@ -28,6 +28,7 @@ class general_instance {
 
     general_instance(std::string filename) {
         std::ifstream input(filename, std::ios::in);
+        assert(input.good());
         parse(input);
         input.close();
     }
@@ -81,6 +82,7 @@ class general_instance {
 
 using uint64_instance = general_instance<std::uint64_t>;
 using uint32_instance = general_instance<std::uint32_t>;
+using uint16_instance = general_instance<std::uint16_t>;
 
 };  // namespace pace2024
 
