@@ -2,6 +2,7 @@
 #define PACE2024_TOPOLOGICAL_SORT_HPP
 
 #include <algorithm>
+#include <cassert>
 #include <stack>
 
 #include "graph.hpp"

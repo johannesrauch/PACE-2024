@@ -1,6 +1,7 @@
 #ifndef PACE2024_INSTANCE_HPP
 #define PACE2024_INSTANCE_HPP
 
+#include <cassert>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
