@@ -29,7 +29,7 @@ int main() {
         // std::cout << nof_crossings << std::endl;
         assert(nof_crossings == 414);
         assert(nof_crossings ==
-               pace2024::compute_crossings(solver.get_crossing_matrix(), solver.get_ordering()));
+               pace2024::nof_crossings(solver.get_crossing_matrix(), solver.get_ordering()));
     }
 
     std::cout << "TEST::PACE2024::BRANCH_AND_CUT: OKAY" << std::endl;

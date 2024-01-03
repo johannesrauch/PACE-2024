@@ -12,11 +12,12 @@ int main() {
     pace2024::folded_square_matrix<uint32_t> cr_matrix(graph);
 
     std::vector<uint32_t> ordering;
-    pace2024::median_heuristic(graph, ordering);
-    uint32_t nof_crossings = pace2024::compute_crossings(cr_matrix, ordering);
+    pace2024::median_heuristic<uint32_t>(graph, ordering).run();
+    uint32_t nof_crossings = pace2024::nof_crossings(cr_matrix, ordering);
     assert(nof_crossings == 17);
 
-    nof_crossings = pace2024::prob_median_heuristic(graph, cr_matrix, ordering);
+    uint32_t nof_crossings_prob = pace2024::probabilistic_median_heuristic<uint32_t>(graph, cr_matrix, ordering).run();
+    assert(nof_crossings_prob <= nof_crossings);
     // std::cout << nof_crossings << std::endl;
     // pace2024::print_output(graph.get_n0(), ordering);
 
