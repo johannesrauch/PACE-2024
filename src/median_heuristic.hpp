@@ -62,7 +62,9 @@ class median_heuristic {
           adjacency_lists(input_graph.get_adjacency_lists()),
           n1(input_graph.get_n1()),
           ordering(ordering),
-          medians(n1) {}
+          medians(n1) {
+        fill_medians();
+    }
 
     // delete copy constructor and assignment function
     median_heuristic(const median_heuristic<T>& other) = delete;
@@ -99,7 +101,6 @@ class median_heuristic {
     void run() {
         ordering.resize(n1);
         for (T i = 0; i < n1; ++i) ordering[i] = i;
-        fill_medians();
         sort(ordering.begin(), ordering.end(), [=](const T& a, const T& b) -> bool {
             return this->compare(a, b);
         });
