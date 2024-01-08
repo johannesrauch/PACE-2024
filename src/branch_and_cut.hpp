@@ -250,7 +250,8 @@ class branch_and_cut {
         }
 
         // the ordering computed by the lp is the topological sort
-        assert(topological_sort(graph, ordering));
+        bool acyclic = topological_sort(graph, ordering);
+        assert(acyclic);
         double value = glp_get_obj_val(lp) + obj_val_offset;
         assert(value >= 0);
         upper_bound = llround(value);
