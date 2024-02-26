@@ -1,5 +1,5 @@
-#ifndef PACE2024_DEBUG_HPP
-#define PACE2024_DEBUG_HPP
+#ifndef PACE2024_DEBUG_PRINTF_HPP
+#define PACE2024_DEBUG_PRINTF_HPP
 
 #include "printf.hpp"
 
