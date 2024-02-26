@@ -15,9 +15,11 @@ template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::val
 class general_instance {
    private:
     std::string problem_descriptor;
+
     std::size_t n0,  // number of vertices in A, the fixed partite set
         n1,          // number of vertices in B
         m;           // number of edges
+
     std::vector<std::pair<T, T>> edges;
 
    public:
@@ -48,7 +50,6 @@ class general_instance {
     void parse(ISTREAM &input) {
         char type_of_line = 0;
         std::string comment;
-        T x, y;
 
         do {
             input >> type_of_line;
@@ -72,6 +73,7 @@ class general_instance {
         } while (type_of_line != 'p' && type_of_line != 'P');
 
         edges.reserve(m);
+        T x, y;
         for (uint64_t i = 0; i < m; ++i) {
             input >> x >> y;
             edges.emplace_back(x, y);
