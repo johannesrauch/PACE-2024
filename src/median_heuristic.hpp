@@ -5,8 +5,8 @@
 #include <vector>
 
 #include "bipartite_graph.hpp"
-#include "crossings.hpp"
-#include "debug.hpp"
+#include "crossing_number.hpp"
+#include "debug_printf.hpp"
 #include "random.hpp"
 
 namespace pace2024 {
