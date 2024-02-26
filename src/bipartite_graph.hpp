@@ -17,9 +17,9 @@ namespace pace2024 {
 /**
  * @brief a bipartite graph implementation
  * used for storing the pace instances
- * 
+ *
  * @tparam T vertex type
- * @tparam std::enable_if_t<std::is_unsigned<T>::value> 
+ * @tparam std::enable_if_t<std::is_unsigned<T>::value>
  */
 template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
 class general_bipartite_graph {
@@ -139,11 +139,11 @@ using uint16_bipartite_graph = general_bipartite_graph<std::uint16_t>;
 
 /**
  * @brief parses input from filestream and stores it in graph
- * 
- * @tparam T 
- * @tparam IFSTREAM 
- * @param graph 
- * @param input 
+ *
+ * @tparam T
+ * @tparam IFSTREAM
+ * @param graph
+ * @param input
  */
 template <typename T, typename IFSTREAM>
 void parse(general_bipartite_graph<T> &graph, IFSTREAM &input) {
