@@ -16,6 +16,7 @@ class general_bipartite_graph {
     std::size_t n0,                               // number of vertices in A, the fixed partite set
         n1,                                       // number of vertices in B, the free partite set
         m;                                        // number of edges
+    
     std::vector<std::vector<T>> adjacency_lists;  // each adjacency list is sorted
 
    public:
@@ -25,15 +26,14 @@ class general_bipartite_graph {
     general_bipartite_graph &operator=(const general_bipartite_graph &rhs) = delete;
     general_bipartite_graph &operator=(general_bipartite_graph &&rhs) = delete;
 
-    template <typename T1>
-    general_bipartite_graph(const general_instance<T1> &instance)
+    general_bipartite_graph(const general_instance<T> &instance)
         : n0(instance.get_n0()),
           n1(instance.get_n1()),
           m(instance.get_m()),
           adjacency_lists(n1) {
         auto edges = instance.get_edges();
 
-        for (auto [x, y] : edges) {
+        for (auto& [x, y] : edges) {
             --x;  // normalize to 0, ..., n0-1
             assert(x < n0);
             y -= n0 + 1;  // normalize to 0, ..., n1-1
@@ -64,6 +64,7 @@ class general_bipartite_graph {
 
 using uint64_bipartite_graph = general_bipartite_graph<std::uint64_t>;
 using uint32_bipartite_graph = general_bipartite_graph<std::uint32_t>;
+using uint16_bipartite_graph = general_bipartite_graph<std::uint16_t>;
 
 };  // namespace pace2024
 
