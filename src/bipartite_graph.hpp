@@ -46,6 +46,13 @@ class general_bipartite_graph {
     std::vector<std::vector<T>> adjacency_lists;
 
     /**
+     * @brief edges
+     * first vertex is in fixed layer
+     * second vertex is in free layer
+     */
+    std::vector<std::pair<T, T>> edges;
+
+    /**
      * @brief used for parsing the input and storing it in general_bipartite_graph
      * friend of general_bipartite_graph
      *
@@ -75,6 +82,9 @@ class general_bipartite_graph {
         assert(input.good());
         parse(*this, input);
         input.close();
+
+        assert(n1 == adjacency_lists.size());
+        assert(m == edges.size());
     }
 
     /**
@@ -86,6 +96,9 @@ class general_bipartite_graph {
     template <typename IFSTREAM>
     general_bipartite_graph(IFSTREAM &input) {
         parse(*this, input);
+
+        assert(n1 == adjacency_lists.size());
+        assert(m == edges.size());
     }
 
     /**
@@ -172,12 +185,15 @@ void parse(general_bipartite_graph<T> &graph, IFSTREAM &input) {
     } while (type_of_line != 'p' && type_of_line != 'P');
 
     graph.adjacency_lists.resize(graph.n1);
+    graph.edges.reserve(graph.m);
     T x, y;
     for (std::size_t i = 0; i < graph.m; ++i) {
         input >> x >> y;
         --x;
         y -= graph.n0 + 1;
+
         graph.adjacency_lists[y].emplace_back(x);
+        graph.edges.emplace_back(x, y);
     }
 
     graph.sort_adjacency_lists();
