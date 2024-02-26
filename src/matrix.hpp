@@ -114,7 +114,9 @@ class folded_square_matrix {
     std::size_t get_n() const { return n1; }
 
     inline std::size_t get_index(const std::size_t i, const std::size_t j) const {
-        assert(i < n1 && j < n1 && i != j);
+        assert(i < n1);
+        assert(j < n1);
+        assert(i != j);
         std::size_t index;
         if (i < j) {
             std::size_t offset = n2 - (n1 - i) * (n1 - i - 1);
