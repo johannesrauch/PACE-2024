@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "bipartite_graph.hpp"
+#include "matrix.hpp"
 #include "vector_intersection.hpp"
 
 namespace pace2024 {
