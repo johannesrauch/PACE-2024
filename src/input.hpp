@@ -1,5 +1,5 @@
-#ifndef PACE2024_INSTANCE_HPP
-#define PACE2024_INSTANCE_HPP
+#ifndef PACE2024_INPUT_HPP
+#define PACE2024_INPUT_HPP
 
 #include <cassert>
 #include <cstdint>

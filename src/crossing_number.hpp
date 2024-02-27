@@ -58,8 +58,7 @@ std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph, T u
 }
 
 /**
- * @brief computes the number of crossings of the given ordering
- *
+ * @brief computes the number of crossings of the given ordering.
  * based on https://doi.org/10.1007/3-540-36151-0_13
  *
  * @tparam T vertex type
@@ -68,31 +67,26 @@ std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph, T u
  * @return R
  */
 template <typename T, typename R>
-R crossing_number_of(const general_bipartite_graph<T>& graph, const std::vector<T>& ordering) {
+R crossing_number_of(general_bipartite_graph<T>& graph, const std::vector<T>& ordering) {
     // compute the positions of each element
     // (inverse of the permutation ordering)
-    std::size_t n1 = graph.get_n1();
+    const std::size_t n1 = graph.get_n1();
     std::vector<T> positions(n1);
     for (std::size_t i = 0; i < n1; ++i) {
         positions[ordering[i]] = i;
     }
 
-    // sort for southside
-    std::size_t m = graph.get_m();
+    // sort, we need the positions of the ends of the edges in the free layer
     auto& edges = graph.get_edges();
-    std::vector<T> southsequence(m);
-    for (std::size_t i = 0; i < m; ++i) {
-        southsequence[i] = i;
-    }
-    std::sort(southsequence.begin(),
-              southsequence.end(),
-              [&](const T& a, const T& b) {
-                  if (edges[a].first < edges[b].first)
+    std::sort(edges.begin(),
+              edges.end(),
+              [&](const std::pair<T, T>& a, const std::pair<T, T>& b) {
+                  if (a.first < b.first)
                       return true;
-                  else if (edges[a].first < edges[b].first)
+                  else if (a.first < b.first)
                       return false;
                   else
-                      return positions[edges[a].second] < positions[edges[b].second];
+                      return positions[a.second] < positions[b.second];
               });
 
     /* build the accumulator tree */
@@ -106,7 +100,7 @@ R crossing_number_of(const general_bipartite_graph<T>& graph, const std::vector<
     /* count the crossings */
     R crosscount = 0;                                 /* number of crossings */
     for (std::size_t k = 0; k < graph.get_m(); ++k) { /* insert edge k */
-        std::size_t index = southsequence[edges[southsequence[k]].second] + firstindex;
+        std::size_t index = positions[edges[k].second] + firstindex;
         ++tree[index];
         while (index > 0) {
             if (index % 2) crosscount += tree[index + 1];
@@ -127,7 +121,7 @@ R crossing_number_of(const general_bipartite_graph<T>& graph, const std::vector<
  * @return R
  */
 template <typename T, typename R>
-R crossing_number_of(const folded_square_matrix<R>& cr_matrix, const std::vector<T>& ordering) {
+R crossing_number_of(const folded_matrix<R>& cr_matrix, const std::vector<T>& ordering) {
     const std::size_t n1 = cr_matrix.get_m();
     assert(n1 == ordering.size());
     std::vector<T> positions(n1);

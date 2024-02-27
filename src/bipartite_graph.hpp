@@ -4,15 +4,12 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <fstream>
+#include <iostream>
+#include <string>
 #include <vector>
 
-#include "instance.hpp"
-
 namespace pace2024 {
-
-//
-// bipartite graph
-//
 
 /**
  * @brief a bipartite graph implementation
@@ -52,18 +49,6 @@ class general_bipartite_graph {
      */
     std::vector<std::pair<T, T>> edges;
 
-    /**
-     * @brief used for parsing the input and storing it in general_bipartite_graph
-     * friend of general_bipartite_graph
-     *
-     * @tparam T1 vertex type of general_bipartite_graph
-     * @tparam IFSTREAM input filestream
-     * @param graph
-     * @param input
-     */
-    template <typename T1, typename IFSTREAM>
-    friend void parse(general_bipartite_graph<T1> &graph, IFSTREAM &input);
-
    public:
     using datatype = T;
 
@@ -73,14 +58,15 @@ class general_bipartite_graph {
     general_bipartite_graph &operator=(general_bipartite_graph &&rhs) = delete;
 
     /**
-     * @brief reads input from filepath and constructs general_bipartite_graph
+     * @brief creates input filestream from filepath,
+     * reads from it to construct general_bipartite_graph
      *
      * @param filepath
      */
     general_bipartite_graph(const std::string filepath) {
-        std::ifstream input(filepath, std::ios::in);
+        std::ifstream input(filepath);
         assert(input.good());
-        parse(*this, input);
+        parse_input(input);
         input.close();
 
         assert(n1 == adjacency_lists.size());
@@ -95,7 +81,7 @@ class general_bipartite_graph {
      */
     template <typename IFSTREAM>
     general_bipartite_graph(IFSTREAM &input) {
-        parse(*this, input);
+        parse_input(input);
 
         assert(n1 == adjacency_lists.size());
         assert(m == edges.size());
@@ -131,6 +117,15 @@ class general_bipartite_graph {
         return adjacency_lists;
     }
 
+    /**
+     * @brief returns a reference to all edges
+     *
+     * @return const std::vector<std::pair<T, T>>&
+     */
+    std::vector<std::pair<T, T>> &get_edges() const {
+        return edges;
+    }
+
    private:
     /**
      * @brief sorts all adjacency lists in ascending order
@@ -140,64 +135,61 @@ class general_bipartite_graph {
             std::sort(adjacency_list.begin(), adjacency_list.end());
         }
     }
+
+    /**
+     * @brief used for parsing the input and storing it in general_bipartite_graph
+     *
+     * @tparam IFSTREAM input filestream
+     * @param input
+     */
+    template <typename IFSTREAM1>
+    void parse_input(IFSTREAM1 &input) {
+        char type_of_line = 0;
+        std::string problem_descriptor, comment;
+
+        // parameter and comment lines
+        do {
+            input >> type_of_line;
+            switch (type_of_line) {
+                case 'c':  // comment line
+                case 'C':
+                    std::getline(input, comment);
+                    break;
+
+                case 'p':  // parameter line
+                case 'P':
+                    input >> problem_descriptor >> n0 >> n1 >> m;
+                    break;
+
+                default:
+                    std::cerr
+                        << "pace2024::parse_input(): unknown line type"
+                        << std::endl;
+                    return;
+            }
+        } while (type_of_line != 'p' && type_of_line != 'P');
+
+        // edges
+        adjacency_lists.resize(n1);
+        edges.reserve(m);
+        T x, y;
+        for (std::size_t i = 0; i < m; ++i) {
+            input >> x >> y;
+            --x;
+            y -= n0 + 1;
+
+            adjacency_lists[y].emplace_back(x);
+            edges.emplace_back(x, y);
+        }
+
+        // sort ascending
+        sort_adjacency_lists();
+    }
 };
 
 using uint64_bipartite_graph = general_bipartite_graph<std::uint64_t>;
 using uint32_bipartite_graph = general_bipartite_graph<std::uint32_t>;
 using uint16_bipartite_graph = general_bipartite_graph<std::uint16_t>;
-
-//
-// input parse function
-//
-
-/**
- * @brief parses input from filestream and stores it in graph
- *
- * @tparam T
- * @tparam IFSTREAM
- * @param graph
- * @param input
- */
-template <typename T, typename IFSTREAM>
-void parse(general_bipartite_graph<T> &graph, IFSTREAM &input) {
-    char type_of_line = 0;
-    std::string problem_descriptor, comment;
-
-    do {
-        input >> type_of_line;
-        switch (type_of_line) {
-            case 'c':  // comment line
-            case 'C':
-                std::getline(input, comment);
-                break;
-
-            case 'p':  // parameter line
-            case 'P':
-                input >> problem_descriptor >> graph.n0 >> graph.n1 >> graph.m;
-                break;
-
-            default:
-                std::cerr
-                    << "pace2024::instance::parse(): unknown line type"
-                    << std::endl;
-                return;
-        }
-    } while (type_of_line != 'p' && type_of_line != 'P');
-
-    graph.adjacency_lists.resize(graph.n1);
-    graph.edges.reserve(graph.m);
-    T x, y;
-    for (std::size_t i = 0; i < graph.m; ++i) {
-        input >> x >> y;
-        --x;
-        y -= graph.n0 + 1;
-
-        graph.adjacency_lists[y].emplace_back(x);
-        graph.edges.emplace_back(x, y);
-    }
-
-    graph.sort_adjacency_lists();
-}
 
 };  // namespace pace2024
 
