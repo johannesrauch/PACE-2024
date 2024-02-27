@@ -4,8 +4,6 @@
 #include <cassert>
 #include <fstream>
 
-#include "instance.hpp"
-
 std::uint64_t ref_n0 = 4;
 std::uint64_t ref_n1 = 4;
 std::uint64_t ref_m = 8;
@@ -13,8 +11,8 @@ std::vector<std::pair<uint64_t, uint64_t>> ref_edges = {
     {1, 5}, {2, 5}, {2, 6}, {4, 6}, {1, 7}, {3, 7}, {3, 8}, {4, 8}};
 
 int main() {
-    pace2024::uint64_instance instance("tiny_test_set/cycle_8_sorted.gr");
-    pace2024::uint64_bipartite_graph graph(instance);
+    const std::string filepath = "tiny_test_set/cycle_8_sorted.gr";
+    pace2024::uint64_bipartite_graph graph(filepath);
 
     assert(ref_n0 == graph.get_n0());
     assert(ref_n1 == graph.get_n1());
