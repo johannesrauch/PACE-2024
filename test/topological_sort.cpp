@@ -5,6 +5,11 @@
 
 #include "graph.hpp"
 
+/**
+ * @brief tests topological_sort.hpp (and graph.hpp a little bit)
+ *
+ * @return int
+ */
 int main() {
     {
         pace2024::general_graph<uint8_t> graph(6);

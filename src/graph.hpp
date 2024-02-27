@@ -5,10 +5,16 @@
 #include <queue>
 #include <vector>
 
-#include "debug.hpp"
+#include "debug_printf.hpp"
 
 namespace pace2024 {
 
+/**
+ * @brief class for a generic (directed) graph with
+ * definable vertex type
+ * 
+ * @tparam T vertex type
+ */
 template <typename T>
 class general_graph {
    private:
