@@ -23,12 +23,8 @@ template <typename T, class MATRIX>
 void compute_crossing_numbers_binary_search(
     const general_bipartite_graph<T> &graph, MATRIX &cr_matrix);
 
-template <typename T, class MATRIX>
-void compute_crossing_numbers_augmented_adjacency(
-    const general_bipartite_graph<T> &graph, MATRIX &cr_matrix);
-
 template <typename T, typename R>
-void compute_crossing_numbers_augmented_adjacency_half(
+void compute_crossing_numbers_augmented_adjacency(
     const general_bipartite_graph<T> &graph, folded_matrix<R> &cr_matrix);
 
 //
@@ -142,6 +138,10 @@ class matrix {
     }
 };
 
+using uint64_matrix = matrix<uint64_t>;
+using uint32_matrix = matrix<uint32_t>;
+using uint16_matrix = matrix<uint16_t>;
+
 /**
  * @brief special matrix for storing crossing number matrix of an instance
  * of one-sided crossing minimization.
@@ -190,7 +190,7 @@ class folded_matrix {
         : n1(graph.get_n1()), n2(n1 * (n1 - 1)), data(new R[n2]()) {
         // the additional () above initializes memory to 0
         assert(n1 > 1);
-        compute_crossing_numbers_augmented_adjacency_half(graph, *this);
+        compute_crossing_numbers_augmented_adjacency(graph, *this);
     }
 
     /**
@@ -329,62 +329,6 @@ void compute_crossing_numbers_binary_search(
 }
 
 /**
- * @brief fills the matrix with the crossing numbers.
- * from Dujmovic and Whitesides https://doi.org/10.1007/s00453-004-1093-2
- *
- * @tparam T vertex type
- * @tparam MATRIX a matrix type
- * @param graph
- * @param cr_matrix
- */
-template <typename T, class MATRIX>
-void compute_crossing_numbers_augmented_adjacency(
-    const general_bipartite_graph<T> &graph, MATRIX &cr_matrix) {
-    assert(graph.get_n1() == cr_matrix.get_m() && cr_matrix.get_m() == cr_matrix.get_n());
-
-    // variables
-    std::size_t n0 = graph.get_n0(), n1 = graph.get_n1();
-    auto &adjacency_lists = graph.get_adjacency_lists();
-
-    // compute enhanced adjacency matrix
-    // nbors(i, j) = number of nbors of i (free layer)
-    // to the right of j (fixed layer)
-    matrix<typename MATRIX::datatype> nbors(n1, n0);
-    for (T i = 0; i < n1; ++i) {
-        auto it_end = adjacency_lists[i].end();
-        auto it = adjacency_lists[i].begin();
-        nbors(i, 0) = adjacency_lists[i].size();
-        if (it != it_end && *it <= 0) {
-            --nbors(i, 0);
-            ++it;
-        }
-        for (T j = 1; j < n0; ++j) {
-            nbors(i, j) = nbors(i, j - 1);
-            if (it != it_end && *it <= j) {
-                --nbors(i, j);
-                ++it;
-            }
-        }
-    }
-
-    for (T v = 0; v < n1; ++v) {
-        if (adjacency_lists[v].size() == 0) continue;
-        T rv = adjacency_lists[v][adjacency_lists[v].size() - 1];
-
-        for (T w = 0; w < n1; ++w) {
-            if (v == w) continue;
-
-            cr_matrix(v, w) = 0;
-            for (T wp : adjacency_lists[w]) {
-                if (wp >= rv) break;
-
-                cr_matrix(v, w) += nbors(v, wp);
-            }
-        }
-    }
-}
-
-/**
  * @brief fills a folded_matrix with crossing numbers.
  * adapted from Dujmovic and Whitesides https://doi.org/10.1007/s00453-004-1093-2
  *
@@ -393,7 +337,7 @@ void compute_crossing_numbers_augmented_adjacency(
  * @param cr_matrix
  */
 template <typename T, typename R>
-void compute_crossing_numbers_augmented_adjacency_half(
+void compute_crossing_numbers_augmented_adjacency(
     const general_bipartite_graph<T> &graph, folded_matrix<R> &cr_matrix) {
     assert(graph.get_n1() == cr_matrix.get_n());
 
@@ -507,6 +451,33 @@ void print_matrix(const matrix<R> &matrix) {
         }
         fmt::printf("\n");
     }
+}
+
+/**
+ * @brief returns true if matrices A and B equal, that is,
+ * - they have the same dimension and
+ * - their elements equal.
+ *
+ * @tparam MATRIX1
+ * @tparam MATRIX2
+ * @param A
+ * @param B
+ * @param skip_diagonal set to true if you want to skip checking the diagonals
+ * @return true
+ * @return false
+ */
+template <typename MATRIX1, typename MATRIX2>
+bool equals(const MATRIX1 &A, const MATRIX2 &B, bool skip_diagonal = false) {
+    bool equal = A.get_m() == B.get_m() && A.get_n() == B.get_n();
+    if (!equal) return false;
+
+    for (std::size_t i = 0; i < A.get_m(); ++i) {
+        for (std::size_t j = 0; j < A.get_n(); ++j) {
+            if (skip_diagonal && i == j) continue;
+            if (A(i, j) != B(i, j)) return false;
+        }
+    }
+    return true;
 }
 
 };  // namespace test
