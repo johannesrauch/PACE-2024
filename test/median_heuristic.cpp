@@ -12,11 +12,11 @@
  * @brief tests the heuristic solvers median_heuristic (against expected values) and
  * probabilistic_median_heuristic (against values of median_heuristic;
  * should be better).
- * 
+ *
  * @tparam T vertex type
  * @tparam R return type
- * @param graph 
- * @param expected 
+ * @param graph
+ * @param expected
  */
 template <typename T, typename R>
 void test_median_heuristics(const pace2024::general_bipartite_graph<T>& graph,
@@ -32,8 +32,8 @@ void test_median_heuristics(const pace2024::general_bipartite_graph<T>& graph,
 
 /**
  * @brief tests median_heuristic.hpp
- * 
- * @return int 
+ *
+ * @return int
  */
 int main() {
     uint32_t expected[] = {13, 4, 60, 0, 6, 0, 3, 11, 20, 0, 0, 17, 3};
@@ -43,6 +43,7 @@ int main() {
         pace2024::uint16_bipartite_graph graph(static_cast<const std::string>(file.path()));
         test_median_heuristics(graph, expected[i++]);
     }
+    assert(i > 0);
 
     std::cout << "TEST::PACE2024::MEDIAN_HEURISTIC: OKAY" << std::endl;
     return 0;
