@@ -3,20 +3,21 @@
 #include <cassert>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 
 #include "bipartite_graph.hpp"
 #include "input.hpp"
 #include "matrix.hpp"
-#include "random.hpp"
 #include "printf.hpp"
+#include "random.hpp"
 
 /**
  * @brief tests crossing_numbers_of function against crossing number matrix
- * 
- * @tparam T 
- * @tparam R 
- * @param graph 
- * @param matrix 
+ *
+ * @tparam T vertex type
+ * @tparam R return type
+ * @param graph
+ * @param matrix
  */
 template <typename T, typename R>
 void test_crossing_numbers_of(const pace2024::general_bipartite_graph<T>& graph,
@@ -33,11 +34,11 @@ void test_crossing_numbers_of(const pace2024::general_bipartite_graph<T>& graph,
 
 /**
  * @brief tests the two crossing_number_of functions against each other
- * 
+ *
  * @tparam T vertex type
  * @tparam R return type
- * @param graph 
- * @param matrix 
+ * @param graph
+ * @param matrix
  */
 template <typename T, typename R>
 void test_crossing_number_of(const pace2024::general_bipartite_graph<T>& graph,
@@ -52,16 +53,18 @@ void test_crossing_number_of(const pace2024::general_bipartite_graph<T>& graph,
 
 /**
  * @brief tests crossing_number.hpp
- * 
- * @return int 
+ *
+ * @return int
  */
 int main() {
-    for (const auto& file : std::filesystem::directory_iterator("tiny_test_set")) { 
+    for (const auto& file : std::filesystem::directory_iterator("tiny_test_set")) {
         pace2024::uint16_bipartite_graph graph(static_cast<const std::string>(file.path()));
         pace2024::uint16_folded_matrix matrix(graph);
 
         test_crossing_numbers_of(graph, matrix);
         test_crossing_number_of(graph, matrix);
     }
+
+    std::cout << "TEST::PACE2024::MEDIAN_HEURISTIC: OKAY" << std::endl;
     return 0;
 }
