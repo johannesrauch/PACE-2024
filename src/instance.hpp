@@ -12,7 +12,7 @@
 namespace pace2024 {
 
 template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
-class general_instance {
+class general_input {
    private:
     std::string problem_descriptor;
 
@@ -23,13 +23,13 @@ class general_instance {
     std::vector<std::pair<T, T>> edges;
 
    public:
-    general_instance(const general_instance &rhs) = delete;
-    general_instance &operator=(const general_instance &rhs) = delete;
-    general_instance &operator=(general_instance &&rhs) = delete;
+    general_input(const general_input &rhs) = delete;
+    general_input &operator=(const general_input &rhs) = delete;
+    general_input &operator=(general_input &&rhs) = delete;
 
-    general_instance() { parse(); }
+    general_input() { parse(); }
 
-    general_instance(std::string filename) {
+    general_input(std::string filename) {
         std::ifstream input(filename, std::ios::in);
         assert(input.good());
         parse(input);
@@ -83,9 +83,9 @@ class general_instance {
     void parse() { parse(std::cin); }
 };
 
-using uint64_instance = general_instance<std::uint64_t>;
-using uint32_instance = general_instance<std::uint32_t>;
-using uint16_instance = general_instance<std::uint16_t>;
+using uint64_instance = general_input<std::uint64_t>;
+using uint32_instance = general_input<std::uint32_t>;
+using uint16_instance = general_input<std::uint16_t>;
 
 };  // namespace pace2024
 

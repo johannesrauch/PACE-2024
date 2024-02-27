@@ -58,7 +58,7 @@ class branch_and_cut {
      *
      * @param instance input
      */
-    branch_and_cut(const general_instance<T>& instance, int msg_level = GLP_MSG_OFF)
+    branch_and_cut(const general_input<T>& instance, int msg_level = GLP_MSG_OFF)
         : graph(instance),
           n1(graph.get_n1()),
           n1_choose_2(n1 * (n1 - 1) / 2),

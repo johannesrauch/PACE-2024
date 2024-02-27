@@ -31,7 +31,7 @@ void tiny_test_set() {
 
 int main() {
     {
-        pace2024::general_instance<uint16_t> instance(
+        pace2024::general_input<uint16_t> instance(
             "tiny_test_set/matching_4_4.gr");
         pace2024::branch_and_cut<uint16_t> solver(instance);
 
