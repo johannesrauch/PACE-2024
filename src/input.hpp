@@ -83,9 +83,9 @@ class general_input {
     void parse() { parse(std::cin); }
 };
 
-using uint64_instance = general_input<std::uint64_t>;
-using uint32_instance = general_input<std::uint32_t>;
-using uint16_instance = general_input<std::uint16_t>;
+using uint64_input = general_input<std::uint64_t>;
+using uint32_input = general_input<std::uint32_t>;
+using uint16_input = general_input<std::uint16_t>;
 
 };  // namespace pace2024
 
