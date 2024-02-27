@@ -13,10 +13,10 @@ namespace pace2024 {
 // forward declarations
 //
 
-template <typename T>
+template <typename R>
 class matrix;
 
-template <typename T>
+template <typename R>
 class folded_matrix;
 
 template <typename T, class MATRIX>
@@ -25,94 +25,214 @@ void compute_crossing_numbers_binary_search(const general_bipartite_graph<T> &gr
 template <typename T, class MATRIX>
 void compute_crossing_numbers_augmented_adjacency(const general_bipartite_graph<T> &graph, MATRIX &cr_matrix);
 
-template <typename T>
-void compute_crossing_numbers_augmented_adjacency_half(const general_bipartite_graph<T> &graph, folded_matrix<T> &cr_matrix);
+template <typename T, typename R>
+void compute_crossing_numbers_augmented_adjacency_half(const general_bipartite_graph<T> &graph, folded_matrix<R> &cr_matrix);
 
 //
 // matrix types
 //
 
-template <typename T>
+/**
+ * @brief generic matrix type. data is stored row-major.
+ *
+ * @tparam R element type
+ */
+template <typename R>
 class matrix {
    private:
-    const std::size_t m, n;  // number of rows and columns, respectively
-    T *const data;           // row-major
+    /**
+     * @brief number of rows
+     */
+    const std::size_t m;
+
+    /**
+     * @brief number of columns
+     */
+    const std::size_t n;  // number of rows and columns, respectively
+
+    /**
+     * @brief constant pointer to (mutable) data
+     * matrix is stored row-major
+     */
+    R *const data;
 
    public:
-    using datatype = T;
+    using datatype = R;
 
+    // delete copy constructor and = operator
     matrix(const matrix &rhs) = delete;
     matrix &operator=(const matrix &rhs) = delete;
     matrix &operator=(matrix &&rhs) = delete;
 
-    template <typename T1>
-    matrix(const general_bipartite_graph<T1> &graph)
+    /**
+     * @brief constructs the crossing number matrix from a bipartite graph
+     * that resembles a one-sided crossing minimization instance.
+     *
+     * @tparam T vertex type
+     * @param graph
+     */
+    template <typename T>
+    matrix(const general_bipartite_graph<T> &graph)
         : m(graph.get_n1()),  //
           n(graph.get_n1()),
-          data(new T[m * n]()) {
+          data(new R[m * n]()) {
         // the additional () above initializes memory to 0
         assert(graph.get_n1() > 0);
         compute_crossing_numbers_binary_search(graph, *this);
     }
 
-    matrix(const uint64_t m, const uint64_t n)
-        : m(m), n(n), data(new T[m * n]()) {
+    /**
+     * @brief initializes a (m x n) matrix with 0s
+     *
+     * @param m
+     * @param n
+     */
+    matrix(const std::size_t m, const std::size_t n)
+        : m(m), n(n), data(new R[m * n]()) {
+        // the additional () initializes memory to 0
         assert(m > 0);
         assert(n > 0);
-    }  // the additional () initializes memory to 0
+    }
 
+    /**
+     * @brief deletes memory behind data pointer
+     */
     ~matrix() { delete[] data; }
 
-    void clear() { memset(data, 0, sizeof(T) * m * n); }
+    /**
+     * @brief overrides the matrix with 0s
+     */
+    void clear() { memset(data, 0, sizeof(R) * m * n); }
 
+    /**
+     * @brief returns the number of rows
+     *
+     * @return std::size_t
+     */
     std::size_t get_m() const { return m; }
 
+    /**
+     * @brief returns the number of columns
+     *
+     * @return std::size_t
+     */
     std::size_t get_n() const { return n; }
 
-    T &operator()(std::size_t i, std::size_t j) { return data[i * n + j]; }
+    /**
+     * @brief returns reference to element at row i and column j
+     *
+     * @param i
+     * @param j
+     * @return R&
+     */
+    R &operator()(std::size_t i, std::size_t j) { return data[i * n + j]; }
 
-    const T &operator()(std::size_t i, std::size_t j) const {
+    /**
+     * @brief returns constant reference to element at row i and column j
+     *
+     * @param i
+     * @param j
+     * @return const R&
+     */
+    const R &operator()(std::size_t i, std::size_t j) const {
         return data[i * n + j];
     }
 };
 
-template <typename T>
+/**
+ * @brief special matrix for storing crossing number matrix of an instance
+ * of one-sided crossing minimization.
+ * data layout is chosen s.t. iterating it is cache-friendly.
+ * essentially it is a square matrix w/o diagonal elements.
+ *
+ * @tparam R element type
+ */
+template <typename R>
 class folded_matrix {
    private:
-    const std::size_t n1,  // number of vertices in the free partite set
-        n2;                // = n1 * (n1 - 1)
-    T *const data;         // storage order: c_01, c_10, c_02, c_20, ..., c_12, c_21,
-                           // ... no diagonal elements
+    /**
+     * @brief number of vertices in the free partite set
+     */
+    const std::size_t n1;
+
+    /**
+     * @brief n2 = n1 * (n1 - 1)
+     */
+    const std::size_t n2;
+
+    /**
+     * @brief constant pointer to (mutable) data 
+     * storage order: c_01, c_10, c_02, c_20, ..., c_12, c_21, ...
+     * no diagonal elements
+     */
+    R *const data;
 
    public:
-    using datatype = T;
+    using datatype = R;
 
+    // delete copy constructor and = operator
     folded_matrix(const folded_matrix &rhs) = delete;
     folded_matrix &operator=(const folded_matrix &rhs) = delete;
     folded_matrix &operator=(folded_matrix &&rhs) = delete;
 
-    template <typename T1>
-    folded_matrix(const general_bipartite_graph<T1> &graph)
-        : n1(graph.get_n1()), n2(n1 * (n1 - 1)), data(new T[n2]()) {
+    /**
+     * @brief constructs the crossing number matrix from a bipartite graph
+     * that resembles a one-sided crossing minimization instance.
+     * 
+     * @tparam T vertex type
+     * @param graph 
+     */
+    template <typename T>
+    folded_matrix(const general_bipartite_graph<T> &graph)
+        : n1(graph.get_n1()), n2(n1 * (n1 - 1)), data(new R[n2]()) {
         // the additional () above initializes memory to 0
         assert(n1 > 1);
         compute_crossing_numbers_augmented_adjacency_half(graph, *this);
     }
 
+    /**
+     * @brief constructs folded_matrix initialized with 0s
+     * 
+     * @param n1 
+     */
     folded_matrix(const std::size_t n1)
         : n1(n1), n2(n1 * (n1 - 1)), data(new T[n2]()) {
         // the additional () above initializes memory to 0
         assert(n1 > 1);
     }
 
+    /**
+     * @brief deletes memory behind pointer data
+     */
     ~folded_matrix() { delete[] data; }
 
+    /**
+     * @brief overwrites data with 0s
+     */
     void clear() { memset(data, 0, sizeof(T) * n2); }
 
+    /**
+     * @brief returns number of rows (matrix is square)
+     * 
+     * @return std::size_t 
+     */
     std::size_t get_m() const { return n1; }
 
+    /**
+     * @brief returns number of columns (matrix is square)
+     * 
+     * @return std::size_t 
+     */
     std::size_t get_n() const { return n1; }
 
+    /**
+     * @brief converts indices i (row) and j (column) to the 
+     * correct position of the corresponding element in data.
+     * 
+     * @param i 
+     * @param j 
+     * @return std::size_t 
+     */
     inline std::size_t get_index(const std::size_t i, const std::size_t j) const {
         assert(i < n1);
         assert(j < n1);
@@ -129,11 +249,27 @@ class folded_matrix {
         return index;
     }
 
-    T &operator()(const std::size_t i, const std::size_t j) {
+    /**
+     * @brief returns reference to the element in row i and column j.
+     * we require i != j.
+     * 
+     * @param i 
+     * @param j 
+     * @return T& 
+     */
+    R &operator()(const std::size_t i, const std::size_t j) {
         return data[get_index(i, j)];
     }
 
-    const T &operator()(const std::size_t i, const std::size_t j) const {
+    /**
+     * @brief returns constant reference to the element in row i and column j.
+     * we require i != j.
+     * 
+     * @param i 
+     * @param j 
+     * @return const T& 
+     */
+    const R &operator()(const std::size_t i, const std::size_t j) const {
         return data[get_index(i, j)];
     }
 };
@@ -151,7 +287,7 @@ template <typename T, class MATRIX>
 void compute_crossing_numbers_binary_search(const general_bipartite_graph<T> &graph, MATRIX &cr_matrix) {
     assert(graph.get_n1() == cr_matrix.get_m() && cr_matrix.get_m() == cr_matrix.get_n());
     uint64_t n1 = graph.get_n1();
-    auto adjacency_lists = graph.get_adjacency_lists();
+    auto& adjacency_lists = graph.get_adjacency_lists();
 
     for (uint64_t v = 0; v < n1; ++v) {
         if (adjacency_lists[v].size() == 0) continue;
@@ -188,7 +324,7 @@ void compute_crossing_numbers_augmented_adjacency(const general_bipartite_graph<
 
     // variables
     uint64_t n0 = graph.get_n0(), n1 = graph.get_n1();
-    auto adjacency_lists = graph.get_adjacency_lists();
+    auto& adjacency_lists = graph.get_adjacency_lists();
 
     // compute enhanced adjacency matrix
     // nbors(i, j) = number of nbors of i (free layer)
@@ -235,7 +371,7 @@ void compute_crossing_numbers_augmented_adjacency_half(const general_bipartite_g
 
     // variables
     uint64_t n0 = graph.get_n0(), n1 = graph.get_n1();
-    auto adjacency_lists = graph.get_adjacency_lists();
+    auto& adjacency_lists = graph.get_adjacency_lists();
 
     // compute enhanced adjacency matrix
     // nbors(i, j) = number of nbors of i (free layer)
@@ -293,15 +429,27 @@ void compute_crossing_numbers_augmented_adjacency_half(const general_bipartite_g
     }
 }
 
-template <typename T>
-void compute_crossing_numbers_naivly(const general_bipartite_graph<T> &graph, folded_matrix<T> &matrix) {
+namespace test {
+
+/**
+ * @brief fills the matrix with all crossing numbers by
+ * considering the ends of all pairs of edges.
+ * 
+ * @tparam T vertex type
+ * @tparam R element type
+ * @param graph 
+ * @param matrix 
+ */
+template <typename T, typename R>
+void compute_crossing_numbers_naivly(const general_bipartite_graph<T> &graph, folded_matrix<R> &matrix) {
     assert(graph.get_n1() == matrix.get_m());
-    uint64_t n1 = matrix.get_m();
-    auto adjacency_lists = graph.get_adjacency_lists();
-    for (uint64_t i = 0; i < n1 - 1; ++i) {
-        for (uint64_t j = i + 1; j < n1; ++j) {
-            for (uint64_t x : adjacency_lists[i]) {
-                for (uint64_t y : adjacency_lists[j]) {
+    
+    const std::size_t n1 = matrix.get_m();
+    auto& adjacency_lists = graph.get_adjacency_lists();
+    for (T i = 0; i < n1 - 1; ++i) {
+        for (T j = i + 1; j < n1; ++j) {
+            for (const &T x : adjacency_lists[i]) {
+                for (const &T y : adjacency_lists[j]) {
                     if (x < y)
                         ++matrix(j, i);
                     else if (x > y)
@@ -312,8 +460,15 @@ void compute_crossing_numbers_naivly(const general_bipartite_graph<T> &graph, fo
     }
 }
 
-template <typename T>
-void print_matrix(const matrix<T> &matrix) {
+/**
+ * @brief prints the matrix.
+ * not cache-friendly.
+ * 
+ * @tparam R element type
+ * @param matrix 
+ */
+template <typename R>
+void print_matrix(const matrix<R> &matrix) {
     const std::size_t m = matrix.get_m();
     const std::size_t n = matrix.get_n();
     for (std::size_t i = 0; i < m; ++i) {
@@ -324,6 +479,8 @@ void print_matrix(const matrix<T> &matrix) {
         fmt::printf("\n");
     }
 }
+
+};
 
 }  // namespace pace2024
 
