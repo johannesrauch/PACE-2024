@@ -1,25 +1,33 @@
+#include "median_heuristic.hpp"
+
 #include <cassert>
+#include <filesystem>
 #include <iostream>
 
-#include "crossings.hpp"
-#include "median_heuristic.hpp"
-#include "instance.hpp"
-#include "output.hpp"
+#include "bipartite_graph.hpp"
+#include "crossing_number.hpp"
+#include "printf.hpp"
+
+template <typename T, typename R>
+void test_median_heuristics(const pace2024::general_bipartite_graph<T>& graph,
+                            const R expected) {
+    std::vector<T> ordering(graph.get_n1());
+    pace2024::median_heuristic<T>(graph, ordering).run();
+    R nof_crossings = pace2024::crossing_number_of<T, R>(graph, ordering);
+    // fmt::printf("%s,\n", nof_crossings);
+
+    R nof_crossings_prob = pace2024::probabilistic_median_heuristic<T, R>(graph, ordering).run();
+    assert(nof_crossings_prob <= nof_crossings);
+}
 
 int main() {
-    pace2024::uint32_instance instance("tiny_test_set/website_20.gr");
-    pace2024::uint32_bipartite_graph graph(instance);
-    pace2024::folded_matrix<uint32_t> cr_matrix(graph);
+    uint32_t expected[] = {13, 4, 60, 0, 6, 0, 3, 11, 20, 0, 0, 17, 3};
 
-    std::vector<uint32_t> ordering;
-    pace2024::median_heuristic<uint32_t>(graph, ordering).run();
-    uint32_t nof_crossings = pace2024::nof_crossings(cr_matrix, ordering);
-    assert(nof_crossings == 17);
-
-    uint32_t nof_crossings_prob = pace2024::probabilistic_median_heuristic<uint32_t>(graph, cr_matrix, ordering).run();
-    assert(nof_crossings_prob <= nof_crossings);
-    // std::cout << nof_crossings << std::endl;
-    // pace2024::print_output(graph.get_n0(), ordering);
+    std::size_t i{0};
+    for (const auto& file : std::filesystem::directory_iterator("tiny_test_set")) {
+        pace2024::uint16_bipartite_graph graph(static_cast<const std::string>(file.path()));
+        test_median_heuristics(graph, expected[i++]);
+    }
 
     std::cout << "TEST::PACE2024::MEDIAN_HEURISTIC: OKAY" << std::endl;
     return 0;

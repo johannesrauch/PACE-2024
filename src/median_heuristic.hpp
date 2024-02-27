@@ -37,6 +37,7 @@ inline T median(const std::vector<T>& vec) {
 
 /**
  * @brief median heuristic solver
+ * based on Eades' and Wormald's paper https://doi.org/10.1007/BF01187020
  *
  * @tparam T vertex type of the instance
  */
@@ -118,13 +119,19 @@ class median_heuristic {
     }
 };
 
-template <typename T>
+/**
+ * @brief probabilistic median heuristic solver
+ * based on Nagamochi's paper https://doi.org/10.1007/s00454-005-1168-0
+ * 
+ * @tparam T 
+ * @tparam R 
+ */
+template <typename T, typename R>
 class probabilistic_median_heuristic {
    private:
     const general_bipartite_graph<T>& input_graph;
     const std::vector<std::vector<T>>& adjacency_lists;
     const std::size_t n1;
-    const folded_matrix<T>& cr_matrix;
     std::vector<T>& ordering;
     std::vector<T> another_ordering;
     std::vector<T> medians;
@@ -137,36 +144,32 @@ class probabilistic_median_heuristic {
      * @brief construct a new probabilistic median heuristic object
      *
      * @param input_graph the instance
-     * @param cr_matrix the crossing number matrix of the instance
      * @param ordering vector where the ordering is stored
      * @param nof_iterations number of iterations
      */
     probabilistic_median_heuristic(const general_bipartite_graph<T>& input_graph,
-                                   const folded_matrix<T>& cr_matrix,
                                    std::vector<T>& ordering,
                                    std::size_t nof_iterations = 1000)
         : input_graph(input_graph),
           adjacency_lists(input_graph.get_adjacency_lists()),
           n1(input_graph.get_n1()),
-          cr_matrix(cr_matrix),
           ordering(ordering),
           another_ordering(n1),
           medians(n1),
           randomized_medians(n1),
-          distribution(0.0957, 0.9043),
+          distribution(0.0957, 0.9043), // from Nagamochi's paper
           nof_iterations(nof_iterations) {}
 
     // delete copy constructor and assignment function
-    probabilistic_median_heuristic(const probabilistic_median_heuristic<T>& other) = delete;
-    probabilistic_median_heuristic<T>& operator=(probabilistic_median_heuristic<T>& other) = delete;
-    probabilistic_median_heuristic<T>& operator=(const probabilistic_median_heuristic<T>& other) = delete;
+    probabilistic_median_heuristic(const probabilistic_median_heuristic<T, R>& other) = delete;
+    probabilistic_median_heuristic<T, R>& operator=(probabilistic_median_heuristic<T, R>& other) = delete;
+    probabilistic_median_heuristic<T, R>& operator=(const probabilistic_median_heuristic<T, R>& other) = delete;
 
     /**
      * @brief compares the randomized medians of a and b
      * we break ties by considering the medians of a and b
      * and then the parity of the degrees of a and b
      * (odd degrees are smaller)
-     * if both degrees are odd, we flip a coin
      *
      * @param a
      * @param b
@@ -192,27 +195,34 @@ class probabilistic_median_heuristic {
         }
     }
 
-    T run() {
+    /**
+     * @brief runs the probabilistic median heuristic solver
+     * and stores the result in ordering
+     * 
+     * @return R number of crossings
+     */
+    R run() {
         // compute initial solution with normal median heuristic
         median_heuristic<T>(input_graph, ordering).run();
-        T best = nof_crossings(cr_matrix, ordering);
+        R best = crossing_number_of<T, R>(input_graph, ordering);
 
-        // try to find a better solution with probabilistic median heuristic
         for (T i = 0; i < n1; ++i) another_ordering[i] = i;
         fill_medians();
+
+        // try to find a better solution with probabilistic median heuristic
         for (std::size_t iteration = 0; iteration < nof_iterations; ++iteration) {
             // PACE2024_DEBUG_PRINTF("%s\n", iteration);
             fill_randomized_medians();
             sort(another_ordering.begin(), another_ordering.end(), [=](const T& a, const T& b) -> bool {
                 return this->compare(a, b);
             });
-            T candidate = nof_crossings(cr_matrix, another_ordering);
+
+            R candidate = crossing_number_of<T, R>(input_graph, another_ordering);
             if (candidate < best) {
                 best = candidate;
                 ordering = another_ordering;
             }
         }
-
         return best;
     }
 
