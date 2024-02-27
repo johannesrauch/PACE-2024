@@ -7,7 +7,7 @@ int main() {
     pace2024::uint64_bipartite_graph graph(instance);
 
     uint64_t n1 = graph.get_n1();
-    pace2024::folded_square_matrix<uint64_t> ref_cr_matrix(n1);
+    pace2024::folded_matrix<uint64_t> ref_cr_matrix(n1);
     pace2024::compute_crossing_numbers_naivly(graph, ref_cr_matrix);
     pace2024::matrix<uint64_t> cr_matrix(graph);
 
@@ -22,7 +22,7 @@ int main() {
         }
     }
 
-    pace2024::folded_square_matrix<uint64_t> fl_matrix(graph);
+    pace2024::folded_matrix<uint64_t> fl_matrix(graph);
     for (uint64_t i = 0; i < n1; ++i) {
         for (uint64_t j = 0; j < n1; ++j) {
             if (i == j) continue;

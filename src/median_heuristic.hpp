@@ -124,7 +124,7 @@ class probabilistic_median_heuristic {
     const general_bipartite_graph<T>& input_graph;
     const std::vector<std::vector<T>>& adjacency_lists;
     const std::size_t n1;
-    const folded_square_matrix<T>& cr_matrix;
+    const folded_matrix<T>& cr_matrix;
     std::vector<T>& ordering;
     std::vector<T> another_ordering;
     std::vector<T> medians;
@@ -142,7 +142,7 @@ class probabilistic_median_heuristic {
      * @param nof_iterations number of iterations
      */
     probabilistic_median_heuristic(const general_bipartite_graph<T>& input_graph,
-                                   const folded_square_matrix<T>& cr_matrix,
+                                   const folded_matrix<T>& cr_matrix,
                                    std::vector<T>& ordering,
                                    std::size_t nof_iterations = 1000)
         : input_graph(input_graph),

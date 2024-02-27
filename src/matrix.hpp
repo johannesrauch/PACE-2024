@@ -17,7 +17,7 @@ template <typename T>
 class matrix;
 
 template <typename T>
-class folded_square_matrix;
+class folded_matrix;
 
 template <typename T, class MATRIX>
 void compute_crossing_numbers_binary_search(const general_bipartite_graph<T> &graph, MATRIX &cr_matrix);
@@ -26,7 +26,7 @@ template <typename T, class MATRIX>
 void compute_crossing_numbers_augmented_adjacency(const general_bipartite_graph<T> &graph, MATRIX &cr_matrix);
 
 template <typename T>
-void compute_crossing_numbers_augmented_adjacency_half(const general_bipartite_graph<T> &graph, folded_square_matrix<T> &cr_matrix);
+void compute_crossing_numbers_augmented_adjacency_half(const general_bipartite_graph<T> &graph, folded_matrix<T> &cr_matrix);
 
 //
 // matrix types
@@ -77,7 +77,7 @@ class matrix {
 };
 
 template <typename T>
-class folded_square_matrix {
+class folded_matrix {
    private:
     const std::size_t n1,  // number of vertices in the free partite set
         n2;                // = n1 * (n1 - 1)
@@ -87,25 +87,25 @@ class folded_square_matrix {
    public:
     using datatype = T;
 
-    folded_square_matrix(const folded_square_matrix &rhs) = delete;
-    folded_square_matrix &operator=(const folded_square_matrix &rhs) = delete;
-    folded_square_matrix &operator=(folded_square_matrix &&rhs) = delete;
+    folded_matrix(const folded_matrix &rhs) = delete;
+    folded_matrix &operator=(const folded_matrix &rhs) = delete;
+    folded_matrix &operator=(folded_matrix &&rhs) = delete;
 
     template <typename T1>
-    folded_square_matrix(const general_bipartite_graph<T1> &graph)
+    folded_matrix(const general_bipartite_graph<T1> &graph)
         : n1(graph.get_n1()), n2(n1 * (n1 - 1)), data(new T[n2]()) {
         // the additional () above initializes memory to 0
         assert(n1 > 1);
         compute_crossing_numbers_augmented_adjacency_half(graph, *this);
     }
 
-    folded_square_matrix(const std::size_t n1)
+    folded_matrix(const std::size_t n1)
         : n1(n1), n2(n1 * (n1 - 1)), data(new T[n2]()) {
         // the additional () above initializes memory to 0
         assert(n1 > 1);
     }
 
-    ~folded_square_matrix() { delete[] data; }
+    ~folded_matrix() { delete[] data; }
 
     void clear() { memset(data, 0, sizeof(T) * n2); }
 
@@ -137,6 +137,10 @@ class folded_square_matrix {
         return data[get_index(i, j)];
     }
 };
+
+using uint64_folded_matrix = folded_matrix<uint64_t>;
+using uint32_folded_matrix = folded_matrix<uint32_t>;
+using uint16_folded_matrix = folded_matrix<uint16_t>;
 
 //
 // compute crossing numbers
@@ -226,7 +230,7 @@ void compute_crossing_numbers_augmented_adjacency(const general_bipartite_graph<
 
 // adapted from Dujmovic and Whitesides
 template <typename T>
-void compute_crossing_numbers_augmented_adjacency_half(const general_bipartite_graph<T> &graph, folded_square_matrix<T> &cr_matrix) {
+void compute_crossing_numbers_augmented_adjacency_half(const general_bipartite_graph<T> &graph, folded_matrix<T> &cr_matrix) {
     assert(graph.get_n1() == cr_matrix.get_n());
 
     // variables
@@ -290,7 +294,7 @@ void compute_crossing_numbers_augmented_adjacency_half(const general_bipartite_g
 }
 
 template <typename T>
-void compute_crossing_numbers_naivly(const general_bipartite_graph<T> &graph, folded_square_matrix<T> &matrix) {
+void compute_crossing_numbers_naivly(const general_bipartite_graph<T> &graph, folded_matrix<T> &matrix) {
     assert(graph.get_n1() == matrix.get_m());
     uint64_t n1 = matrix.get_m();
     auto adjacency_lists = graph.get_adjacency_lists();

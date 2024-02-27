@@ -9,7 +9,7 @@
 int main() {
     pace2024::uint32_instance instance("tiny_test_set/website_20.gr");
     pace2024::uint32_bipartite_graph graph(instance);
-    pace2024::folded_square_matrix<uint32_t> cr_matrix(graph);
+    pace2024::folded_matrix<uint32_t> cr_matrix(graph);
 
     std::vector<uint32_t> ordering;
     pace2024::median_heuristic<uint32_t>(graph, ordering).run();

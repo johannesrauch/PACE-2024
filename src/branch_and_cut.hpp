@@ -33,7 +33,7 @@ class branch_and_cut {
     // instance
     const general_bipartite_graph<T> graph;
     const int n1, n1_choose_2;
-    const folded_square_matrix<T> cr_matrix;
+    const folded_matrix<T> cr_matrix;
 
     // lp
     glp_prob* const lp;
@@ -328,7 +328,7 @@ class branch_and_cut {
         return upper_bound;
     }
 
-    const folded_square_matrix<T>& get_crossing_matrix() const {
+    const folded_matrix<T>& get_crossing_matrix() const {
         return cr_matrix;
     }
 
