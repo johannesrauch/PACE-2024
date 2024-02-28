@@ -37,6 +37,7 @@ std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph, T u
     if (nbors_v[deg_v - 1] <= nbors_u[0])
         return std::pair<R, R>{deg_u * deg_v - (nbors_v[deg_v - 1] < nbors_u[0] ? 0 : 1), 0};
 
+    // compute number of common neighbors of u and v
     R nof_common_nbors = vector_intersection<T, R>(nbors_u, nbors_v);
 
     // compute crossing number c_uv
