@@ -77,11 +77,9 @@ class general_bipartite_graph {
     /**
      * @brief reads input from filestream and constructs general_bipartite_graph
      *
-     * @tparam IFSTREAM
      * @param input
      */
-    template <typename IFSTREAM>
-    general_bipartite_graph(IFSTREAM &input) {
+    general_bipartite_graph(std::ifstream &input) {
         parse_input(input);
 
         assert(n1 == adjacency_lists.size());
@@ -123,7 +121,16 @@ class general_bipartite_graph {
      *
      * @return const std::vector<std::pair<T, T>>&
      */
-    std::vector<std::pair<T, T>> &get_edges() const {
+    std::vector<std::pair<T, T>> &get_edges() {
+        return edges;
+    }
+
+    /**
+     * @brief returns a constant reference to all edges
+     *
+     * @return const std::vector<std::pair<T, T>>&
+     */
+    const std::vector<std::pair<T, T>> &get_edges() const {
         return edges;
     }
 
@@ -140,11 +147,9 @@ class general_bipartite_graph {
     /**
      * @brief used for parsing the input and storing it in general_bipartite_graph
      *
-     * @tparam IFSTREAM input filestream
      * @param input
      */
-    template <typename IFSTREAM1>
-    void parse_input(IFSTREAM1 &input) {
+    void parse_input(std::ifstream &input) {
         char type_of_line = 0;
         std::string problem_descriptor, comment;
 
