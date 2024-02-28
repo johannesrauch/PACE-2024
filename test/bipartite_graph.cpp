@@ -35,6 +35,6 @@ int main() {
         }
     }
 
-    std::cout << "TEST::PACE2024::BIPARTITE_GRAPH: OKAY" << std::endl;
+    std::cout << "TEST::PACE2024::BIPARTITE_GRAPH:\t\tOK" << std::endl;
     return 0;
 }

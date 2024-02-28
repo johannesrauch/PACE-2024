@@ -45,6 +45,6 @@ int main() {
     }
     assert(i > 0);
 
-    std::cout << "TEST::PACE2024::MEDIAN_HEURISTIC: OKAY" << std::endl;
+    std::cout << "TEST::PACE2024::MEDIAN_HEURISTIC:\t\tOK" << std::endl;
     return 0;
 }

@@ -28,6 +28,6 @@ int main() {
         assert(ref_edges[i].second == edges[i].second);
     }
 
-    std::cout << "TEST::PACE2024::INPUT: OKAY" << std::endl;
+    std::cout << "TEST::PACE2024::INPUT:\t\t\t\tOK" << std::endl;
     return 0;
 }

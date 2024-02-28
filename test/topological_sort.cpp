@@ -41,6 +41,6 @@ int main() {
         assert(!pace2024::topological_sort(digraph, ordering));
     }
 
-    std::cout << "TEST::PACE2024::TOPOLOGICAL_SORT: OKAY" << std::endl;
+    std::cout << "TEST::PACE2024::TOPOLOGICAL_SORT:\t\tOK" << std::endl;
     return 0;
 }

@@ -65,6 +65,6 @@ int main() {
         test_crossing_number_of(graph, matrix);
     }
 
-    std::cout << "TEST::PACE2024::MEDIAN_HEURISTIC: OKAY" << std::endl;
+    std::cout << "TEST::PACE2024::CROSSING_NUMBER:\t\tOK" << std::endl;
     return 0;
 }
