@@ -52,8 +52,9 @@ class general_bipartite_graph {
    public:
     using datatype = T;
 
-    // delete copy constructor and = operator
+    // delete copy constructor, move constructor, copy assignment and move assignment
     general_bipartite_graph(const general_bipartite_graph &rhs) = delete;
+    general_bipartite_graph(general_bipartite_graph &&rhs) = delete;
     general_bipartite_graph &operator=(const general_bipartite_graph &rhs) = delete;
     general_bipartite_graph &operator=(general_bipartite_graph &&rhs) = delete;
 
