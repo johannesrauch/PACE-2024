@@ -83,7 +83,7 @@ class general_digraph {
      *   are deleted
      */
     void set_rollback_base() {
-        for (std::size_t i = 0; i < n; ++i) {
+        for (std::size_t i = 0; i < get_n(); ++i) {
             nof_neighbors_in_rollback_base[i] = adjacency_lists[i].size();
         }
     }
@@ -93,7 +93,7 @@ class general_digraph {
      * deletes all arcs if set_rollback_base has not been called.
      */
     void rollback() {
-        for (std::size_t i = 0; i < n; ++i) {
+        for (std::size_t i = 0; i < get_n(); ++i) {
             adjacency_lists[i].resize(nof_neighbors_in_rollback_base[i]);
         }
     }
