@@ -68,7 +68,7 @@ std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph, T u
  * @return R
  */
 template <typename T, typename R>
-R crossing_number_of(general_bipartite_graph<T>& graph, const std::vector<T>& ordering) {
+R crossing_number_of(const general_bipartite_graph<T>& graph, const std::vector<T>& ordering) {
     // compute the positions of each element
     // (inverse of the permutation ordering)
     const std::size_t n1 = graph.get_n1();
@@ -78,13 +78,13 @@ R crossing_number_of(general_bipartite_graph<T>& graph, const std::vector<T>& or
     }
 
     // sort, we need the positions of the ends of the edges in the free layer
-    auto& edges = graph.get_edges();
+    auto& edges = const_cast<general_bipartite_graph<T>&>(graph).get_edges();
     std::sort(edges.begin(),
               edges.end(),
               [&](const std::pair<T, T>& a, const std::pair<T, T>& b) {
                   if (a.first < b.first)
                       return true;
-                  else if (a.first < b.first)
+                  else if (a.first > b.first)
                       return false;
                   else
                       return positions[a.second] < positions[b.second];
