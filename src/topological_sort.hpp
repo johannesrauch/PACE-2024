@@ -22,7 +22,7 @@ namespace pace2024 {
  * @return false if a (directed) cycle was found
  */
 template <typename T>
-bool topological_sort_dfs(const general_graph<T>& graph,
+bool topological_sort_dfs(const general_digraph<T>& graph,
                           std::vector<T>& ordering,       //
                           std::vector<uint8_t>& visited,  //
                           T v) {
@@ -52,7 +52,7 @@ bool topological_sort_dfs(const general_graph<T>& graph,
  * @return false if a (directed) cycle was found
  */
 template <typename T>
-bool topological_sort(const general_graph<T>& graph, std::vector<T>& ordering) {
+bool topological_sort(const general_digraph<T>& graph, std::vector<T>& ordering) {
     const T n = graph.get_n();
     ordering.clear();
     std::vector<uint8_t> visited(n, 0);

@@ -10,67 +10,102 @@
 namespace pace2024 {
 
 /**
- * @brief class for a generic (directed) graph with
+ * @brief class for a generic directed graph with
  * definable vertex type
- * 
+ *
  * @tparam T vertex type
  */
 template <typename T>
-class general_graph {
+class general_digraph {
    private:
+    /**
+     * @brief stores all neighbors of each vertex
+     */
     std::vector<std::vector<T>> adjacency_lists;
-    std::vector<std::vector<T>> in_adjacency_lists;
-
-   public:
-    using datatype = T;
-
-    general_graph(const general_graph &rhs) = delete;
-    general_graph &operator=(const general_graph &rhs) = delete;
-    general_graph &operator=(general_graph &&rhs) = delete;
-
-    general_graph(const std::size_t n) : adjacency_lists(n), in_adjacency_lists(n) {}
 
     /**
-     * @brief add arc (u,v)
+     * @brief stores how many neighbors each vertex had in the rollback base
+     */
+    std::vector<std::size_t> nof_neighbors_in_rollback_base;
+
+   public:
+    using vertextype = T;
+
+    // delete copy constructor, move constructor, copy assignment and move assignment
+    general_digraph(const general_digraph &rhs) = delete;
+    general_digraph(general_digraph &&rhs) = delete;
+    general_digraph &operator=(const general_digraph &rhs) = delete;
+    general_digraph &operator=(general_digraph &&rhs) = delete;
+
+    /**
+     * @brief constructs an empty digraph with n vertices
+     *
+     * @param n
+     */
+    general_digraph(const std::size_t n)
+        : adjacency_lists(n),
+          nof_neighbors_in_rollback_base(n) {}
+
+    /**
+     * @brief add arc (u, v)
      *
      * @param u
      * @param v
      */
-    void add_edge(const T u, const T v) {
+    void add_arc(const T u, const T v) {
         assert(u < get_n() && v < get_n());
         adjacency_lists[u].emplace_back(v);
-        in_adjacency_lists[v].emplace_back(u);
     }
 
-    void pop_neighbor(const T u) {
-        assert(u < get_n());
-        if (adjacency_lists[u].size() > 0) adjacency_lists[u].pop_back();
-    }
-
-    void pop_in_neighbor(const T v) {
-        assert(v < get_n());
-        if (in_adjacency_lists[v].size() > 0) in_adjacency_lists[v].pop_back();
-    }
-
+    /**
+     * @brief return number of vertices
+     *
+     * @return std::size_t
+     */
     std::size_t get_n() const {
         return adjacency_lists.size();
     }
 
+    /**
+     * @brief get neighbors of vertex v
+     *
+     * @param v
+     * @return const std::vector<T>&
+     */
     const std::vector<T> &get_adjacency_list(const T v) const {
         return adjacency_lists[v];
     }
 
-    const std::vector<T> &get_in_adjacency_list(const T v) const {
-        return in_adjacency_lists[v];
+    /**
+     * @brief sets the base for the rollback:
+     * - stores the neighbor of vertices each vertex has
+     * - in case of rollback, any new arcs added after the call to set_rollback_base
+     *   are deleted
+     */
+    void set_rollback_base() {
+        for (std::size_t i = 0; i < n; ++i) {
+            nof_neighbors_in_rollback_base[i] = adjacency_lists[i].size();
+        }
+    }
+
+    /**
+     * @brief deletes any arcs that got added after the last call to set_rollback_base.
+     * deletes all arcs if set_rollback_base has not been called.
+     */
+    void rollback() {
+        for (std::size_t i = 0; i < n; ++i) {
+            adjacency_lists[i].resize(nof_neighbors_in_rollback_base[i]);
+        }
     }
 
     /**
      * @brief checks if u and v are connected by a directed path
+     * with a breadth-first search
      *
      * @param u vertex, 0 <= u < get_n()
      * @param v vertex, 0 <= v < get_n()
      * @return true if u and v are connected by a directed path
-     * @return false if not
+     * @return false otherwise
      */
     bool connected(const T u, const T v) {
         std::queue<T> q;
@@ -86,7 +121,6 @@ class general_graph {
                 if (!visited[neighbor]) q.emplace(neighbor);
             }
         }
-
         return false;
     }
 };
@@ -96,14 +130,15 @@ namespace test {
 /**
  * @brief tests if the given graph is a tournament
  * (a tournament is a directed graph such that (i, j) or (j, i) is an arc for every i < j)
- * 
+ * not efficient!
+ *
  * @tparam T vertex type
- * @param graph 
+ * @param graph
  * @return true if the graph is a tournament
- * @return false if not
+ * @return false otherwise
  */
 template <typename T>
-bool is_tournament(const general_graph<T> &graph) {
+bool is_tournament(const general_digraph<T> &graph) {
     const std::size_t n = graph.get_n();
     for (T i = 0; i < n - 1; ++i) {
         const auto &neighbors_i = graph.get_adjacency_list(i);
@@ -111,7 +146,7 @@ bool is_tournament(const general_graph<T> &graph) {
             const auto &neighbors_j = graph.get_adjacency_list(j);
             if (std::find(neighbors_i.begin(), neighbors_i.end(), j) == neighbors_i.end() &&
                 std::find(neighbors_j.begin(), neighbors_j.end(), i) == neighbors_j.end()) {
-                    PACE2024_DEBUG_PRINTF("%s,%s\n", i, j);
+                PACE2024_DEBUG_PRINTF("%s,%s\n", i, j);
                 return false;
             }
         }

@@ -12,7 +12,7 @@
  */
 int main() {
     {
-        pace2024::general_graph<uint8_t> graph(6);
+        pace2024::general_digraph<uint8_t> graph(6);
         graph.add_edge(5, 2);
         graph.add_edge(5, 0);
         graph.add_edge(4, 0);
@@ -30,7 +30,7 @@ int main() {
     }
 
     {
-        pace2024::general_graph<uint8_t> graph(6);
+        pace2024::general_digraph<uint8_t> graph(6);
         graph.add_edge(0, 1);
         graph.add_edge(1, 2);
         graph.add_edge(2, 3);
