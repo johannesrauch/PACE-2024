@@ -24,7 +24,7 @@ int main() {
     assert(ref_m == graph.get_m());
 
     uint64_t i = 0;
-    auto adjacency_lists = graph.get_adjacency_lists();
+    auto& adjacency_lists = graph.get_adjacency_lists();
     for (uint64_t y = 0; y < ref_n1; ++y) {
         for (uint64_t x : adjacency_lists[y]) {
             auto [ref_x, ref_y] = ref_edges[i];
