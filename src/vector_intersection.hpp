@@ -17,7 +17,7 @@ namespace pace2024 {
  */
 template <typename T, typename R = std::size_t>
 R vector_intersection(const std::vector<T>& vec1, const std::vector<T>& vec2) {
-    R size_of_intersection;
+    R size_of_intersection{0};
     for (std::size_t i = 0, j = 0; i < vec1.size() && j < vec2.size();) {
         if (vec1[i] == vec2[j]) {
             ++size_of_intersection;
