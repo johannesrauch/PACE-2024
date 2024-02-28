@@ -50,7 +50,7 @@ class general_bipartite_graph {
     std::vector<std::pair<T, T>> edges;
 
    public:
-    using datatype = T;
+    using vertextype = T;
 
     // delete copy constructor, move constructor, copy assignment and move assignment
     general_bipartite_graph(const general_bipartite_graph &rhs) = delete;
