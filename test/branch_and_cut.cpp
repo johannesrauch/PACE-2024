@@ -49,9 +49,8 @@ void test_solver_w_tiny_test_set() {
         pace2024::uint32_bipartite_graph graph(filepath);
         pace2024::branch_and_cut<uint32_t, uint32_t> solver(graph);
         solver.solve(false);
-        // assert(solver.get_nof_crossings() == solutions[i]);
-        fmt::printf("%s,%s\n", solver.get_nof_crossings(), solutions[i]);
-        std::cout.flush();
+        assert(solver.get_nof_crossings() == solutions[i]);
+        // fmt::printf("%s,%s\n", solver.get_nof_crossings(), solutions[i]);
     }
 }
 
@@ -81,6 +80,6 @@ int main() {
     test_solver_w_tiny_test_set();
     test_solver_w_random_instance();
 
-    std::cout << "TEST::PACE2024::BRANCH_AND_CUT: OKAY" << std::endl;
+    std::cout << "TEST::PACE2024::BRANCH_AND_CUT:\t\t\tOK" << std::endl;
     return 0;
 }

@@ -189,11 +189,7 @@ class branch_and_cut {
      * @param k index k for lp
      */
     inline void handle_variable(const T i, const T j, const int k) {
-        std::pair<R, R> p = crossing_numbers_of<T, R>(graph, i, j);
-        R c_ij = p.first, c_ji = p.second;
-        fmt::printf("c: %s,%s\n", c_ij, c_ji);
-        assert(c_ij <= 1000000);
-        assert(c_ji <= 1000000);
+        auto [c_ij, c_ji] = crossing_numbers_of<T, R>(graph, i, j);
 
         // lower_bound = sum min(c_ij, c_ji)
         lower_bound += c_ij < c_ji ? c_ij : c_ji;
