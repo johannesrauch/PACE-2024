@@ -13,13 +13,15 @@
 #include <glpk.h>
 #include <math.h>
 
+#include <functional>
 #include <stack>
 #include <type_traits>
+#include <unordered_map>
+#include <vector>
 
 #include "bipartite_graph.hpp"
-#include "crossings.hpp"
-#include "debug.hpp"
-#include "instance.hpp"
+#include "crossing_number.hpp"
+#include "debug_printf.hpp"
 #include "matrix.hpp"
 #include "median_heuristic.hpp"
 #include "output.hpp"
@@ -27,25 +29,86 @@
 
 namespace pace2024 {
 
-template <typename T>
+template <typename T, typename R>
 class branch_and_cut {
    private:
-    // instance
-    const general_bipartite_graph<T> graph;
-    const int n1, n1_choose_2;
-    const folded_matrix<T> cr_matrix;
+    //
+    // instance related attributes
+    //
 
-    // lp
-    glp_prob* const lp;
+    /**
+     * @brief a bipartite graph that resembles an instance of
+     * one-sided crossing minimization
+     */
+    const general_bipartite_graph<T>& graph;
+
+    /**
+     * @brief number of vertices in free layer of the graph
+     */
+    const std::size_t n1;
+
+    /**
+     * @brief n1_choose_2 = n1*(n1-1)/2
+     */
+    const std::size_t n1_choose_2;
+
+    //
+    // lp related attributes
+    //
+
+    /**
+     * @brief const pointer to (mutable) lp solver
+     */
+    glp_prob *const lp;
+
+    /**
+     * @brief parameters for glp_simplex
+     */
     glp_smcp params;
 
-    // solution
-    T lower_bound,
-        upper_bound,     // current best solution
-        obj_val_offset;  // this + the obj_val of the lp = #crossings
+    /**
+     * @brief obj_val_offset + the obj_val of the lp = number of crossings
+     */
+    R obj_val_offset;
+
+    //
+    // solution related attributes
+    //
+
+    /**
+     * @brief lower bound for optimal value of the instance
+     * given by computing sum min(c_ij, c_ji)
+     */
+    R lower_bound;
+
+    /**
+     * @brief upper bound for optimal value of the instance, that is,
+     * number of crossings of current best solution.
+     * - initialized through heuristic
+     * - updated over time through this solver
+     */
+    R upper_bound;
+
+    /**
+     * @brief ordering achieving the current best number of crossings
+     */
     std::vector<T> ordering;
 
-    // internal variables
+    /**
+     * @brief the restrictions graph for the instance.
+     * the vertices of digraph are the vertices of the free layer of the
+     * (instance) graph.
+     * an arc (i, j) in digraph means that i < j in the ordering.
+     */
+    general_digraph<T> digraph;
+
+    //
+    // solver related attributes
+    //
+
+    /**
+     * @brief stack used for branch and cut
+     */
     std::stack<int> stack;
 
    public:
@@ -58,59 +121,107 @@ class branch_and_cut {
      *
      * @param instance input
      */
-    branch_and_cut(const general_input<T>& instance, int msg_level = GLP_MSG_OFF)
-        : graph(instance),
+    branch_and_cut(general_bipartite_graph<T> &graph, int msg_level = GLP_MSG_OFF)
+        : graph(graph),
           n1(graph.get_n1()),
           n1_choose_2(n1 * (n1 - 1) / 2),
-          cr_matrix(graph),
           lp(glp_create_prob()),
+          obj_val_offset(0),
           lower_bound(0),
           upper_bound(0),
-          obj_val_offset(0),
-          ordering(n1) {
+          ordering(n1),
+          digraph(n1) {
+        assert(n1 > 0);
+
+        // initialize glp_simplex parameters and set lp objective to minimization
         glp_init_smcp(&params);
         params.msg_lev = msg_level;
         glp_set_obj_dir(lp, GLP_MIN);
 
-        // add n1(n1-1)/2 variables
-        glp_add_cols(lp, n1_choose_2);
-        int k = 1;
-        for (int i = 0; i < n1; ++i) {
-            for (int j = i + 1; j < n1; ++j) {
-                // just a test
-                assert(k == get_variable_index(i, j));
+        // compute the crossing numbers and add respective variables to the lp
+        construct_lp();
 
-                T c_ij = cr_matrix(i, j), c_ji = cr_matrix(j, i);
-                double c = (double)c_ij - (double)c_ji;
-                lower_bound += c_ij < c_ji ? c_ij : c_ji;  // min(c_ij, c_ji)
-                obj_val_offset += c_ji;
-
-                if (c_ij == 0) {
-                    glp_set_col_bnds(lp, k, GLP_FX, 1, 1);  // fix i < j
-                } else if (c_ji == 0) {
-                    glp_set_col_bnds(lp, k, GLP_FX, 0, 0);  // fix j < i
-                } else {
-                    // set 0 <= x_ij <= 1
-                    glp_set_col_bnds(lp, k, GLP_DB, 0, 1);
-                }
-
-                glp_set_obj_coef(lp, k, c);
-                ++k;
-            }
-        }
-
-        median_heuristic(graph, ordering);
-        upper_bound = nof_crossings(cr_matrix, ordering);
+        // compute a first heuristic solution for an upper bound
+        median_heuristic(graph, ordering).run();
+        upper_bound = crossing_number_of<T, R>(graph, ordering);
     }
 
+    // delete copy constructor, move constructor, copy assignment and move assignment
     branch_and_cut(const branch_and_cut &rhs) = delete;
+    branch_and_cut(branch_and_cut &&rhs) = delete;
     branch_and_cut &operator=(const branch_and_cut &rhs) = delete;
     branch_and_cut &operator=(branch_and_cut &&rhs) = delete;
 
+    /**
+     * @brief deletes the lp solver object
+     */
     ~branch_and_cut() {
         glp_delete_prob(lp);
     }
 
+   private:
+    //
+    // initializer methods
+    //
+
+    /**
+     * @brief constructs the lp for branch and cut:
+     * - computes the crossing numbers
+     * - adds the corresponding variables to the lp
+     * - fixes relative positions if possible
+     */
+    inline void construct_lp() {
+        int k = glp_add_cols(lp, static_cast<int>(n1_choose_2));
+        for (T i = 0; i < n1; ++i) {
+            for (T j = i + 1; j < n1; ++j) {
+                handle_variable(i, j, k);
+                ++k;
+            }
+        }
+    }
+
+    /**
+     * @brief computes the crossing number, sets the corresponding bounds for the variable,
+     * fixes it if possible, and computes lower_bound and obj_val_offsets (partially).
+     *
+     * @param i vertex i
+     * @param j vertex j
+     * @param k index k for lp
+     */
+    inline void handle_variable(const T i, const T j, const int k) {
+        std::pair<R, R> p = crossing_numbers_of<T, R>(graph, i, j);
+        R c_ij = p.first, c_ji = p.second;
+        fmt::printf("c: %s,%s\n", c_ij, c_ji);
+        assert(c_ij <= 1000000);
+        assert(c_ji <= 1000000);
+
+        // lower_bound = sum min(c_ij, c_ji)
+        lower_bound += c_ij < c_ji ? c_ij : c_ji;
+        // obj_val_offset = sum c_ji (since we subtract the c_ji for the coefficients)
+        obj_val_offset += c_ji;
+
+        if (c_ij == 0) {
+            // fix i < j in the ordering
+            glp_set_col_bnds(lp, k, GLP_FX, 1., 1.);  // ub is ignored
+        } else if (c_ji == 0) {
+            // fix j < i in the ordering
+            glp_set_col_bnds(lp, k, GLP_FX, 0., 0.);  // ub is ignored
+        } else {
+            // set 0 <= x_ij <= 1
+            glp_set_col_bnds(lp, k, GLP_DB, 0., 1.);
+        }
+        // todo: if d(i)=d(j), check if fixing is possible
+
+        // set coefficient of added column
+        double coef = static_cast<double>(c_ij) - static_cast<double>(c_ji);
+        glp_set_obj_coef(lp, k, coef);
+    }
+
+    //
+    // helper methods
+    //
+
+   public:
     /**
      * @brief converts an index pair i, j, i < j, to the lp column (variable)
      * index
@@ -123,22 +234,88 @@ class branch_and_cut {
         assert(i < j);
         int offset = n1_choose_2 - (n1 - i) * (n1 - i - 1) / 2;
         int index = offset + j - i;
-        assert(1 <= index && index <= n1_choose_2);
+        assert(1 <= index && index <= static_cast<int>(n1_choose_2));
         return index;
     }
 
    private:
     /**
-     * @brief given indices i, j, k, checks the 3-cycle constraints ijk and ikj
-     * if violated, it adds them to the lp, too
+     * @brief checks if a column (variable) of the lp is integral
+     *
+     * @param j index between 1 and n1_choose_2
+     * @return true if integral
+     * @return false if not
+     */
+    inline bool is_column_integral(int j) {
+        double x = glp_get_col_prim(lp, j);
+        if (x > PACE2024_CONST_EPSILON && x < 1. - PACE2024_CONST_EPSILON) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @brief checks if the current solution is integral
+     *
+     * @return int 0, if solution is integral, index j, 1 <= j <= n1_choose_2,
+     * of nonintegral column if not
+     */
+    int is_solution_integral() {
+        for (int j = 1; j <= static_cast<int>(n1_choose_2); ++j) {
+            if (!is_column_integral(j)) {
+                return j;
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * @brief constructs the restrictions graph into digraph and
+     * then computes a topological sort of digraph for the ordering.
+     * stores the ordering in ordering and the number of crossings in upper_bound.
+     * requirement: lp solution integral.
+     */
+    void compute_ordering() {
+        // resets the graph
+        digraph.rollback();
+
+        // build the constraint graph
+        int k = 1;
+        for (T i = 0; i < n1; ++i) {
+            for (T j = i + 1; j < n1; ++j) {
+                assert(is_column_integral(k));
+                double x = glp_get_col_prim(lp, k);
+                if (x < PACE2024_CONST_EPSILON) {
+                    digraph.add_arc(j, i);
+                } else {
+                    digraph.add_arc(i, j);
+                }
+                ++k;
+            }
+        }
+
+        // the ordering computed by the lp is the topological sort
+        bool acyclic = topological_sort(digraph, ordering);
+        assert(acyclic);
+        double value = glp_get_obj_val(lp) + static_cast<double>(obj_val_offset);
+        assert(value >= 0);
+        upper_bound = static_cast<R>(llround(value));
+    }
+
+    //
+    // branch and cut methods
+    //
+
+    /**
+     * @brief given the vertices i, j, k, checks the 3-cycle constraints
+     * ijk and ikj. if violated, it adds them to the lp, too.
      *
      * @param i
      * @param j
      * @param k
-     * @return T number of found and added 3-cycle constraints: 0, 1
-     * or 2
+     * @return std::size_t number of found and added 3-cycle constraints: 0, 1 or 2
      */
-    inline T check_cycle_constraint(const int i, const int j, const int k) {
+    inline std::size_t check_cycle_constraint(const int i, const int j, const int k) {
         const int index_ij = get_variable_index(i, j),
                   index_jk = get_variable_index(j, k),
                   index_ik = get_variable_index(i, k);
@@ -148,6 +325,7 @@ class branch_and_cut {
         double x_ik = glp_get_col_prim(lp, index_ik);
 
         std::size_t nof_new_cycle_constraints = 0;
+
         // cycle ijk
         if (x_ij + x_jk - x_ik > 1) {
             ++nof_new_cycle_constraints;
@@ -179,11 +357,11 @@ class branch_and_cut {
      * @return false 3-cycle not found
      */
     bool check_cycle_constraints() {
-        T nof_cycle_constraints = 0;
+        std::size_t nof_cycle_constraints = 0;
 
-        for (int i = 0; i < n1; ++i) {
-            for (int j = i + 1; j < n1; ++j) {
-                for (int k = j + 1; k < n1; ++k) {
+        for (T i = 0; i < n1; ++i) {
+            for (T j = i + 1; j < n1; ++j) {
+                for (T k = j + 1; k < n1; ++k) {
                     nof_cycle_constraints += check_cycle_constraint(i, j, k);
 
                     if (nof_cycle_constraints >
@@ -198,73 +376,25 @@ class branch_and_cut {
     }
 
     /**
-     * @brief checks if a column (variable) of the lp is integral
+     * @brief search for violated constraints
+     * and add these to the lp.
      *
-     * @param j index between 1 and n1_choose_2
-     * @return true if integral
-     * @return false if not
+     * @return true some where found
+     * @return false otherwise
      */
-    inline bool is_column_integral(int j) {
-        double x = glp_get_col_prim(lp, j);
-        if (x > PACE2024_CONST_EPSILON && x < 1. - PACE2024_CONST_EPSILON) {
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * @brief checks if the current solution is integral
-     *
-     * @return int 0, if solution is integral, index j, 1 <= j <= n1_choose_2,
-     * of nonintegral column if not
-     */
-    int is_solution_integral() {
-        for (int j = 1; j <= n1_choose_2; ++j) {
-            if (!is_column_integral(j)) {
-                return j;
-            }
-        }
-        return 0;
-    }
-
     bool try_to_generate_cutting_planes() {
         bool success = check_cycle_constraints();
         return success;
     }
 
-    void compute_ordering() {
-        // build the constraint graph
-        general_graph<T> graph(n1);
-        int k = 1;
-        for (int i = 0; i < n1; ++i) {
-            for (int j = i + 1; j < n1; ++j) {
-                assert(is_column_integral(k));
-                double x = glp_get_col_prim(lp, k);
-                if (x < PACE2024_CONST_EPSILON) {
-                    graph.add_edge(j, i);
-                } else {
-                    graph.add_edge(i, j);
-                }
-                ++k;
-            }
-        }
-
-        // the ordering computed by the lp is the topological sort
-        bool acyclic = topological_sort(graph, ordering);
-        assert(acyclic);
-        double value = glp_get_obj_val(lp) + obj_val_offset;
-        assert(value >= 0);
-        upper_bound = llround(value);
-    }
-
     /**
      * @brief if there's a variable on the stack,
-     * the function pops it, and we fix the opposite value
+     * the function pops it, and we fix the opposite value.
      *
      * @return true if stack is empty
-     * @return false if not
+     * @return false otherwise
      */
-    bool backtrack() {
+    bool backtrack_fix_column() {
         if (stack.empty()) {
             return true;
         }
@@ -273,7 +403,7 @@ class branch_and_cut {
         int j = stack.top();
         stack.pop();
         double x = glp_get_col_prim(lp, j);
-        glp_set_col_bnds(lp, j, GLP_FX, 1. - x, 1. - x);
+        glp_set_col_bnds(lp, j, GLP_FX, 1. - x, 0.);  // ub is ignored
 
         return false;
     }
@@ -290,6 +420,37 @@ class branch_and_cut {
         stack.emplace(j);
     }
 
+    /**
+     * @brief given the optimal value of the current lp,
+     * decides if we generate cutting planes,
+     * or if we branch,
+     * or if we backtrack.
+     *
+     * @param value optimal value of current lp
+     * @return true optimal solution found
+     * @return false otherwise
+     */
+    inline bool branch_n_cut(double value) {
+        if (static_cast<double>(upper_bound) <= value) {
+            if (backtrack_fix_column()) return true;
+        } else {
+            if (!try_to_generate_cutting_planes()) {
+                int j = is_solution_integral();
+                if (j == 0) {
+                    // we found a better solution
+                    compute_ordering();
+                    // todo: permanent fixing
+                } else {
+                    // todo: improve solution with heuristic
+                    // todo: permanent fixing
+                    // todo: better selection
+                    fix_column(j);
+                }
+            }
+        }
+        return false;
+    }
+
    public:
     void solve(bool do_print = true) {
         for (std::size_t iteration = 0;; ++iteration) {
@@ -298,25 +459,9 @@ class branch_and_cut {
             assert(status == GLP_OPT);
 
             double value = glp_get_obj_val(lp) + (double)obj_val_offset;
-            assert(iteration > 0 || llround(value) == lower_bound);
+            assert(iteration > 0 || static_cast<R>(llround(value)) == lower_bound);
 
-            if ((double)upper_bound <= value) {
-                if (backtrack()) break;
-            } else {
-                if (!try_to_generate_cutting_planes()) {
-                    int j = is_solution_integral();
-                    if (j == 0) {
-                        // we found a better solution
-                        compute_ordering();
-                        // todo: permanent fixing
-                    } else {
-                        // todo: improve solution with heuristic
-                        // todo: permanent fixing
-                        // todo: better selection
-                        fix_column(j);
-                    }
-                }
-            }
+            if (branch_n_cut(value)) break;
         }
 
         if (do_print) {
@@ -324,14 +469,24 @@ class branch_and_cut {
         }
     }
 
-    T get_nof_crossings() {
+    //
+    // getter
+    //
+
+    /**
+     * @brief get number of crossings of current ordering
+     *
+     * @return R
+     */
+    R get_nof_crossings() {
         return upper_bound;
     }
 
-    const folded_matrix<T>& get_crossing_matrix() const {
-        return cr_matrix;
-    }
-
+    /**
+     * @brief get current best ordering
+     *
+     * @return const std::vector<T>
+     */
     const std::vector<T> get_ordering() const {
         return ordering;
     }
