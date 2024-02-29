@@ -2,7 +2,7 @@
 #define PACE2024_BRANCH_AND_CUT_HPP
 
 #ifndef PACE2024_CONST_NOF_CYCLE_CONSTRAINTS
-#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 64
+#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 256
 #endif
 
 // 1e-7 is the default tolerance in glpk for feasibility
@@ -143,6 +143,7 @@ class branch_and_cut {
         glp_set_obj_dir(lp, GLP_MIN);
 
         // compute the crossing numbers and add respective variables to the lp
+        PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::branch_and_cut: constructing lp\n");
         construct_lp();
 
         // compute a first heuristic solution for an upper bound
@@ -306,6 +307,7 @@ class branch_and_cut {
 
         // the ordering computed by the lp is the topological sort
         bool acyclic = topological_sort(digraph, ordering);
+        (void)acyclic;
         assert(acyclic);
         double value = glp_get_obj_val(lp);
         assert(value >= 0);
@@ -393,7 +395,9 @@ class branch_and_cut {
      * @return false otherwise
      */
     bool try_to_generate_cutting_planes() {
+        PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::solve:\tstart checking cycle constraints\n");
         bool success = check_cycle_constraints();
+        PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::solve:\tend checking cycle constraints (%s)\n", success);
         return success;
     }
 
@@ -511,6 +515,7 @@ class branch_and_cut {
         // solve the lp
         glp_simplex(lp, &params);
         int status = glp_get_status(lp);
+        (void)status;
         assert(status == GLP_OPT);
 
         // perform initial permanent fixing since we already have a heuristic solution
@@ -524,9 +529,11 @@ class branch_and_cut {
         if (!optimum) {
             for (std::size_t iteration = 0;; ++iteration) {
                 // solve the lp
+                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::solve:\tstart simplex\n");
                 glp_simplex(lp, &params);
                 status = glp_get_status(lp);
                 assert(status == GLP_OPT);
+                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::solve:\tend simplex\n");
 
                 // get value of current optimal solution and call branch_n_cut with it
                 value = glp_get_obj_val(lp);
