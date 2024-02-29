@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "debug_printf.hpp"
+
 namespace pace2024 {
 
 /**
@@ -184,6 +186,8 @@ class general_bipartite_graph {
             --x;
             y -= n0 + 1;
 
+            assert(x < n0);
+            assert(y < n1);
             adjacency_lists[y].emplace_back(x);
             edges.emplace_back(x, y);
         }
