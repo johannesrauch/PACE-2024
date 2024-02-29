@@ -3,7 +3,7 @@
 
 #include "printf.hpp"
 
-#ifndef NDEBUG_PRINT
+#ifdef NDEBUG_PRINT
 #define PACE2024_DEBUG_PRINTF(...) \
     do {                            \
         fmt::printf(__VA_ARGS__);          \
