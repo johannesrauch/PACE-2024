@@ -182,6 +182,8 @@ class branch_and_cut {
                 ++k;
             }
         }
+        // set constant term (shift/offset) in the objective function
+        glp_set_obj_coef(lp, 0, static_cast<double>(obj_val_offset));
     }
 
     /**
@@ -305,7 +307,7 @@ class branch_and_cut {
         // the ordering computed by the lp is the topological sort
         bool acyclic = topological_sort(digraph, ordering);
         assert(acyclic);
-        double value = glp_get_obj_val(lp) + static_cast<double>(obj_val_offset);
+        double value = glp_get_obj_val(lp);
         assert(value >= 0);
         upper_bound = static_cast<R>(llround(value));
     }
@@ -492,7 +494,7 @@ class branch_and_cut {
         // perform_permanent_fixing();
 
         // get value of current optimal solution and call branch_n_cut with it
-        double value = glp_get_obj_val(lp) + static_cast<double>(obj_val_offset);
+        double value = glp_get_obj_val(lp);
         assert(static_cast<R>(llround(value)) == lower_bound);
         bool optimum = branch_n_cut(value);
 
@@ -504,7 +506,7 @@ class branch_and_cut {
                 assert(status == GLP_OPT);
 
                 // get value of current optimal solution and call branch_n_cut with it
-                value = glp_get_obj_val(lp) + static_cast<double>(obj_val_offset);
+                value = glp_get_obj_val(lp);
                 optimum = branch_n_cut(value);
                 if (optimum) break;
             }
