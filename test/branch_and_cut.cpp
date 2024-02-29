@@ -1,5 +1,7 @@
 #include "branch_and_cut.hpp"
 
+#include <filesystem>
+#include <fstream>
 #include <string>
 
 #include "crossing_number.hpp"
@@ -28,32 +30,31 @@ void test_get_variable_index() {
  * @brief test branch_and_cut solver on tiny_test_set
  */
 void test_solver_w_tiny_test_set() {
-    const std::string tiny_tests[13] =
-        {"complete_4_5.gr",
-         "cycle_8_shuffled.gr",
-         "cycle_8_sorted.gr",
-         "grid_9_shuffled.gr",
-         "ladder_4_4_shuffled.gr",
-         "ladder_4_4_sorted.gr",
-         "matching_4_4.gr",
-         "path_9_shuffled.gr",
-         "path_9_sorted.gr",
-         "plane_5_6.gr",
-         "star_6.gr",
-         "tree_6_10.gr",
-         "website_20.gr"};
-    const uint16_t solutions[13] = {60, 4, 3, 17, 11, 3, 0, 6, 0, 0, 0, 13, 17};
+    for (const auto& file : std::filesystem::directory_iterator("tiny_test_set")) {
+        if (!file.is_regular_file()) continue;
 
-    for (uint16_t i = 0; i < 13; ++i) {
-        const std::string filepath = "tiny_test_set/" + tiny_tests[i];
-        pace2024::uint32_bipartite_graph graph(filepath);
+        const auto filepath_instance = file.path();
+        pace2024::uint32_bipartite_graph graph(filepath_instance);
         pace2024::branch_and_cut<uint32_t, uint32_t> solver(graph);
         solver.solve(false);
-        assert(solver.get_nof_crossings() == solutions[i]);
+
+        uint32_t ref_nof_crossings;
+        {
+            auto filepath_nof_crossings =
+                filepath_instance.parent_path() / "nof_crossings" / filepath_instance.filename();
+            filepath_nof_crossings.replace_extension(".txt");
+            // fmt::printf("%s\n", static_cast<std::string>(filepath_nof_crossings));
+            std::ifstream file_nof_crossings(filepath_nof_crossings);
+            assert(file_nof_crossings.good());
+            file_nof_crossings >> ref_nof_crossings;
+            file_nof_crossings.close();
+        }
+
+        assert(ref_nof_crossings == solver.get_nof_crossings());
         // fmt::printf("%s,%s\n", solver.get_nof_crossings(), solutions[i]);
-        uint32_t nof_crossings =
+        uint32_t test_nof_crossings =
             pace2024::crossing_number_of<uint32_t, uint32_t>(graph, solver.get_ordering());
-        assert(solver.get_nof_crossings() == nof_crossings);
+        assert(ref_nof_crossings == test_nof_crossings);
     }
 }
 
