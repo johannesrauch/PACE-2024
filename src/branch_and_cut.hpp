@@ -313,7 +313,7 @@ class branch_and_cut {
     }
 
     //
-    // branch and cut methods
+    // cutting plane methods
     //
 
     /**
@@ -397,6 +397,13 @@ class branch_and_cut {
         return success;
     }
 
+    //
+    // variable fixing methods
+    //
+
+    /**
+     * @brief fixes variables according to the reduced cost condition
+     */
     void perform_permanent_fixing() {
         for (int j = 1; j <= static_cast<int>(n1_choose_2); ++j) {
             int col_stat = glp_get_col_stat(lp, j);
@@ -479,7 +486,8 @@ class branch_and_cut {
                 if (j == 0) {
                     // the solution is integral; we found a better solution
                     compute_ordering();
-                    // todo: permanent fixing
+                    perform_permanent_fixing();
+                    return backtrack_fix_column();
                 } else {
                     // todo: improve solution with heuristic
                     // todo: permanent fixing
