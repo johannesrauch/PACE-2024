@@ -26,8 +26,8 @@ void test_median_heuristics(const pace2024::general_bipartite_graph<T>& graph,
     R nof_crossings = pace2024::crossing_number_of<T, R>(graph, ordering);
     // fmt::printf("%s,\n", nof_crossings);
 
-    R nof_crossings_prob = pace2024::probabilistic_median_heuristic<T, R>(graph, ordering).run();
-    assert(nof_crossings_prob <= nof_crossings);
+    R nof_crossings_ = pace2024::probabilistic_median_heuristic<T, R>(graph, ordering).run();
+    assert(nof_crossings_ <= nof_crossings);
 }
 
 /**
@@ -40,6 +40,8 @@ int main() {
 
     std::size_t i{0};
     for (const auto& file : std::filesystem::directory_iterator("tiny_test_set")) {
+        if (!file.is_regular_file()) continue;
+
         pace2024::uint16_bipartite_graph graph(static_cast<const std::string>(file.path()));
         test_median_heuristics(graph, expected[i++]);
     }

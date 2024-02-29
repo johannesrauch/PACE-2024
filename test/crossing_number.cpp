@@ -58,6 +58,8 @@ void test_crossing_number_of(const pace2024::general_bipartite_graph<T>& graph,
  */
 int main() {
     for (const auto& file : std::filesystem::directory_iterator("tiny_test_set")) {
+        if (!file.is_regular_file()) continue;
+
         pace2024::uint16_bipartite_graph graph(static_cast<const std::string>(file.path()));
         pace2024::uint16_folded_matrix matrix(graph);
 

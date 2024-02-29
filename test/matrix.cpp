@@ -29,6 +29,8 @@ void test_matrix_and_compute_crossing_numbers(const pace2024::general_bipartite_
  */
 int main() {
     for (const auto& file : std::filesystem::directory_iterator("tiny_test_set")) {
+        if (!file.is_regular_file()) continue;
+
         pace2024::uint16_bipartite_graph graph(static_cast<const std::string>(file.path()));
         test_matrix_and_compute_crossing_numbers(graph);        
     }
