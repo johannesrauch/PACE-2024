@@ -2,7 +2,7 @@
 #define PACE2024_BRANCH_AND_CUT_HPP
 
 #ifndef PACE2024_CONST_NOF_CYCLE_CONSTRAINTS
-#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 8
+#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 64
 #endif
 
 // 1e-7 is the default tolerance in glpk for feasibility
@@ -428,18 +428,25 @@ class branch_and_cut {
      */
     inline bool branch_n_cut(double value) {
         if (static_cast<double>(upper_bound) <= value) {
-            if (backtrack_fix_column()) return true;
+            // try to backtrack
+            // if this is not possible (meaning that the stack is empty),
+            // then we found an optimal solution
+            return backtrack_fix_column();
         } else {
-            if (!try_to_generate_cutting_planes()) {
+            // try to generate cutting planes
+            bool successul = try_to_generate_cutting_planes();
+
+            if (!successul) {
                 int j = is_solution_integral();
                 if (j == 0) {
-                    // we found a better solution
+                    // the solution is integral; we found a better solution
                     compute_ordering();
                     // todo: permanent fixing
                 } else {
                     // todo: improve solution with heuristic
                     // todo: permanent fixing
                     // todo: better selection
+                    // branch by fixing a column
                     fix_column(j);
                 }
             }
@@ -450,13 +457,14 @@ class branch_and_cut {
    public:
     void solve(bool do_print = true) {
         for (std::size_t iteration = 0;; ++iteration) {
+            // solve the lp
             glp_simplex(lp, &params);
             int status = glp_get_status(lp);
             assert(status == GLP_OPT);
 
-            double value = glp_get_obj_val(lp) + (double)obj_val_offset;
+            // value of current optimal solution
+            double value = glp_get_obj_val(lp) + static_cast<double>(obj_val_offset);
             assert(iteration > 0 || static_cast<R>(llround(value)) == lower_bound);
-
             if (branch_n_cut(value)) break;
         }
 
