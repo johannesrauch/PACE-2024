@@ -8,6 +8,10 @@ else
 	CXXFLAGS += -g
 endif
 
+ifdef SILENT
+	CXXFLAGS += -DNDEBUG_PRINT
+endif
+
 .PHONY: all
 
 all:
