@@ -397,6 +397,30 @@ class branch_and_cut {
         return success;
     }
 
+    void perform_permanent_fixing() {
+        for (int j = 1; j <= static_cast<int>(n1_choose_2); ++j) {
+            int col_stat = glp_get_col_stat(lp, j);
+            // PACE2024_DEBUG_PRINTF("col_stat=%s\n", col_stat);
+            if (col_stat == GLP_BS) continue;
+
+            double reduced_cost = glp_get_col_dual(lp, j);
+
+            if (initial_solution[j] == 0 &&
+                static_cast<double>(lower_bound) + reduced_cost >= static_cast<double>(upper_bound)) {
+                glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);
+            }
+
+            if (initial_solution[j] == 1 &&
+                static_cast<double>(lower_bound) - reduced_cost >= static_cast<double>(upper_bound)) {
+                glp_set_col_bnds(lp, j, GLP_FX, 1., 1.);
+            }
+        }
+    }
+
+    //
+    // branch and bound
+    //
+
     /**
      * @brief if there's a variable on the stack,
      * the function pops it, and we fix the opposite value.
@@ -468,15 +492,6 @@ class branch_and_cut {
         return false;
     }
 
-    // void perform_permanent_fixing() {
-    //     for (int j = 1; j <= n1_choose_2; ++j) {
-    //         // if (glp_get_col_stat(lp, j) == GLP_BS) continue;
-
-    //         double reduced_cost = glp_get_col_dual(lp, j);
-    //         double x_
-    //     }
-    // }
-
    public:
     /**
      * @brief solves the given instance exactly with a
@@ -491,7 +506,7 @@ class branch_and_cut {
         assert(status == GLP_OPT);
 
         // perform initial permanent fixing since we already have a heuristic solution
-        // perform_permanent_fixing();
+        perform_permanent_fixing();
 
         // get value of current optimal solution and call branch_n_cut with it
         double value = glp_get_obj_val(lp);
