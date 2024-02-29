@@ -69,7 +69,13 @@ class branch_and_cut {
     /**
      * @brief obj_val_offset + the obj_val of the lp = number of crossings
      */
-    R obj_val_offset;
+    R obj_val_offset{0};
+
+    /**
+     * @brief stores an optimal solution to the lp without constraints
+     * used for permanent variable fixing
+     */
+    std::vector<uint8_t> initial_solution;
 
     //
     // solution related attributes
@@ -79,7 +85,7 @@ class branch_and_cut {
      * @brief lower bound for optimal value of the instance
      * given by computing sum min(c_ij, c_ji)
      */
-    R lower_bound;
+    R lower_bound{0};
 
     /**
      * @brief upper bound for optimal value of the instance, that is,
@@ -87,7 +93,7 @@ class branch_and_cut {
      * - initialized through heuristic
      * - updated over time through this solver
      */
-    R upper_bound;
+    R upper_bound{0};
 
     /**
      * @brief ordering achieving the current best number of crossings
@@ -126,9 +132,7 @@ class branch_and_cut {
           n1(graph.get_n1()),
           n1_choose_2(n1 * (n1 - 1) / 2),
           lp(glp_create_prob()),
-          obj_val_offset(0),
-          lower_bound(0),
-          upper_bound(0),
+          initial_solution(n1_choose_2 + 1),
           ordering(n1),
           digraph(n1) {
         assert(n1 > 0);
@@ -174,7 +178,7 @@ class branch_and_cut {
         int k = glp_add_cols(lp, static_cast<int>(n1_choose_2));
         for (T i = 0; i < n1; ++i) {
             for (T j = i + 1; j < n1; ++j) {
-                handle_variable(i, j, k);
+                add_variable_to_lp(i, j, k);
                 ++k;
             }
         }
@@ -188,11 +192,19 @@ class branch_and_cut {
      * @param j vertex j
      * @param k index k for lp
      */
-    inline void handle_variable(const T i, const T j, const int k) {
+    inline void add_variable_to_lp(const T i, const T j, const int k) {
+        assert(static_cast<std::size_t>(k) <= n1_choose_2);
         auto [c_ij, c_ji] = crossing_numbers_of<T, R>(graph, i, j);
 
         // lower_bound = sum min(c_ij, c_ji)
-        lower_bound += c_ij < c_ji ? c_ij : c_ji;
+        if (c_ij < c_ji) {
+            lower_bound += c_ij;
+            initial_solution[k] = 1;
+        } else {
+            lower_bound += c_ji;
+            initial_solution[k] = 0;
+        }
+
         // obj_val_offset = sum c_ji (since we subtract the c_ji for the coefficients)
         obj_val_offset += c_ji;
 
@@ -454,6 +466,15 @@ class branch_and_cut {
         return false;
     }
 
+    // void perform_permanent_fixing() {
+    //     for (int j = 1; j <= n1_choose_2; ++j) {
+    //         // if (glp_get_col_stat(lp, j) == GLP_BS) continue;
+
+    //         double reduced_cost = glp_get_col_dual(lp, j);
+    //         double x_
+    //     }
+    // }
+
    public:
     /**
      * @brief solves the given instance exactly with a
@@ -462,17 +483,31 @@ class branch_and_cut {
      * @param do_print
      */
     void solve(bool do_print = true) {
-        for (std::size_t iteration = 0;; ++iteration) {
-            // solve the lp
-            glp_simplex(lp, &params);
-            int status = glp_get_status(lp);
-            assert(status == GLP_OPT);
+        // solve the lp
+        glp_simplex(lp, &params);
+        int status = glp_get_status(lp);
+        assert(status == GLP_OPT);
 
-            // get value of current optimal solution
-            // and call branch_n_cut with it
-            double value = glp_get_obj_val(lp) + static_cast<double>(obj_val_offset);
-            assert(iteration > 0 || static_cast<R>(llround(value)) == lower_bound);
-            if (branch_n_cut(value)) break;
+        // perform initial permanent fixing since we already have a heuristic solution
+        // perform_permanent_fixing();
+
+        // get value of current optimal solution and call branch_n_cut with it
+        double value = glp_get_obj_val(lp) + static_cast<double>(obj_val_offset);
+        assert(static_cast<R>(llround(value)) == lower_bound);
+        bool optimum = branch_n_cut(value);
+
+        if (!optimum) {
+            for (std::size_t iteration = 0;; ++iteration) {
+                // solve the lp
+                glp_simplex(lp, &params);
+                status = glp_get_status(lp);
+                assert(status == GLP_OPT);
+
+                // get value of current optimal solution and call branch_n_cut with it
+                value = glp_get_obj_val(lp) + static_cast<double>(obj_val_offset);
+                optimum = branch_n_cut(value);
+                if (optimum) break;
+            }
         }
 
         if (do_print) {
