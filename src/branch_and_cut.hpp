@@ -40,7 +40,7 @@ class branch_and_cut {
      * @brief a bipartite graph that resembles an instance of
      * one-sided crossing minimization
      */
-    const general_bipartite_graph<T>& graph;
+    const general_bipartite_graph<T> &graph;
 
     /**
      * @brief number of vertices in free layer of the graph
@@ -455,6 +455,12 @@ class branch_and_cut {
     }
 
    public:
+    /**
+     * @brief solves the given instance exactly with a
+     * branch and cut approach.
+     *
+     * @param do_print
+     */
     void solve(bool do_print = true) {
         for (std::size_t iteration = 0;; ++iteration) {
             // solve the lp
@@ -462,7 +468,8 @@ class branch_and_cut {
             int status = glp_get_status(lp);
             assert(status == GLP_OPT);
 
-            // value of current optimal solution
+            // get value of current optimal solution
+            // and call branch_n_cut with it
             double value = glp_get_obj_val(lp) + static_cast<double>(obj_val_offset);
             assert(iteration > 0 || static_cast<R>(llround(value)) == lower_bound);
             if (branch_n_cut(value)) break;
