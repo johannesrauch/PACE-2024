@@ -419,11 +419,13 @@ class branch_and_cut {
             if (initial_solution[j] == 0 &&
                 static_cast<double>(lower_bound) + reduced_cost >= static_cast<double>(upper_bound)) {
                 glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);
+                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::perform_permanent_fixing: of %d\n", j);
             }
 
             if (initial_solution[j] == 1 &&
                 static_cast<double>(lower_bound) - reduced_cost >= static_cast<double>(upper_bound)) {
                 glp_set_col_bnds(lp, j, GLP_FX, 1., 1.);
+                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::perform_permanent_fixing: of %d\n", j);
             }
         }
     }
@@ -495,6 +497,8 @@ class branch_and_cut {
                 } else {
                     // todo: improve solution with heuristic
                     // todo: permanent fixing
+                    // todo: transitivity
+                    // todo: delete "loose" inequalities
                     // todo: better selection
                     // branch by fixing a column
                     fix_column(j);
