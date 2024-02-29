@@ -51,6 +51,9 @@ void test_solver_w_tiny_test_set() {
         solver.solve(false);
         assert(solver.get_nof_crossings() == solutions[i]);
         // fmt::printf("%s,%s\n", solver.get_nof_crossings(), solutions[i]);
+        uint32_t nof_crossings =
+            pace2024::crossing_number_of<uint32_t, uint32_t>(graph, solver.get_ordering());
+        assert(solver.get_nof_crossings() == nof_crossings);
     }
 }
 
@@ -72,8 +75,8 @@ void test_solver_w_random_instance() {
 
 /**
  * @brief tests branch_and_cut
- * 
- * @return int 
+ *
+ * @return int
  */
 int main() {
     test_get_variable_index();
