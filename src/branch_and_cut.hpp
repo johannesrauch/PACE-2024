@@ -143,7 +143,7 @@ class branch_and_cut {
         glp_set_obj_dir(lp, GLP_MIN);
 
         // compute the crossing numbers and add respective variables to the lp
-        PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::branch_and_cut: constructing lp\n");
+        PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\tconstructing lp\n");
         construct_lp();
 
         // compute a first heuristic solution for an upper bound
@@ -395,9 +395,9 @@ class branch_and_cut {
      * @return false otherwise
      */
     bool try_to_generate_cutting_planes() {
-        PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::solve:\tstart checking cycle constraints\n");
+        PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\t\tstart checking cycle constraints\n");
         bool success = check_cycle_constraints();
-        PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::solve:\tend checking cycle constraints (%s)\n", success);
+        PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\t\tend checking cycle constraints (%s)\n", success);
         return success;
     }
 
@@ -419,13 +419,13 @@ class branch_and_cut {
             if (initial_solution[j] == 0 &&
                 static_cast<double>(lower_bound) + reduced_cost >= static_cast<double>(upper_bound)) {
                 glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);
-                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::perform_permanent_fixing: of %d\n", j);
+                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\t\tpermanent fixing of %d\n", j);
             }
 
             if (initial_solution[j] == 1 &&
                 static_cast<double>(lower_bound) - reduced_cost >= static_cast<double>(upper_bound)) {
                 glp_set_col_bnds(lp, j, GLP_FX, 1., 1.);
-                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::perform_permanent_fixing: of %d\n", j);
+                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\t\tpermanent fixing of %d\n", j);
             }
         }
     }
@@ -533,11 +533,11 @@ class branch_and_cut {
         if (!optimum) {
             for (std::size_t iteration = 0;; ++iteration) {
                 // solve the lp
-                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::solve:\tstart simplex\n");
+                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\tstart simplex\n");
                 glp_simplex(lp, &params);
                 status = glp_get_status(lp);
                 assert(status == GLP_OPT);
-                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut::solve:\tend simplex\n");
+                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\tend simplex\n");
 
                 // get value of current optimal solution and call branch_n_cut with it
                 value = glp_get_obj_val(lp);
