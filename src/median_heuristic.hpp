@@ -122,9 +122,9 @@ class median_heuristic {
 /**
  * @brief probabilistic median heuristic solver
  * based on Nagamochi's paper https://doi.org/10.1007/s00454-005-1168-0
- * 
- * @tparam T 
- * @tparam R 
+ *
+ * @tparam T
+ * @tparam R
  */
 template <typename T, typename R>
 class probabilistic_median_heuristic {
@@ -137,7 +137,7 @@ class probabilistic_median_heuristic {
     std::vector<T> medians;
     std::vector<T> randomized_medians;
     std::uniform_real_distribution<> distribution;
-    const std::size_t nof_iterations;
+    R best;
 
    public:
     /**
@@ -148,8 +148,7 @@ class probabilistic_median_heuristic {
      * @param nof_iterations number of iterations
      */
     probabilistic_median_heuristic(const general_bipartite_graph<T>& input_graph,
-                                   std::vector<T>& ordering,
-                                   std::size_t nof_iterations = 1000)
+                                   std::vector<T>& ordering)
         : input_graph(input_graph),
           adjacency_lists(input_graph.get_adjacency_lists()),
           n1(input_graph.get_n1()),
@@ -157,8 +156,16 @@ class probabilistic_median_heuristic {
           another_ordering(n1),
           medians(n1),
           randomized_medians(n1),
-          distribution(0.0957, 0.9043), // from Nagamochi's paper
-          nof_iterations(nof_iterations) {}
+          distribution(0.0957, 0.9043)  // from Nagamochi's paper
+    {
+        // compute initial solution with normal median heuristic
+        median_heuristic<T>(input_graph, ordering).run();
+        best = crossing_number_of<T, R>(input_graph, ordering);
+
+        // initialize vectors
+        for (T i = 0; i < n1; ++i) another_ordering[i] = i;
+        fill_medians();
+    }
 
     // delete copy constructor and assignment function
     probabilistic_median_heuristic(const probabilistic_median_heuristic<T, R>& other) = delete;
@@ -188,27 +195,22 @@ class probabilistic_median_heuristic {
             return true;
         } else if (medians[a] > medians[b]) {  // from here medians[a] == medians[b]
             return false;
-        } else if (adjacency_lists[a].size() % 2 == 1) {
+        } else if (adjacency_lists[a].size() % 2 == 1 && adjacency_lists[a].size() % 2 == 0) {
             return true;
-        } else {
+        } else if (adjacency_lists[a].size() % 2 == 0 && adjacency_lists[a].size() % 2 == 1) {
             return false;
+        } else {
+            return a < b;
         }
     }
 
     /**
      * @brief runs the probabilistic median heuristic solver
      * and stores the result in ordering
-     * 
+     *
      * @return R number of crossings
      */
-    R run() {
-        // compute initial solution with normal median heuristic
-        median_heuristic<T>(input_graph, ordering).run();
-        R best = crossing_number_of<T, R>(input_graph, ordering);
-
-        for (T i = 0; i < n1; ++i) another_ordering[i] = i;
-        fill_medians();
-
+    R run(const std::size_t nof_iterations = 1000) {
         // try to find a better solution with probabilistic median heuristic
         for (std::size_t iteration = 0; iteration < nof_iterations; ++iteration) {
             // PACE2024_DEBUG_PRINTF("%s\n", iteration);
@@ -238,7 +240,9 @@ class probabilistic_median_heuristic {
         if (nof_neighbors == 0) {
             return 0;
         } else {
-            return adjacency_lists[i][static_cast<std::size_t>(distribution(generator) * nof_neighbors)];
+            const std::size_t j = static_cast<std::size_t>(distribution(generator) * nof_neighbors);
+            assert(j < nof_neighbors);
+            return adjacency_lists[i][j];
         }
     }
 
