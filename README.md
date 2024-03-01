@@ -2,7 +2,7 @@
 ## Dependencies
 - Modern version of `gcc`; we use `c++17`.
 - `make`.
-- [GLPK](https://www.gnu.org/software/glpk/). The makefile is configured such that the glpk library should be in the standard folder `/usr/local/include`.
+- [glpk](https://www.gnu.org/software/glpk/). `make` expects the glpk library in the standard folder `/usr/local/include`.
 
 ## Compiling
 ### Tests
