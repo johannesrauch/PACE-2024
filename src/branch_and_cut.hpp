@@ -352,7 +352,7 @@ class branch_and_cut {
      * @param k
      * @return std::size_t number of found and added 3-cycle constraints: 0, 1 or 2
      */
-    inline std::size_t check_cycle_constraint(const int i, const int j, const int k) {
+    inline std::size_t check_3cycle(const int i, const int j, const int k) {
         const int index_ij = get_variable_index(i, j),
                   index_jk = get_variable_index(j, k),
                   index_ik = get_variable_index(i, k);
@@ -393,13 +393,13 @@ class branch_and_cut {
      * @return true 3-cycle found
      * @return false 3-cycle not found
      */
-    bool check_cycle_constraints() {
+    bool check_3cycles() {
         std::size_t nof_cycle_constraints = 0;
 
         for (T i = 0; i < n1; ++i) {
             for (T j = i + 1; j < n1; ++j) {
                 for (T k = j + 1; k < n1; ++k) {
-                    nof_cycle_constraints += check_cycle_constraint(i, j, k);
+                    nof_cycle_constraints += check_3cycle(i, j, k);
 
                     if (nof_cycle_constraints >
                         PACE2024_CONST_NOF_CYCLE_CONSTRAINTS) {
@@ -421,7 +421,7 @@ class branch_and_cut {
      */
     bool try_to_generate_cutting_planes() {
         PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\t\tstart checking cycle constraints\n");
-        bool success = check_cycle_constraints();
+        bool success = check_3cycles();
         PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\t\tend checking cycle constraints (%s)\n", success);
         return success;
     }
