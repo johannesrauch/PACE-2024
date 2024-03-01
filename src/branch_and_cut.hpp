@@ -261,16 +261,18 @@ class branch_and_cut {
 
    private:
     /**
-     * @brief given by how much the 3-cycle ieq is violated,
+     * @brief given by how much the 3-cycle ieq is violated, that is,
+     * # x_ij + x_jk - x_ik - 1 > 0
+     * # -x_ij - x_jk + x_ik > 0
      * returns the corresponding bucket index
      *
-     * @param val
+     * @param val in (0,1]
      * @return std::size_t bucket index
      */
     inline std::size_t get_bucket(double val) {
-        assert(1 < val);
-        assert(val <= 2);
-        const std::size_t i = static_cast<std::size_t>((val - 1) * (PACE2024_CONST_NOF_BUCKETS - 1));
+        assert(0 < val);
+        assert(val <= 1);
+        const std::size_t i = static_cast<std::size_t>(val * (PACE2024_CONST_NOF_BUCKETS - 1));
         assert(i < PACE2024_CONST_NOF_BUCKETS);
         return i;
     }
