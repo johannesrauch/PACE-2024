@@ -345,6 +345,17 @@ class branch_and_cut {
     // cutting plane methods
     //
 
+    /**
+     * @brief given the row indices ij, jk and ik, returns
+     * # x_ij + x_jk - x_ik if forward = true
+     * # -x_ij - x_jk + x_ik if forward = false
+     * 
+     * @tparam forward determines if we consider the forward or backward cycle
+     * @param ij 
+     * @param jk 
+     * @param ik 
+     * @return double 
+     */
     template <bool forward>
     inline double get_3cycle_ieq_value(const int ij, const int jk, const int ik) {
         double x_ij = glp_get_col_prim(lp, ij);
