@@ -2,7 +2,7 @@
 #define PACE2024_BRANCH_AND_CUT_HPP
 
 #ifndef PACE2024_CONST_NOF_CYCLE_CONSTRAINTS
-#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 256
+#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 128
 #endif
 
 // 1e-7 is the default tolerance in glpk for feasibility
@@ -10,11 +10,16 @@
 #define PACE2024_CONST_EPSILON 1e-7
 #endif
 
+#ifndef PACE2024_CONST_NOF_BUCKETS
+#define PACE2024_CONST_NOF_BUCKETS 1000
+#endif
+
 #include <glpk.h>
 #include <math.h>
 
 #include <functional>
 #include <stack>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
@@ -116,6 +121,11 @@ class branch_and_cut {
      * @brief stack used for branch and cut
      */
     std::stack<int> stack;
+
+    /**
+     * @brief buckets for bucket sorting violated 3-cycle ieqs
+     */
+    std::vector<std::tuple<T, T, T, bool>> buckets{PACE2024_CONST_NOF_BUCKETS};
 
    public:
     /**
@@ -250,6 +260,21 @@ class branch_and_cut {
     }
 
    private:
+   /**
+    * @brief given by how much the 3-cycle ieq is violated,
+    * returns the corresponding bucket index
+    * 
+    * @param val 
+    * @return std::size_t bucket index
+    */
+    inline std::size_t get_bucket(double val) {
+        assert(1 < val);
+        assert(val <= 2);
+        const std::size_t i = static_cast<std::size_t>((val - 1) * (PACE2024_CONST_NOF_BUCKETS - 1));
+        assert(i < PACE2024_CONST_NOF_BUCKETS);
+        return i;
+    }
+
     /**
      * @brief checks if a column (variable) of the lp is integral
      *
@@ -307,7 +332,7 @@ class branch_and_cut {
 
         // the ordering computed by the lp is the topological sort
         bool acyclic = topological_sort(digraph, ordering);
-        (void)acyclic;
+        (void)acyclic; // suppress unused warning
         assert(acyclic);
         double value = glp_get_obj_val(lp);
         assert(value >= 0);
@@ -410,9 +435,9 @@ class branch_and_cut {
      */
     void perform_permanent_fixing() {
         for (int j = 1; j <= static_cast<int>(n1_choose_2); ++j) {
-            int col_stat = glp_get_col_stat(lp, j);
+            // int col_stat = glp_get_col_stat(lp, j);
             // PACE2024_DEBUG_PRINTF("col_stat=%s\n", col_stat);
-            if (col_stat == GLP_BS) continue;
+            // if (col_stat == GLP_BS) continue;
 
             double reduced_cost = glp_get_col_dual(lp, j);
 
