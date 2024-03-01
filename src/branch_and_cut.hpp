@@ -2,7 +2,7 @@
 #define PACE2024_BRANCH_AND_CUT_HPP
 
 #ifndef PACE2024_CONST_NOF_CYCLE_CONSTRAINTS
-#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 128
+#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 1024
 #endif
 
 // 1e-7 is the default tolerance in glpk for feasibility
@@ -11,7 +11,7 @@
 #endif
 
 #ifndef PACE2024_CONST_NOF_BUCKETS
-#define PACE2024_CONST_NOF_BUCKETS 1000
+#define PACE2024_CONST_NOF_BUCKETS 10
 #endif
 
 #include <glpk.h>
@@ -19,7 +19,6 @@
 
 #include <functional>
 #include <stack>
-#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
@@ -122,10 +121,18 @@ class branch_and_cut {
      */
     std::stack<int> stack;
 
+    struct bucket_entry {
+        const int ij, jk, ik;
+        const bool forward;
+
+        explicit bucket_entry(const int ij, const int jk, const int ik, const bool forward)
+            : ij(ij), jk(jk), ik(ik), forward(forward) {}
+    };
+
     /**
      * @brief buckets for bucket sorting violated 3-cycle ieqs
      */
-    std::vector<std::tuple<T, T, T, bool>> buckets{PACE2024_CONST_NOF_BUCKETS};
+    std::vector<std::vector<bucket_entry>> buckets{PACE2024_CONST_NOF_BUCKETS};
 
    public:
     /**
@@ -153,11 +160,14 @@ class branch_and_cut {
         glp_set_obj_dir(lp, GLP_MIN);
 
         // compute the crossing numbers and add respective variables to the lp
-        PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\tconstructing lp\n");
+        PACE2024_DEBUG_PRINTF("start constructing lp\n");
         construct_lp();
+        PACE2024_DEBUG_PRINTF("end constructing lp\n");
 
         // compute a first heuristic solution for an upper bound
-        median_heuristic(graph, ordering).run();
+        PACE2024_DEBUG_PRINTF("start heuristic\n");
+        probabilistic_median_heuristic<T, R>(graph, ordering).run();
+        PACE2024_DEBUG_PRINTF("end heuristic\n");
         upper_bound = crossing_number_of<T, R>(graph, ordering);
     }
 
@@ -242,6 +252,16 @@ class branch_and_cut {
     // helper methods
     //
 
+   private:
+    /**
+     * @brief erases contents of each bucket in buckets
+     */
+    inline void clear_buckets() {
+        for (auto &bucket : buckets) {
+            bucket.clear();
+        }
+    }
+
    public:
     /**
      * @brief converts an index pair i, j, i < j, to the lp column (variable)
@@ -251,7 +271,7 @@ class branch_and_cut {
      * @param j
      * @return int lp column index
      */
-    inline int get_variable_index(const int i, const int j) {
+    inline int get_variable_index(const int &i, const int &j) {
         assert(i < j);
         int offset = n1_choose_2 - (n1 - i) * (n1 - i - 1) / 2;
         int index = offset + j - i;
@@ -269,12 +289,22 @@ class branch_and_cut {
      * @param val in (0,1]
      * @return std::size_t bucket index
      */
-    inline std::size_t get_bucket(double val) {
+    inline std::size_t get_bucket(const double &val) {
         assert(0 < val);
-        assert(val <= 1);
+        assert(val <= 1 + 10 * PACE2024_CONST_EPSILON);
         const std::size_t i = static_cast<std::size_t>(val * (PACE2024_CONST_NOF_BUCKETS - 1));
         assert(i < PACE2024_CONST_NOF_BUCKETS);
         return i;
+    }
+
+    /**
+     * @brief returns if the last bucket is full
+     *
+     * @return true if last bucket has >= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS elements
+     * @return false otherwise
+     */
+    inline bool is_last_bucket_full() {
+        return (*buckets.rbegin()).size() >= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS;
     }
 
     /**
@@ -284,7 +314,7 @@ class branch_and_cut {
      * @return true if integral
      * @return false if not
      */
-    inline bool is_column_integral(int j) {
+    inline bool is_column_integral(const int &j) {
         double x = glp_get_col_prim(lp, j);
         if (x > PACE2024_CONST_EPSILON && x < 1. - PACE2024_CONST_EPSILON) {
             return false;
@@ -344,32 +374,6 @@ class branch_and_cut {
     //
     // cutting plane methods
     //
-
-    /**
-     * @brief adds the forward or backward 3-cycle ieq (depending on forward)
-     * for the variables with indices ij, jk and ik
-     *
-     * @tparam forward
-     * @param ij
-     * @param jk
-     * @param ik
-     */
-    template <bool forward>
-    inline void add_3cycle_ieq(const int &ij, const int &jk, const int &ik) {
-        if constexpr (forward) {
-            int row = glp_add_rows(lp, 1);
-            glp_set_row_bnds(lp, row, GLP_UP, 0., 1.);
-            const int indices[4] = {0, ij, jk, ik};
-            const double coefficients[4] = {0, 1., 1., -1.};
-            glp_set_mat_row(lp, row, 3, indices, coefficients);
-        } else {
-            int row = glp_add_rows(lp, 1);
-            glp_set_row_bnds(lp, row, GLP_UP, 0., 0.);
-            const int indices[4] = {0, ij, jk, ik};
-            const double coefficients[4] = {0, -1., -1., 1.};
-            glp_set_mat_row(lp, row, 3, indices, coefficients);
-        }
-    }
 
     /**
      * @brief given the row indices ij, jk and ik, returns
@@ -452,15 +456,56 @@ class branch_and_cut {
         return nof_cycle_constraints > 0;
     }
 
+    /**
+     * @brief checks the two 3-cycle inequalities for the vertices i, j and k.
+     * if they are violated by val, they are added to the bucket corresponding to val.
+     *
+     * @param i
+     * @param j
+     * @param k
+     * @return true violated 3-cycle ieq found
+     * @return false otherwise
+     */
     bool check_3cycle_and_bucket_it(const int i, const int j, const int k) {
         const int ij = get_variable_index(i, j),
                   jk = get_variable_index(j, k),
                   ik = get_variable_index(i, k);
-        return false;
+
+        bool new_constraints = false;
+
+        // cycle ijk
+        double val = get_3cycle_ieq_value<true>(ij, jk, ik);
+        if (val > 1) {
+            new_constraints = true;
+            buckets[get_bucket(val - 1)].emplace_back(ij, jk, ik, true);
+        }
+
+        // cycle ikj
+        val = get_3cycle_ieq_value<false>(ij, jk, ik);
+        if (val > 0) {
+            new_constraints = true;
+            buckets[get_bucket(val)].emplace_back(ij, jk, ik, false);
+        }
+
+        return new_constraints;
     }
 
     bool check_3cycles_exhaustively() {
-        return false;
+        clear_buckets();
+
+        for (T i = 0; i < n1; ++i) {
+            for (T j = i + 1; j < n1; ++j) {
+                for (T k = j + 1; k < n1; ++k) {
+                    bool new_constraints = check_3cycle_and_bucket_it(i, j, k);
+                    if (new_constraints && is_last_bucket_full()) {
+                        goto break_for_loops;
+                    }
+                }
+            }
+        }
+
+    break_for_loops:
+        return add_3cycle_ieqs_most_violated();
     }
 
     /**
@@ -471,15 +516,70 @@ class branch_and_cut {
      * @return false otherwise
      */
     bool try_to_generate_cutting_planes() {
-        PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\t\tstart checking cycle constraints\n");
-        bool success = check_3cycles();
-        PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\t\tend checking cycle constraints (%s)\n", success);
+        PACE2024_DEBUG_PRINTF("\tstart checking cycle constraints\n");
+        bool success = check_3cycles_exhaustively();
+        PACE2024_DEBUG_PRINTF("\tend checking cycle constraints (%s)\n", success);
         return success;
     }
 
     //
-    // variable fixing methods
+    // lp row modification methods
     //
+
+    /**
+     * @brief adds the forward or backward 3-cycle ieq (depending on forward)
+     * for the variables with indices ij, jk and ik
+     *
+     * @tparam forward
+     * @param ij
+     * @param jk
+     * @param ik
+     */
+    template <bool forward>
+    inline void add_3cycle_ieq(const int &ij, const int &jk, const int &ik) {
+        if constexpr (forward) {
+            int row = glp_add_rows(lp, 1);
+            glp_set_row_bnds(lp, row, GLP_UP, 0., 1.);
+            const int indices[4] = {0, ij, jk, ik};
+            const double coefficients[4] = {0, 1., 1., -1.};
+            glp_set_mat_row(lp, row, 3, indices, coefficients);
+        } else {
+            int row = glp_add_rows(lp, 1);
+            glp_set_row_bnds(lp, row, GLP_UP, 0., 0.);
+            const int indices[4] = {0, ij, jk, ik};
+            const double coefficients[4] = {0, -1., -1., 1.};
+            glp_set_mat_row(lp, row, 3, indices, coefficients);
+        }
+    }
+
+    /**
+     * @brief expects the violated 3-cycle ieqs in buckets.
+     * adds the most violated <= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS to the lp.
+     *
+     * @return true violated 3-cycle ieq found
+     * @return false otherwise
+     */
+    inline bool add_3cycle_ieqs_most_violated() {
+        std::size_t nof_new_cycle_constraints{0};
+
+        for (auto r_it = buckets.rbegin(); r_it != buckets.rend(); ++r_it) {
+            for (const auto &[ij, jk, ik, forward] : *r_it) {
+                ++nof_new_cycle_constraints;
+                if (forward) {
+                    add_3cycle_ieq<true>(ij, jk, ik);
+                } else {
+                    add_3cycle_ieq<false>(ij, jk, ik);
+                }
+
+                if (nof_new_cycle_constraints >
+                    PACE2024_CONST_NOF_CYCLE_CONSTRAINTS) {
+                    return true;
+                }
+            }
+        }
+
+        return nof_new_cycle_constraints > 0;
+    }
 
     /**
      * @brief fixes variables according to the reduced cost condition
@@ -495,15 +595,19 @@ class branch_and_cut {
             if (initial_solution[j] == 0 &&
                 static_cast<double>(lower_bound) + reduced_cost >= static_cast<double>(upper_bound)) {
                 glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);
-                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\t\tpermanent fixing of %d\n", j);
+                PACE2024_DEBUG_PRINTF("\tpermanent fixing of %d\n", j);
             }
 
             if (initial_solution[j] == 1 &&
                 static_cast<double>(lower_bound) - reduced_cost >= static_cast<double>(upper_bound)) {
                 glp_set_col_bnds(lp, j, GLP_FX, 1., 1.);
-                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\t\tpermanent fixing of %d\n", j);
+                PACE2024_DEBUG_PRINTF("\tpermanent fixing of %d\n", j);
             }
         }
+    }
+
+    void delete_positive_slack_ieqs() {
+
     }
 
     //
@@ -609,12 +713,16 @@ class branch_and_cut {
 
         if (!optimum) {
             for (std::size_t iteration = 0;; ++iteration) {
+                if (iteration % 1000 == 0) {
+                    fmt::printf("depth=%d, upper_bound=%d\n", stack.size(), upper_bound);
+                }
+
                 // solve the lp
-                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\tstart simplex\n");
+                PACE2024_DEBUG_PRINTF("start simplex\n", stack.size());
                 glp_simplex(lp, &params);
                 status = glp_get_status(lp);
                 assert(status == GLP_OPT);
-                PACE2024_DEBUG_PRINTF("pace2024::branch_and_cut\tend simplex\n");
+                PACE2024_DEBUG_PRINTF("end simplex\n");
 
                 // get value of current optimal solution and call branch_n_cut with it
                 value = glp_get_obj_val(lp);
