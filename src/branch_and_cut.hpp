@@ -260,13 +260,13 @@ class branch_and_cut {
     }
 
    private:
-   /**
-    * @brief given by how much the 3-cycle ieq is violated,
-    * returns the corresponding bucket index
-    * 
-    * @param val 
-    * @return std::size_t bucket index
-    */
+    /**
+     * @brief given by how much the 3-cycle ieq is violated,
+     * returns the corresponding bucket index
+     *
+     * @param val
+     * @return std::size_t bucket index
+     */
     inline std::size_t get_bucket(double val) {
         assert(1 < val);
         assert(val <= 2);
@@ -332,7 +332,7 @@ class branch_and_cut {
 
         // the ordering computed by the lp is the topological sort
         bool acyclic = topological_sort(digraph, ordering);
-        (void)acyclic; // suppress unused warning
+        (void)acyclic;  // suppress unused warning
         assert(acyclic);
         double value = glp_get_obj_val(lp);
         assert(value >= 0);
@@ -342,6 +342,19 @@ class branch_and_cut {
     //
     // cutting plane methods
     //
+
+    template <bool forward>
+    inline double get_3cycle_ieq_value(const int ij, const int jk, const int ik) {
+        double x_ij = glp_get_col_prim(lp, ij);
+        double x_jk = glp_get_col_prim(lp, jk);
+        double x_ik = glp_get_col_prim(lp, ik);
+
+        if constexpr (forward) {
+            return x_ij + x_jk - x_ik;
+        } else {
+            return -x_ij - x_jk + x_ik;
+        }
+    }
 
     /**
      * @brief given the vertices i, j, k, checks the 3-cycle constraints
@@ -353,32 +366,28 @@ class branch_and_cut {
      * @return std::size_t number of found and added 3-cycle constraints: 0, 1 or 2
      */
     inline std::size_t check_3cycle(const int i, const int j, const int k) {
-        const int index_ij = get_variable_index(i, j),
-                  index_jk = get_variable_index(j, k),
-                  index_ik = get_variable_index(i, k);
-
-        double x_ij = glp_get_col_prim(lp, index_ij);
-        double x_jk = glp_get_col_prim(lp, index_jk);
-        double x_ik = glp_get_col_prim(lp, index_ik);
+        const int ij = get_variable_index(i, j),
+                  jk = get_variable_index(j, k),
+                  ik = get_variable_index(i, k);
 
         std::size_t nof_new_cycle_constraints = 0;
 
         // cycle ijk
-        if (x_ij + x_jk - x_ik > 1) {
+        if (get_3cycle_ieq_value<true>(ij, jk, ik) > 1) {
             ++nof_new_cycle_constraints;
             int row = glp_add_rows(lp, 1);
             glp_set_row_bnds(lp, row, GLP_UP, 0., 1.);
-            const int indices[4] = {0, index_ij, index_jk, index_ik};
+            const int indices[4] = {0, ij, jk, ik};
             const double coefficients[4] = {0, 1., 1., -1.};
             glp_set_mat_row(lp, row, 3, indices, coefficients);
         }
 
         // cycle ikj
-        if (x_ik - x_ij - x_jk > 0) {
+        if (get_3cycle_ieq_value<false>(ij, jk, ik) > 0) {
             ++nof_new_cycle_constraints;
             int row = glp_add_rows(lp, 1);
             glp_set_row_bnds(lp, row, GLP_UP, 0., 0.);
-            const int indices[4] = {0, index_ij, index_jk, index_ik};
+            const int indices[4] = {0, ij, jk, ik};
             const double coefficients[4] = {0, -1., -1., 1.};
             glp_set_mat_row(lp, row, 3, indices, coefficients);
         }
@@ -388,7 +397,7 @@ class branch_and_cut {
 
     /**
      * @brief tries to find violated 3-cycle constraints
-     * and adds them to the lp
+     * and adds the first <= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS to the lp
      *
      * @return true 3-cycle found
      * @return false 3-cycle not found
