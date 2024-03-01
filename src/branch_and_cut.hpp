@@ -495,6 +495,7 @@ class branch_and_cut {
                     perform_permanent_fixing();
                     return backtrack_fix_column();
                 } else {
+                    // todo: better selection of 3-cycle ieqs to add
                     // todo: improve solution with heuristic
                     // todo: permanent fixing
                     // todo: transitivity
