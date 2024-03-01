@@ -346,18 +346,44 @@ class branch_and_cut {
     //
 
     /**
+     * @brief adds the forward or backward 3-cycle ieq (depending on forward)
+     * for the variables with indices ij, jk and ik
+     *
+     * @tparam forward
+     * @param ij
+     * @param jk
+     * @param ik
+     */
+    template <bool forward>
+    inline void add_3cycle_ieq(const int &ij, const int &jk, const int &ik) {
+        if constexpr (forward) {
+            int row = glp_add_rows(lp, 1);
+            glp_set_row_bnds(lp, row, GLP_UP, 0., 1.);
+            const int indices[4] = {0, ij, jk, ik};
+            const double coefficients[4] = {0, 1., 1., -1.};
+            glp_set_mat_row(lp, row, 3, indices, coefficients);
+        } else {
+            int row = glp_add_rows(lp, 1);
+            glp_set_row_bnds(lp, row, GLP_UP, 0., 0.);
+            const int indices[4] = {0, ij, jk, ik};
+            const double coefficients[4] = {0, -1., -1., 1.};
+            glp_set_mat_row(lp, row, 3, indices, coefficients);
+        }
+    }
+
+    /**
      * @brief given the row indices ij, jk and ik, returns
      * # x_ij + x_jk - x_ik if forward = true
      * # -x_ij - x_jk + x_ik if forward = false
-     * 
+     *
      * @tparam forward determines if we consider the forward or backward cycle
-     * @param ij 
-     * @param jk 
-     * @param ik 
-     * @return double 
+     * @param ij
+     * @param jk
+     * @param ik
+     * @return double
      */
     template <bool forward>
-    inline double get_3cycle_ieq_value(const int ij, const int jk, const int ik) {
+    inline double get_3cycle_ieq_value(const int &ij, const int &jk, const int &ik) {
         double x_ij = glp_get_col_prim(lp, ij);
         double x_jk = glp_get_col_prim(lp, jk);
         double x_ik = glp_get_col_prim(lp, ik);
@@ -388,21 +414,13 @@ class branch_and_cut {
         // cycle ijk
         if (get_3cycle_ieq_value<true>(ij, jk, ik) > 1) {
             ++nof_new_cycle_constraints;
-            int row = glp_add_rows(lp, 1);
-            glp_set_row_bnds(lp, row, GLP_UP, 0., 1.);
-            const int indices[4] = {0, ij, jk, ik};
-            const double coefficients[4] = {0, 1., 1., -1.};
-            glp_set_mat_row(lp, row, 3, indices, coefficients);
+            add_3cycle_ieq<true>(ij, jk, ik);
         }
 
         // cycle ikj
         if (get_3cycle_ieq_value<false>(ij, jk, ik) > 0) {
             ++nof_new_cycle_constraints;
-            int row = glp_add_rows(lp, 1);
-            glp_set_row_bnds(lp, row, GLP_UP, 0., 0.);
-            const int indices[4] = {0, ij, jk, ik};
-            const double coefficients[4] = {0, -1., -1., 1.};
-            glp_set_mat_row(lp, row, 3, indices, coefficients);
+            add_3cycle_ieq<false>(ij, jk, ik);
         }
 
         return nof_new_cycle_constraints;
@@ -432,6 +450,17 @@ class branch_and_cut {
         }
 
         return nof_cycle_constraints > 0;
+    }
+
+    bool check_3cycle_and_bucket_it(const int i, const int j, const int k) {
+        const int ij = get_variable_index(i, j),
+                  jk = get_variable_index(j, k),
+                  ik = get_variable_index(i, k);
+        return false;
+    }
+
+    bool check_3cycles_exhaustively() {
+        return false;
     }
 
     /**
