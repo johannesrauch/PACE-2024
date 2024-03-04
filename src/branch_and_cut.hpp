@@ -607,7 +607,7 @@ class branch_and_cut {
     }
 
     void delete_positive_slack_ieqs() {
-
+        if (stack.size() > 0) return;
     }
 
     //
