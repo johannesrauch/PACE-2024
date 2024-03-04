@@ -8,7 +8,7 @@ else
 	CXXFLAGS += -g
 endif
 
-ifdef SILENT
+ifdef VERBOSE
 	CXXFLAGS += -DNDEBUG_PRINT
 endif
 
