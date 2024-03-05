@@ -571,7 +571,7 @@ class branch_and_cut {
             if (std::abs(coeff) >= static_cast<double>(diff) && coeff != 0.) {
                 const double fix = coeff > 0 ? 0. : 1.;
                 PACE2024_DEBUG_PRINTF("fixed variable %5d to %1.0f permanently\n", j, fix);
-                glp_set_col_bnds(lp, j, GLP_FX, fix, 0.); // ub is ignored
+                glp_set_col_bnds(lp, j, GLP_FX, fix, 0.);  // ub is ignored
             }
         }
     }
@@ -657,8 +657,8 @@ class branch_and_cut {
                     branch(j);
                 }
             }
+            return false;
         }
-        return false;
     }
 
    public:
