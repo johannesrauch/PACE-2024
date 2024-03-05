@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cfloat>
+#include <cmath>
 #include <functional>
 #include <stack>
 #include <type_traits>
@@ -71,12 +72,6 @@ class branch_and_cut {
      * @brief obj_val_offset + the obj_val of the lp = number of crossings
      */
     R obj_val_offset{0};
-
-    /**
-     * @brief stores an optimal solution to the lp without constraints
-     * used for permanent variable fixing
-     */
-    std::vector<uint8_t> initial_solution;
 
     //
     // solution related attributes
@@ -146,7 +141,6 @@ class branch_and_cut {
           n1(graph.get_n1()),
           n1_choose_2(n1 * (n1 - 1) / 2),
           lp(glp_create_prob()),
-          initial_solution(n1_choose_2 + 1),
           ordering(n1),
           digraph(n1) {
         assert(n1 > 0);
@@ -219,10 +213,8 @@ class branch_and_cut {
         // lower_bound = sum min(c_ij, c_ji)
         if (c_ij < c_ji) {
             lower_bound += c_ij;
-            initial_solution[k] = 1;
         } else {
             lower_bound += c_ji;
-            initial_solution[k] = 0;
         }
 
         // obj_val_offset = sum c_ji (since we subtract the c_ji for the coefficients)
@@ -523,7 +515,7 @@ class branch_and_cut {
      */
     bool cut() {
         bool success = check_3cycles();
-        // todo: 
+        // todo:
         return success;
     }
 
@@ -572,19 +564,14 @@ class branch_and_cut {
      */
     void fix_variables_permanently() {
         for (int j = 1; j <= static_cast<int>(n1_choose_2); ++j) {
+            assert(lower_bound <= upper_bound);
+            const R diff = upper_bound - lower_bound;
             const double coeff = glp_get_obj_coef(lp, j);
 
-            if (initial_solution[j] == 0) {
-                if (static_cast<double>(lower_bound) + coeff >= static_cast<double>(upper_bound)) {
-                    glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);
-                    PACE2024_DEBUG_PRINTF("fixed variable %5d to 0 permanently\n", j);
-                }
-            } else {
-                assert(initial_solution[j] == 1);
-                if (static_cast<double>(lower_bound) - coeff >= static_cast<double>(upper_bound)) {
-                    glp_set_col_bnds(lp, j, GLP_FX, 1., 0.);
-                    PACE2024_DEBUG_PRINTF("fixed variable %5d to 1 permanently\n", j);
-                }
+            if (std::abs(coeff) >= static_cast<double>(diff) && coeff != 0.) {
+                const double fix = coeff > 0 ? 0. : 1.;
+                PACE2024_DEBUG_PRINTF("fixed variable %5d to %1.0f permanently\n", j, fix);
+                glp_set_col_bnds(lp, j, GLP_FX, fix, 0.); // ub is ignored
             }
         }
     }
