@@ -222,11 +222,11 @@ class branch_and_cut {
 
         if (c_ij == 0 && c_ji != 0) {
             // fix i < j in the ordering
-            PACE2024_DEBUG_PRINTF("fixed variable %5d to 1 permanently\n", k);
+            PACE2024_DEBUG_PRINTF("fixed variable %5d to 1 permanently (%llu,%llu)\n", k, c_ij, c_ji);
             glp_set_col_bnds(lp, k, GLP_FX, 1., 0.);  // ub is ignored
         } else if (c_ji == 0 && c_ij != 0) {
             // fix j < i in the ordering
-            PACE2024_DEBUG_PRINTF("fixed variable %5d to 0 permanently\n", k);
+            PACE2024_DEBUG_PRINTF("fixed variable %5d to 0 permanently (%llu,%llu)\n", k, c_ij, c_ji);
             glp_set_col_bnds(lp, k, GLP_FX, 0., 0.);  // ub is ignored
         } else {
             // set 0 <= x_ij <= 1
@@ -236,8 +236,8 @@ class branch_and_cut {
 
         // set coefficient of added column
         if (c_ij != c_ji) {
-            double coef = static_cast<double>(c_ij) - static_cast<double>(c_ji);
-            glp_set_obj_coef(lp, k, coef);
+            const double coeff = static_cast<double>(c_ij) - static_cast<double>(c_ji);
+            glp_set_obj_coef(lp, k, coeff);
         }
     }
 
