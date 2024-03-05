@@ -10,5 +10,5 @@ clean:
 	@if [ $* != "all" ]; then\
 		$(CXX) $(CXXFLAGS) -c $*.cpp && \
 		$(CXX) $*.o $(LFLAGS) -o $*.exe && \
-		./$*.exe > $*.log; \
+		./$*.exe; \
 	fi
