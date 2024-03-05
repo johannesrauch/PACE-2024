@@ -626,7 +626,6 @@ class branch_and_cut {
      * or if we branch,
      * or if we backtrack.
      *
-     * @param value optimal value of current lp
      * @return true optimal solution found
      * @return false otherwise
      */
@@ -639,25 +638,24 @@ class branch_and_cut {
             // then we found an optimal solution
             return backtrack();
         } else {
-            // try to generate cutting planes
-            bool successul = cut();
+            // try to generate cutting planes, return if successful
+            bool successful = cut();
+            if (successful) return false;
 
-            if (!successul) {
-                int j = is_solution_integral();
-                if (j == 0) {
-                    // the solution is integral; we found a better solution
-                    compute_ordering();
-                    fix_variables_permanently();
-                    return backtrack();
-                } else {
-                    // todo: improve solution with heuristic
-                    // todo: transitivity
-                    // todo: better selection
-                    // branch by fixing a column
-                    branch(j);
-                }
+            int j = is_solution_integral();
+            if (j == 0) {
+                // the solution is integral; we found a better solution
+                compute_ordering();
+                fix_variables_permanently();
+                return backtrack();
+            } else {
+                // todo: improve solution with heuristic
+                // todo: transitivity
+                // todo: better selection
+                // branch by fixing a column
+                branch(j);
+                return false;
             }
-            return false;
         }
     }
 
@@ -671,6 +669,7 @@ class branch_and_cut {
     void solve(bool do_print = true) {
         // solve the lp
         glp_simplex(lp, &params);
+        glp_exact(lp, &params);
         int status = glp_get_status(lp);
         (void)status;
         assert(status == GLP_OPT);
@@ -692,6 +691,7 @@ class branch_and_cut {
             // solve the lp
             PACE2024_DEBUG_PRINTF("start glp_simplex\n", stack.size());
             glp_simplex(lp, &params);
+            glp_exact(lp, &params);
             status = glp_get_status(lp);
             PACE2024_DEBUG_PRINTF("end   glp_simplex, status=%d, objective value=%f\n", status, glp_get_obj_val(lp));
             (void)status;
