@@ -228,11 +228,11 @@ class branch_and_cut {
         // obj_val_offset = sum c_ji (since we subtract the c_ji for the coefficients)
         obj_val_offset += c_ji;
 
-        if (c_ij == 0) {
+        if (c_ij == 0 && c_ji != 0) {
             // fix i < j in the ordering
             PACE2024_DEBUG_PRINTF("fixed variable %5d to 1\n", k);
             glp_set_col_bnds(lp, k, GLP_FX, 1., 0.);  // ub is ignored
-        } else if (c_ji == 0) {
+        } else if (c_ji == 0 && c_ij != 0) {
             // fix j < i in the ordering
             PACE2024_DEBUG_PRINTF("fixed variable %5d to 0\n", k);
             glp_set_col_bnds(lp, k, GLP_FX, 0., 0.);  // ub is ignored
@@ -243,8 +243,10 @@ class branch_and_cut {
         // todo: if d(i)=d(j), check if fixing is possible
 
         // set coefficient of added column
-        double coef = static_cast<double>(c_ij) - static_cast<double>(c_ji);
-        glp_set_obj_coef(lp, k, coef);
+        if (c_ij != c_ji) {
+            double coef = static_cast<double>(c_ij) - static_cast<double>(c_ji);
+            glp_set_obj_coef(lp, k, coef);
+        }
     }
 
     //
@@ -571,7 +573,7 @@ class branch_and_cut {
      */
     void fix_variables_permanently() {
         for (int j = 1; j <= static_cast<int>(n1_choose_2); ++j) {
-            double coeff = glp_get_obj_coef(lp, j);
+            const double coeff = glp_get_obj_coef(lp, j);
 
             if (initial_solution[j] == 0) {
                 if (static_cast<double>(lower_bound) + coeff >= static_cast<double>(upper_bound)) {
@@ -659,7 +661,7 @@ class branch_and_cut {
                 if (j == 0) {
                     // the solution is integral; we found a better solution
                     compute_ordering();
-                    fix_variables_permanently();
+                    // fix_variables_permanently();
                     return backtrack();
                 } else {
                     // todo: improve solution with heuristic
