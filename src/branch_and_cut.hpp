@@ -2,7 +2,7 @@
 #define PACE2024_BRANCH_AND_CUT_HPP
 
 #ifndef PACE2024_CONST_NOF_CYCLE_CONSTRAINTS
-#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 1024
+#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 512
 #endif
 
 #ifndef PACE2024_CONST_NOF_BUCKETS
@@ -159,12 +159,12 @@ class branch_and_cut {
         // compute the crossing numbers and add respective variables to the lp
         PACE2024_DEBUG_PRINTF("start constructing lp\n");
         construct_lp();
-        PACE2024_DEBUG_PRINTF("end constructing lp\n");
+        PACE2024_DEBUG_PRINTF("end   constructing lp\n");
 
         // compute a first heuristic solution for an upper bound
         PACE2024_DEBUG_PRINTF("start heuristic\n");
         probabilistic_median_heuristic<T, R>(graph, ordering).run();
-        PACE2024_DEBUG_PRINTF("end heuristic\n");
+        PACE2024_DEBUG_PRINTF("end   heuristic\n");
         upper_bound = crossing_number_of<T, R>(graph, ordering);
     }
 
@@ -512,7 +512,7 @@ class branch_and_cut {
         }
 
         const std::size_t nof_new_rows = add_3cycle_ieq_bnds();
-        PACE2024_DEBUG_PRINTF("\tend check_3cycles, number of new rows=%lld\n", nof_new_rows);
+        PACE2024_DEBUG_PRINTF("\tend   check_3cycles, number of new rows=%lld\n", nof_new_rows);
         return nof_new_rows > 0;
     }
 
@@ -560,7 +560,7 @@ class branch_and_cut {
 
         const int nof_removed_rows = static_cast<int>(rows_to_remove.size()) - 1;
         if (nof_removed_rows > 0) {
-            PACE2024_DEBUG_PRINTF("\tend remove_positive_slack_ieqs, number of removed rows=%lld\n", nof_removed_rows);
+            PACE2024_DEBUG_PRINTF("\tend   remove_positive_slack_ieqs, number of removed rows=%lld\n", nof_removed_rows);
             glp_del_rows(lp, nof_removed_rows, &rows_to_remove[0]);
         }
     }
@@ -612,10 +612,10 @@ class branch_and_cut {
         stack.pop();
         const double fix = glp_get_col_lb(lp, j);
         if (fix > 0.5) {
-            PACE2024_DEBUG_PRINTF("\tfix_column %d to 0\n", j);
+            PACE2024_DEBUG_PRINTF("\tbacktrack: fixed variable %d to 0\n", j);
             glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);  // ub is ignored
         } else {
-            PACE2024_DEBUG_PRINTF("\tfix_column %d to 1\n", j);
+            PACE2024_DEBUG_PRINTF("\tbacktrack: fixed variable %d to 1\n", j);
             glp_set_col_bnds(lp, j, GLP_FX, 1., 0.);  // ub is ignored
         }
 
@@ -708,7 +708,7 @@ class branch_and_cut {
             PACE2024_DEBUG_PRINTF("start glp_simplex\n", stack.size());
             glp_simplex(lp, &params);
             status = glp_get_status(lp);
-            PACE2024_DEBUG_PRINTF("end glp_simplex, status=%d, objective value=%f\n", status, glp_get_obj_val(lp));
+            PACE2024_DEBUG_PRINTF("end   glp_simplex, status=%d, objective value=%f\n", status, glp_get_obj_val(lp));
             (void)status;
             assert(status == GLP_OPT);
 
