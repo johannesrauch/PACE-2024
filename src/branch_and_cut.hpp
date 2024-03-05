@@ -230,9 +230,11 @@ class branch_and_cut {
 
         if (c_ij == 0) {
             // fix i < j in the ordering
+            PACE2024_DEBUG_PRINTF("fixed variable %5d to 1\n", k);
             glp_set_col_bnds(lp, k, GLP_FX, 1., 0.);  // ub is ignored
         } else if (c_ji == 0) {
             // fix j < i in the ordering
+            PACE2024_DEBUG_PRINTF("fixed variable %5d to 0\n", k);
             glp_set_col_bnds(lp, k, GLP_FX, 0., 0.);  // ub is ignored
         } else {
             // set 0 <= x_ij <= 1
@@ -497,7 +499,7 @@ class branch_and_cut {
 
     bool check_3cycles() {
         PACE2024_DEBUG_PRINTF("\tstart check_3cycles\n");
-        
+
         clear_buckets();
         for (T i = 0; i < n1; ++i) {
             for (T j = i + 1; j < n1; ++j) {
@@ -567,24 +569,21 @@ class branch_and_cut {
     /**
      * @brief fixes variables according to the reduced cost condition
      */
-    void perform_permanent_fixing() {
+    void fix_variables_permanently() {
         for (int j = 1; j <= static_cast<int>(n1_choose_2); ++j) {
-            // int col_stat = glp_get_col_stat(lp, j);
-            // PACE2024_DEBUG_PRINTF("col_stat=%s\n", col_stat);
-            // if (col_stat == GLP_BS) continue;
+            double coeff = glp_get_obj_coef(lp, j);
 
-            double reduced_cost = glp_get_col_dual(lp, j);
-
-            if (initial_solution[j] == 0 &&
-                static_cast<double>(lower_bound) + reduced_cost >= static_cast<double>(upper_bound)) {
-                glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);
-                PACE2024_DEBUG_PRINTF("\tpermanent fixing of %d\n", j);
-            }
-
-            if (initial_solution[j] == 1 &&
-                static_cast<double>(lower_bound) - reduced_cost >= static_cast<double>(upper_bound)) {
-                glp_set_col_bnds(lp, j, GLP_FX, 1., 0.);
-                PACE2024_DEBUG_PRINTF("\tpermanent fixing of %d\n", j);
+            if (initial_solution[j] == 0) {
+                if (static_cast<double>(lower_bound) + coeff >= static_cast<double>(upper_bound)) {
+                    glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);
+                    PACE2024_DEBUG_PRINTF("fixed variable %5d to 0\n", j);
+                }
+            } else {
+                assert(initial_solution[j] == 1);
+                if (static_cast<double>(lower_bound) - coeff >= static_cast<double>(upper_bound)) {
+                    glp_set_col_bnds(lp, j, GLP_FX, 1., 0.);
+                    PACE2024_DEBUG_PRINTF("fixed variable %5d to 1\n", j);
+                }
             }
         }
     }
@@ -660,7 +659,7 @@ class branch_and_cut {
                 if (j == 0) {
                     // the solution is integral; we found a better solution
                     compute_ordering();
-                    perform_permanent_fixing();
+                    fix_variables_permanently();
                     return backtrack();
                 } else {
                     // todo: improve solution with heuristic
@@ -689,7 +688,7 @@ class branch_and_cut {
         assert(status == GLP_OPT);
 
         // perform initial permanent fixing since we already have a heuristic solution
-        perform_permanent_fixing();
+        // fix_variables_permanently();
 
         // get value of current optimal solution and call branch_n_cut with it
         bool is_optimum = branch_n_cut();
@@ -706,9 +705,9 @@ class branch_and_cut {
             PACE2024_DEBUG_PRINTF("start glp_simplex\n", stack.size());
             glp_simplex(lp, &params);
             status = glp_get_status(lp);
-            (void) status;
-            // assert(status == GLP_OPT);
             PACE2024_DEBUG_PRINTF("end glp_simplex, status=%d, objective value=%f\n", status, glp_get_obj_val(lp));
+            (void)status;
+            assert(status == GLP_OPT);
 
             // delete untight ieqs
             remove_positive_slack_ieqs();
