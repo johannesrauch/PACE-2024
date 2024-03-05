@@ -42,3 +42,4 @@
 .gdb_history
 
 dep
+*.log
