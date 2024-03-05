@@ -230,11 +230,11 @@ class branch_and_cut {
 
         if (c_ij == 0 && c_ji != 0) {
             // fix i < j in the ordering
-            PACE2024_DEBUG_PRINTF("fixed variable %5d to 1\n", k);
+            PACE2024_DEBUG_PRINTF("fixed variable %5d to 1 permanently\n", k);
             glp_set_col_bnds(lp, k, GLP_FX, 1., 0.);  // ub is ignored
         } else if (c_ji == 0 && c_ij != 0) {
             // fix j < i in the ordering
-            PACE2024_DEBUG_PRINTF("fixed variable %5d to 0\n", k);
+            PACE2024_DEBUG_PRINTF("fixed variable %5d to 0 permanently\n", k);
             glp_set_col_bnds(lp, k, GLP_FX, 0., 0.);  // ub is ignored
         } else {
             // set 0 <= x_ij <= 1
@@ -525,6 +525,7 @@ class branch_and_cut {
      */
     bool cut() {
         bool success = check_3cycles();
+        // todo: 
         return success;
     }
 
@@ -578,13 +579,13 @@ class branch_and_cut {
             if (initial_solution[j] == 0) {
                 if (static_cast<double>(lower_bound) + coeff >= static_cast<double>(upper_bound)) {
                     glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);
-                    PACE2024_DEBUG_PRINTF("fixed variable %5d to 0\n", j);
+                    PACE2024_DEBUG_PRINTF("fixed variable %5d to 0 permanently\n", j);
                 }
             } else {
                 assert(initial_solution[j] == 1);
                 if (static_cast<double>(lower_bound) - coeff >= static_cast<double>(upper_bound)) {
                     glp_set_col_bnds(lp, j, GLP_FX, 1., 0.);
-                    PACE2024_DEBUG_PRINTF("fixed variable %5d to 1\n", j);
+                    PACE2024_DEBUG_PRINTF("fixed variable %5d to 1 permanently\n", j);
                 }
             }
         }
@@ -629,7 +630,7 @@ class branch_and_cut {
     inline void branch(const int &j) {
         // todo: more sophisticated fixing
         // todo: fix implications, too
-        PACE2024_DEBUG_PRINTF("\tfix_column %d to 0\n", j);
+        PACE2024_DEBUG_PRINTF("\tbranch: fixed variable %d to 0\n", j);
         glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);
         stack.emplace(j);
     }
