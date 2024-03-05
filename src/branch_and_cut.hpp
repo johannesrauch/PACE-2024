@@ -373,19 +373,17 @@ class branch_and_cut {
     }
 
     /**
-     * @brief returns x < -3 * 1e-7
-     * (the factor 3 comes from the sum x_ij + x_jk - x_ik, where each factor has a tolerance of 1e-7)
+     * @brief returns value of x < -1e-7
      */
     inline bool is_3cycle_lb_violated(const double &x) {
-        return x < -3 * params.tol_bnd;
+        return x < -params.tol_bnd;
     }
 
     /**
-     * @brief returns 1 + 3 * 1e-7
-     * (the factor 3 comes from the sum x_ij + x_jk - x_ik, where each factor has a tolerance of 1e-7)
+     * @brief returns value of x > 1 + 1e-7
      */
     inline bool is_3cycle_ub_violated(const double &x) {
-        return x > 1. + 3 * params.tol_bnd;
+        return x > 1. + params.tol_bnd;
     }
 
     /**
@@ -662,7 +660,7 @@ class branch_and_cut {
                 if (j == 0) {
                     // the solution is integral; we found a better solution
                     compute_ordering();
-                    // fix_variables_permanently();
+                    fix_variables_permanently();
                     return backtrack();
                 } else {
                     // todo: improve solution with heuristic
@@ -691,7 +689,7 @@ class branch_and_cut {
         assert(status == GLP_OPT);
 
         // perform initial permanent fixing since we already have a heuristic solution
-        // fix_variables_permanently();
+        fix_variables_permanently();
 
         // get value of current optimal solution and call branch_n_cut with it
         bool is_optimum = branch_n_cut();
