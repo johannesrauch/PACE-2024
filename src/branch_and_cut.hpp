@@ -5,11 +5,6 @@
 #define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 1024
 #endif
 
-// 1e-7 is the default tolerance in glpk for feasibility
-#ifndef PACE2024_CONST_EPSILON
-#define PACE2024_CONST_EPSILON 1e-7
-#endif
-
 #ifndef PACE2024_CONST_NOF_BUCKETS
 #define PACE2024_CONST_NOF_BUCKETS 10
 #endif
@@ -17,6 +12,8 @@
 #include <glpk.h>
 #include <math.h>
 
+#include <algorithm>
+#include <cfloat>
 #include <functional>
 #include <stack>
 #include <type_traits>
@@ -123,10 +120,10 @@ class branch_and_cut {
 
     struct bucket_entry {
         const int ij, jk, ik;
-        const bool forward;
+        const bool ub;
 
-        explicit bucket_entry(const int ij, const int jk, const int ik, const bool forward)
-            : ij(ij), jk(jk), ik(ik), forward(forward) {}
+        explicit bucket_entry(const int ij, const int jk, const int ik, const bool ub)
+            : ij(ij), jk(jk), ik(ik), ub(ub) {}
     };
 
     /**
@@ -233,7 +230,7 @@ class branch_and_cut {
 
         if (c_ij == 0) {
             // fix i < j in the ordering
-            glp_set_col_bnds(lp, k, GLP_FX, 1., 1.);  // ub is ignored
+            glp_set_col_bnds(lp, k, GLP_FX, 1., 0.);  // ub is ignored
         } else if (c_ji == 0) {
             // fix j < i in the ordering
             glp_set_col_bnds(lp, k, GLP_FX, 0., 0.);  // ub is ignored
@@ -246,6 +243,44 @@ class branch_and_cut {
         // set coefficient of added column
         double coef = static_cast<double>(c_ij) - static_cast<double>(c_ji);
         glp_set_obj_coef(lp, k, coef);
+    }
+
+    //
+    // solution methods
+    //
+
+    /**
+     * @brief constructs the restrictions graph into digraph and
+     * then computes a topological sort of digraph for the ordering.
+     * stores the ordering in ordering and the number of crossings in upper_bound.
+     * requirement: lp solution integral.
+     */
+    void compute_ordering() {
+        // resets the graph
+        digraph.rollback();
+
+        // build the constraint graph
+        int k = 1;
+        for (T i = 0; i < n1; ++i) {
+            for (T j = i + 1; j < n1; ++j) {
+                assert(is_column_integral(k));
+                double x = glp_get_col_prim(lp, k);
+                if (x < 0.5) {
+                    digraph.add_arc(j, i);
+                } else {
+                    digraph.add_arc(i, j);
+                }
+                ++k;
+            }
+        }
+
+        // the ordering computed by the lp is the topological sort
+        bool acyclic = topological_sort(digraph, ordering);
+        (void)acyclic;  // suppress unused warning
+        assert(acyclic);
+        double value = glp_get_obj_val(lp);
+        assert(value >= 0);
+        upper_bound = static_cast<R>(llround(value));
     }
 
     //
@@ -291,10 +326,62 @@ class branch_and_cut {
      */
     inline std::size_t get_bucket(const double &val) {
         assert(0 < val);
-        assert(val <= 1 + 10 * PACE2024_CONST_EPSILON);
+        assert(val <= 1 + 3 * params.tol_bnd);
         const std::size_t i = static_cast<std::size_t>(val * (PACE2024_CONST_NOF_BUCKETS - 1));
         assert(i < PACE2024_CONST_NOF_BUCKETS);
         return i;
+    }
+
+    /**
+     * @brief returns x_ij + x_jk - x_ik of the lp
+     */
+    inline double get_3cycle_ieq_value(const int &ij, const int &jk, const int &ik) {
+        const double x_ij = glp_get_col_prim(lp, ij);
+        const double x_jk = glp_get_col_prim(lp, jk);
+        const double x_ik = glp_get_col_prim(lp, ik);
+        return x_ij + x_jk - x_ik;
+    }
+
+    inline bool has_row_lb_slack(const int &i) {
+        const double x = glp_get_row_prim(lp, i);
+        return has_row_lb(i) && x > params.tol_bnd;
+    }
+
+    inline bool has_row_ub_slack(const int &i) {
+        const double x = glp_get_row_prim(lp, i);
+        return has_row_ub(i) && x < 1. - params.tol_bnd;
+    }
+
+    /**
+     * @brief returns lb != -DBL_MAX
+     */
+    inline bool has_row_lb(const int &i) {
+        const double lb = glp_get_row_lb(lp, i);
+        return lb != -DBL_MAX;
+    }
+
+    /**
+     * @brief returns ub != DBL_MAX
+     */
+    inline bool has_row_ub(const int &i) {
+        const double ub = glp_get_row_ub(lp, i);
+        return ub != DBL_MAX;
+    }
+
+    /**
+     * @brief returns x < -3 * 1e-7
+     * (the factor 3 comes from the sum x_ij + x_jk - x_ik, where each factor has a tolerance of 1e-7)
+     */
+    inline bool is_3cycle_lb_violated(const double &x) {
+        return x < -3 * params.tol_bnd;
+    }
+
+    /**
+     * @brief returns 1 + 3 * 1e-7
+     * (the factor 3 comes from the sum x_ij + x_jk - x_ik, where each factor has a tolerance of 1e-7)
+     */
+    inline bool is_3cycle_ub_violated(const double &x) {
+        return x > 1. + 3 * params.tol_bnd;
     }
 
     /**
@@ -316,7 +403,7 @@ class branch_and_cut {
      */
     inline bool is_column_integral(const int &j) {
         double x = glp_get_col_prim(lp, j);
-        if (x > PACE2024_CONST_EPSILON && x < 1. - PACE2024_CONST_EPSILON) {
+        if (x > params.tol_bnd && x < 1. - params.tol_bnd) {
             return false;
         }
         return true;
@@ -337,175 +424,92 @@ class branch_and_cut {
         return 0;
     }
 
-    /**
-     * @brief constructs the restrictions graph into digraph and
-     * then computes a topological sort of digraph for the ordering.
-     * stores the ordering in ordering and the number of crossings in upper_bound.
-     * requirement: lp solution integral.
-     */
-    void compute_ordering() {
-        // resets the graph
-        digraph.rollback();
-
-        // build the constraint graph
-        int k = 1;
-        for (T i = 0; i < n1; ++i) {
-            for (T j = i + 1; j < n1; ++j) {
-                assert(is_column_integral(k));
-                double x = glp_get_col_prim(lp, k);
-                if (x < PACE2024_CONST_EPSILON) {
-                    digraph.add_arc(j, i);
-                } else {
-                    digraph.add_arc(i, j);
-                }
-                ++k;
-            }
-        }
-
-        // the ordering computed by the lp is the topological sort
-        bool acyclic = topological_sort(digraph, ordering);
-        (void)acyclic;  // suppress unused warning
-        assert(acyclic);
-        double value = glp_get_obj_val(lp);
-        assert(value >= 0);
-        upper_bound = static_cast<R>(llround(value));
-    }
-
     //
     // cutting plane methods
     //
 
-    /**
-     * @brief given the row indices ij, jk and ik, returns
-     * # x_ij + x_jk - x_ik if forward = true
-     * # -x_ij - x_jk + x_ik if forward = false
-     *
-     * @tparam forward determines if we consider the forward or backward cycle
-     * @param ij
-     * @param jk
-     * @param ik
-     * @return double
-     */
-    template <bool forward>
-    inline double get_3cycle_ieq_value(const int &ij, const int &jk, const int &ik) {
-        double x_ij = glp_get_col_prim(lp, ij);
-        double x_jk = glp_get_col_prim(lp, jk);
-        double x_ik = glp_get_col_prim(lp, ik);
+    inline int add_3cycle_row(const int &ij, const int &jk, const int &ik) {
+        const int row = glp_add_rows(lp, 1);
+        const int indices[4] = {0, ij, jk, ik};
+        const double coefficients[4] = {0, 1., 1., -1.};
+        glp_set_mat_row(lp, row, 3, indices, coefficients);
+        return row;
+    }
 
-        if constexpr (forward) {
-            return x_ij + x_jk - x_ik;
-        } else {
-            return -x_ij - x_jk + x_ik;
-        }
+    inline void add_3cycle_ieq_lb(const int &ij, const int &jk, const int &ik) {
+        const int row = add_3cycle_row(ij, jk, ik);
+        glp_set_row_bnds(lp, row, GLP_LO, 0., 1.);
+    }
+
+    inline void add_3cycle_ieq_ub(const int &ij, const int &jk, const int &ik) {
+        const int row = add_3cycle_row(ij, jk, ik);
+        glp_set_row_bnds(lp, row, GLP_UP, 0., 1.);
     }
 
     /**
-     * @brief given the vertices i, j, k, checks the 3-cycle constraints
-     * ijk and ikj. if violated, it adds them to the lp, too.
+     * @brief expects the violated 3-cycle ieqs in buckets.
+     * adds the most violated <= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS to the lp.
      *
-     * @param i
-     * @param j
-     * @param k
-     * @return std::size_t number of found and added 3-cycle constraints: 0, 1 or 2
+     * @return std::size_t number of new rows
      */
-    inline std::size_t check_3cycle(const int i, const int j, const int k) {
-        const int ij = get_variable_index(i, j),
-                  jk = get_variable_index(j, k),
-                  ik = get_variable_index(i, k);
+    inline std::size_t add_3cycle_ieq_bnds() {
+        std::size_t nof_new_rows{0};
 
-        std::size_t nof_new_cycle_constraints = 0;
+        for (auto r_it = buckets.rbegin(); r_it != buckets.rend(); ++r_it) {
+            for (const auto &[ij, jk, ik, ub] : *r_it) {
+                ++nof_new_rows;
 
-        // cycle ijk
-        if (get_3cycle_ieq_value<true>(ij, jk, ik) > 1) {
-            ++nof_new_cycle_constraints;
-            add_3cycle_ieq<true>(ij, jk, ik);
+                if (ub) {
+                    add_3cycle_ieq_ub(ij, jk, ik);
+                } else {
+                    add_3cycle_ieq_lb(ij, jk, ik);
+                }
+
+                if (nof_new_rows >= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS) {
+                    return nof_new_rows;
+                }
+            }
         }
 
-        // cycle ikj
-        if (get_3cycle_ieq_value<false>(ij, jk, ik) > 0) {
-            ++nof_new_cycle_constraints;
-            add_3cycle_ieq<false>(ij, jk, ik);
-        }
-
-        return nof_new_cycle_constraints;
+        return nof_new_rows;
     }
 
-    /**
-     * @brief tries to find violated 3-cycle constraints
-     * and adds the first <= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS to the lp
-     *
-     * @return true 3-cycle found
-     * @return false 3-cycle not found
-     */
+    inline void check_3cycle_ieq_lb(const int &ij, const int &jk, const int &ik, const double &x) {
+        if (is_3cycle_lb_violated(x)) {
+            buckets[get_bucket(-x)].emplace_back(ij, jk, ik, false);
+        }
+    }
+
+    inline void check_3cycle_ieq_ub(const int &ij, const int &jk, const int &ik, const double &x) {
+        if (is_3cycle_ub_violated(x)) {
+            buckets[get_bucket(x - 1)].emplace_back(ij, jk, ik, true);
+        }
+    }
+
+    inline void check_3cycle(const T &i, const T &j, const T &k) {
+        const int ij = get_variable_index(i, j);
+        const int jk = get_variable_index(j, k);
+        const int ik = get_variable_index(i, k);
+        const double x = get_3cycle_ieq_value(ij, jk, ik);
+        check_3cycle_ieq_lb(ij, jk, ik, x);
+        check_3cycle_ieq_ub(ij, jk, ik, x);
+    }
+
     bool check_3cycles() {
-        std::size_t nof_cycle_constraints = 0;
-
-        for (T i = 0; i < n1; ++i) {
-            for (T j = i + 1; j < n1; ++j) {
-                for (T k = j + 1; k < n1; ++k) {
-                    nof_cycle_constraints += check_3cycle(i, j, k);
-
-                    if (nof_cycle_constraints >
-                        PACE2024_CONST_NOF_CYCLE_CONSTRAINTS) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return nof_cycle_constraints > 0;
-    }
-
-    /**
-     * @brief checks the two 3-cycle inequalities for the vertices i, j and k.
-     * if they are violated by val, they are added to the bucket corresponding to val.
-     *
-     * @param i
-     * @param j
-     * @param k
-     * @return true violated 3-cycle ieq found
-     * @return false otherwise
-     */
-    bool check_3cycle_and_bucket_it(const int i, const int j, const int k) {
-        const int ij = get_variable_index(i, j),
-                  jk = get_variable_index(j, k),
-                  ik = get_variable_index(i, k);
-
-        bool new_constraints = false;
-
-        // cycle ijk
-        double val = get_3cycle_ieq_value<true>(ij, jk, ik);
-        if (val > 1) {
-            new_constraints = true;
-            buckets[get_bucket(val - 1)].emplace_back(ij, jk, ik, true);
-        }
-
-        // cycle ikj
-        val = get_3cycle_ieq_value<false>(ij, jk, ik);
-        if (val > 0) {
-            new_constraints = true;
-            buckets[get_bucket(val)].emplace_back(ij, jk, ik, false);
-        }
-
-        return new_constraints;
-    }
-
-    bool check_3cycles_exhaustively() {
+        PACE2024_DEBUG_PRINTF("\tstart check_3cycles\n");
+        
         clear_buckets();
-
         for (T i = 0; i < n1; ++i) {
             for (T j = i + 1; j < n1; ++j) {
                 for (T k = j + 1; k < n1; ++k) {
-                    bool new_constraints = check_3cycle_and_bucket_it(i, j, k);
-                    if (new_constraints && is_last_bucket_full()) {
-                        goto break_for_loops;
-                    }
+                    check_3cycle(i, j, k);
                 }
             }
         }
 
-    break_for_loops:
-        return add_3cycle_ieqs_most_violated();
+        const std::size_t nof_new_rows = add_3cycle_ieq_bnds();
+        PACE2024_DEBUG_PRINTF("\tend check_3cycles, number of new rows=%lld\n", nof_new_rows);
+        return nof_new_rows > 0;
     }
 
     /**
@@ -515,71 +519,50 @@ class branch_and_cut {
      * @return true some where found
      * @return false otherwise
      */
-    bool try_to_generate_cutting_planes() {
-        PACE2024_DEBUG_PRINTF("\tstart checking cycle constraints\n");
-        bool success = check_3cycles_exhaustively();
-        PACE2024_DEBUG_PRINTF("\tend checking cycle constraints (%s)\n", success);
+    bool cut() {
+        bool success = check_3cycles();
         return success;
     }
 
     //
-    // lp row modification methods
+    // ieq deletion methods
     //
 
     /**
-     * @brief adds the forward or backward 3-cycle ieq (depending on forward)
-     * for the variables with indices ij, jk and ik
-     *
-     * @tparam forward
-     * @param ij
-     * @param jk
-     * @param ik
+     * @brief delete ieqs with postive slack from the lp (if stack.size() > 0)
      */
-    template <bool forward>
-    inline void add_3cycle_ieq(const int &ij, const int &jk, const int &ik) {
-        if constexpr (forward) {
-            int row = glp_add_rows(lp, 1);
-            glp_set_row_bnds(lp, row, GLP_UP, 0., 1.);
-            const int indices[4] = {0, ij, jk, ik};
-            const double coefficients[4] = {0, 1., 1., -1.};
-            glp_set_mat_row(lp, row, 3, indices, coefficients);
-        } else {
-            int row = glp_add_rows(lp, 1);
-            glp_set_row_bnds(lp, row, GLP_UP, 0., 0.);
-            const int indices[4] = {0, ij, jk, ik};
-            const double coefficients[4] = {0, -1., -1., 1.};
-            glp_set_mat_row(lp, row, 3, indices, coefficients);
-        }
-    }
+    void remove_positive_slack_ieqs() {
+        if (stack.size() > 0) return;
+        PACE2024_DEBUG_PRINTF("\tstart remove_positive_slack_ieqs\n");
 
-    /**
-     * @brief expects the violated 3-cycle ieqs in buckets.
-     * adds the most violated <= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS to the lp.
-     *
-     * @return true violated 3-cycle ieq found
-     * @return false otherwise
-     */
-    inline bool add_3cycle_ieqs_most_violated() {
-        std::size_t nof_new_cycle_constraints{0};
+        std::vector<int> rows_to_remove;
+        rows_to_remove.emplace_back(0);
 
-        for (auto r_it = buckets.rbegin(); r_it != buckets.rend(); ++r_it) {
-            for (const auto &[ij, jk, ik, forward] : *r_it) {
-                ++nof_new_cycle_constraints;
-                if (forward) {
-                    add_3cycle_ieq<true>(ij, jk, ik);
-                } else {
-                    add_3cycle_ieq<false>(ij, jk, ik);
+        // gather rows to delete in respective vector or just remove lb/ub's from row
+        const int nof_rows = glp_get_num_rows(lp);
+        for (int i = 1; i <= nof_rows; ++i) {
+            if (has_row_lb(i)) {
+                if (has_row_lb_slack(i)) {
+                    rows_to_remove.emplace_back(i);
                 }
-
-                if (nof_new_cycle_constraints >
-                    PACE2024_CONST_NOF_CYCLE_CONSTRAINTS) {
-                    return true;
+            } else {
+                assert(has_row_ub(i));
+                if (has_row_ub_slack(i)) {
+                    rows_to_remove.emplace_back(i);
                 }
             }
         }
 
-        return nof_new_cycle_constraints > 0;
+        const int nof_removed_rows = static_cast<int>(rows_to_remove.size()) - 1;
+        if (nof_removed_rows > 0) {
+            PACE2024_DEBUG_PRINTF("\tend remove_positive_slack_ieqs, number of removed rows=%lld\n", nof_removed_rows);
+            glp_del_rows(lp, nof_removed_rows, &rows_to_remove[0]);
+        }
     }
+
+    //
+    // variable fixing methods
+    //
 
     /**
      * @brief fixes variables according to the reduced cost condition
@@ -600,14 +583,10 @@ class branch_and_cut {
 
             if (initial_solution[j] == 1 &&
                 static_cast<double>(lower_bound) - reduced_cost >= static_cast<double>(upper_bound)) {
-                glp_set_col_bnds(lp, j, GLP_FX, 1., 1.);
+                glp_set_col_bnds(lp, j, GLP_FX, 1., 0.);
                 PACE2024_DEBUG_PRINTF("\tpermanent fixing of %d\n", j);
             }
         }
-    }
-
-    void delete_positive_slack_ieqs() {
-        if (stack.size() > 0) return;
     }
 
     //
@@ -621,16 +600,22 @@ class branch_and_cut {
      * @return true if stack is empty
      * @return false otherwise
      */
-    bool backtrack_fix_column() {
+    bool backtrack() {
         if (stack.empty()) {
             return true;
         }
 
         // fix the opposite value
-        int j = stack.top();
+        const int j = stack.top();
         stack.pop();
-        double x = glp_get_col_prim(lp, j);
-        glp_set_col_bnds(lp, j, GLP_FX, 1. - x, 0.);  // ub is ignored
+        const double fix = glp_get_col_lb(lp, j);
+        if (fix > 0.5) {
+            PACE2024_DEBUG_PRINTF("\tfix_column %d to 0\n", j);
+            glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);  // ub is ignored
+        } else {
+            PACE2024_DEBUG_PRINTF("\tfix_column %d to 1\n", j);
+            glp_set_col_bnds(lp, j, GLP_FX, 1., 0.);  // ub is ignored
+        }
 
         return false;
     }
@@ -640,9 +625,10 @@ class branch_and_cut {
      *
      * @param j
      */
-    void fix_column(int j) {
+    inline void branch(const int &j) {
         // todo: more sophisticated fixing
         // todo: fix implications, too
+        PACE2024_DEBUG_PRINTF("\tfix_column %d to 0\n", j);
         glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);
         stack.emplace(j);
     }
@@ -657,15 +643,17 @@ class branch_and_cut {
      * @return true optimal solution found
      * @return false otherwise
      */
-    inline bool branch_n_cut(double value) {
+    inline bool branch_n_cut() {
+        double value = glp_get_obj_val(lp);
+
         if (static_cast<double>(upper_bound) <= value) {
             // try to backtrack
             // if this is not possible (meaning that the stack is empty),
             // then we found an optimal solution
-            return backtrack_fix_column();
+            return backtrack();
         } else {
             // try to generate cutting planes
-            bool successul = try_to_generate_cutting_planes();
+            bool successul = cut();
 
             if (!successul) {
                 int j = is_solution_integral();
@@ -673,16 +661,13 @@ class branch_and_cut {
                     // the solution is integral; we found a better solution
                     compute_ordering();
                     perform_permanent_fixing();
-                    return backtrack_fix_column();
+                    return backtrack();
                 } else {
-                    // todo: better selection of 3-cycle ieqs to add
                     // todo: improve solution with heuristic
-                    // todo: permanent fixing
                     // todo: transitivity
-                    // todo: delete "loose" inequalities
                     // todo: better selection
                     // branch by fixing a column
-                    fix_column(j);
+                    branch(j);
                 }
             }
         }
@@ -707,30 +692,32 @@ class branch_and_cut {
         perform_permanent_fixing();
 
         // get value of current optimal solution and call branch_n_cut with it
-        double value = glp_get_obj_val(lp);
-        assert(static_cast<R>(llround(value)) == lower_bound);
-        bool optimum = branch_n_cut(value);
+        bool is_optimum = branch_n_cut();
+        assert(get_rounded_obj_value() == lower_bound);
 
-        if (!optimum) {
-            for (std::size_t iteration = 0;; ++iteration) {
-                if (iteration % 1000 == 0) {
-                    fmt::printf("depth=%d, upper_bound=%d\n", stack.size(), upper_bound);
-                }
+        // driver loop
+        for (std::size_t iteration = 0; !is_optimum; ++iteration) {
+            PACE2024_DEBUG_PRINTF("depth=%d, upper_bound=%d, nof_rows=%d\n",
+                                  stack.size(),
+                                  upper_bound,
+                                  glp_get_num_rows(lp));
 
-                // solve the lp
-                PACE2024_DEBUG_PRINTF("start simplex\n", stack.size());
-                glp_simplex(lp, &params);
-                status = glp_get_status(lp);
-                assert(status == GLP_OPT);
-                PACE2024_DEBUG_PRINTF("end simplex\n");
+            // solve the lp
+            PACE2024_DEBUG_PRINTF("start glp_simplex\n", stack.size());
+            glp_simplex(lp, &params);
+            status = glp_get_status(lp);
+            (void) status;
+            // assert(status == GLP_OPT);
+            PACE2024_DEBUG_PRINTF("end glp_simplex, status=%d, objective value=%f\n", status, glp_get_obj_val(lp));
 
-                // get value of current optimal solution and call branch_n_cut with it
-                value = glp_get_obj_val(lp);
-                optimum = branch_n_cut(value);
-                if (optimum) break;
-            }
+            // delete untight ieqs
+            remove_positive_slack_ieqs();
+
+            // branch or cut
+            is_optimum = branch_n_cut();
         }
 
+        // output
         if (do_print) {
             print_output(graph.get_n0(), ordering);
         }
@@ -756,6 +743,16 @@ class branch_and_cut {
      */
     const std::vector<T> get_ordering() const {
         return ordering;
+    }
+
+   private:
+    /**
+     * @brief retrieve objective value from lp and round it
+     *
+     * @return R rounded objective value of lp
+     */
+    inline R get_rounded_obj_value() {
+        return static_cast<R>(llround(glp_get_obj_val(lp)));
     }
 };
 
