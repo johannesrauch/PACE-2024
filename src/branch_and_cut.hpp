@@ -196,6 +196,8 @@ class branch_and_cut {
         }
         // set constant term (shift/offset) in the objective function
         glp_set_obj_coef(lp, 0, static_cast<double>(obj_val_offset));
+
+        assert(static_cast<int>(n1_choose_2) == glp_get_num_cols(lp));
     }
 
     /**
@@ -222,12 +224,10 @@ class branch_and_cut {
 
         if (c_ij == 0 && c_ji != 0) {
             // fix i < j in the ordering
-            PACE2024_DEBUG_PRINTF("fixed variable %5d to 1 permanently (%llu,%llu)\n", k, c_ij, c_ji);
-            glp_set_col_bnds(lp, k, GLP_FX, 1., 0.);  // ub is ignored
+            fix_variable(k, 1.);
         } else if (c_ji == 0 && c_ij != 0) {
             // fix j < i in the ordering
-            PACE2024_DEBUG_PRINTF("fixed variable %5d to 0 permanently (%llu,%llu)\n", k, c_ij, c_ji);
-            glp_set_col_bnds(lp, k, GLP_FX, 0., 0.);  // ub is ignored
+            fix_variable(k, 0.);
         } else {
             // set 0 <= x_ij <= 1
             glp_set_col_bnds(lp, k, GLP_DB, 0., 1.);
@@ -423,9 +423,10 @@ class branch_and_cut {
     //
 
     inline int add_3cycle_row(const int &ij, const int &jk, const int &ik) {
+        PACE2024_DEBUG_PRINTF("\t\tij=%5d, ik=%5d, jk=%d\n", ij, ik, jk);
         const int row = glp_add_rows(lp, 1);
-        const int indices[4] = {0, ij, jk, ik};
-        const double coefficients[4] = {0, 1., 1., -1.};
+        const int indices[4] = {0, ij, ik, jk};
+        const double coefficients[4] = {0, 1., -1., 1.};
         glp_set_mat_row(lp, row, 3, indices, coefficients);
         return row;
     }
@@ -484,6 +485,8 @@ class branch_and_cut {
         const int ij = get_variable_index(i, j);
         const int jk = get_variable_index(j, k);
         const int ik = get_variable_index(i, k);
+        assert(ij < ik);
+        assert(ik < jk);
         const double x = get_3cycle_ieq_value(ij, jk, ik);
         check_3cycle_ieq_lb(ij, jk, ik, x);
         check_3cycle_ieq_ub(ij, jk, ik, x);
@@ -496,6 +499,8 @@ class branch_and_cut {
         for (T i = 0; i < n1; ++i) {
             for (T j = i + 1; j < n1; ++j) {
                 for (T k = j + 1; k < n1; ++k) {
+                    assert(i < j);
+                    assert(j < k);
                     check_3cycle(i, j, k);
                 }
             }
@@ -559,6 +564,11 @@ class branch_and_cut {
     // variable fixing methods
     //
 
+    inline void fix_variable(const int &j, const double &&fix) {
+        PACE2024_DEBUG_PRINTF("fixed variable %5d to %1.0f permanently\n", j, fix);
+        glp_set_col_bnds(lp, j, GLP_FX, fix, 0.);  // ub is ignored
+    }
+
     /**
      * @brief fixes variables according to the reduced cost condition
      */
@@ -569,9 +579,7 @@ class branch_and_cut {
             const double coeff = glp_get_obj_coef(lp, j);
 
             if (std::abs(coeff) >= static_cast<double>(diff) && coeff != 0.) {
-                const double fix = coeff > 0 ? 0. : 1.;
-                PACE2024_DEBUG_PRINTF("fixed variable %5d to %1.0f permanently\n", j, fix);
-                glp_set_col_bnds(lp, j, GLP_FX, fix, 0.);  // ub is ignored
+                fix_variable(j, coeff > 0 ? 0. : 1.);
             }
         }
     }
@@ -592,16 +600,20 @@ class branch_and_cut {
             return true;
         }
 
-        // fix the opposite value
         const int j = stack.top();
         stack.pop();
+
+        assert(glp_get_col_type(lp, j) == GLP_FX);
         const double fix = glp_get_col_lb(lp, j);
+        assert(fix == 0.);
+
+        // fix the opposite value
         if (fix > 0.5) {
-            PACE2024_DEBUG_PRINTF("\tbacktrack: fixed variable %d to 0\n", j);
-            glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);  // ub is ignored
+            fix_variable(j, 0.);
+            PACE2024_DEBUG_PRINTF("(backtrack)\n");
         } else {
-            PACE2024_DEBUG_PRINTF("\tbacktrack: fixed variable %d to 1\n", j);
-            glp_set_col_bnds(lp, j, GLP_FX, 1., 0.);  // ub is ignored
+            fix_variable(j, 1.);
+            PACE2024_DEBUG_PRINTF("(backtrack)\n");
         }
 
         return false;
@@ -615,8 +627,9 @@ class branch_and_cut {
     inline void branch(const int &j) {
         // todo: more sophisticated fixing
         // todo: fix implications, too
-        PACE2024_DEBUG_PRINTF("\tbranch: fixed variable %d to 0\n", j);
-        glp_set_col_bnds(lp, j, GLP_FX, 0., 0.);
+        assert(glp_get_col_type(lp, j) != GLP_FX);
+        fix_variable(j, 0.);
+        PACE2024_DEBUG_PRINTF("(branch)\n");
         stack.emplace(j);
     }
 
@@ -642,7 +655,7 @@ class branch_and_cut {
             bool successful = cut();
             if (successful) return false;
 
-            int j = is_solution_integral();
+            const int j = is_solution_integral();
             if (j == 0) {
                 // the solution is integral; we found a better solution
                 compute_ordering();
