@@ -7,8 +7,8 @@ clean:
 	rm *.o
 
 %:
-	@if [ $* != "all" ]; then\
+	@if [ $* != "all" ]; then \
 		$(CXX) $(CXXFLAGS) -c $*.cpp && \
 		$(CXX) $*.o $(LFLAGS) -o $*.exe && \
-		./$*.exe; \
+		./$*.exe $(INPUT); \
 	fi
