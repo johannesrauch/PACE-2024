@@ -208,7 +208,7 @@ class branch_and_cut {
      * @param j vertex j
      * @param k index k for lp
      */
-    inline void add_variable_to_lp(const T i, const T j, const int k) {
+    inline void add_variable_to_lp(const T &i, const T &j, const int &k) {
         assert(static_cast<std::size_t>(k) <= n1_choose_2);
         auto [c_ij, c_ji] = crossing_numbers_of<T, R>(graph, i, j);
 
@@ -368,14 +368,14 @@ class branch_and_cut {
      * @brief returns value of x < -1e-7
      */
     inline bool is_3cycle_lb_violated(const double &x) {
-        return x < 0.;
+        return x < -params.tol_bnd;
     }
 
     /**
      * @brief returns value of x > 1 + 1e-7
      */
     inline bool is_3cycle_ub_violated(const double &x) {
-        return x > 1.;
+        return x > 1. + params.tol_bnd;
     }
 
     /**
@@ -396,8 +396,8 @@ class branch_and_cut {
      * @return false if not
      */
     inline bool is_column_integral(const int &j) {
-        double x = glp_get_col_prim(lp, j);
-        if (x > 0. && x < 1.) {
+        const double x = glp_get_col_prim(lp, j);
+        if (x > params.tol_bnd && x < 1. - params.tol_bnd) {
             return false;
         }
         return true;
