@@ -5,7 +5,7 @@ LFLAGS = -lglpk -lstdc++ -lm
 ifdef PRODUCTION
 	CXXFLAGS += -O3 -DNDEBUG
 else
-	CXXFLAGS += -g
+	CXXFLAGS += -O0 -g
 endif
 
 ifdef VERBOSE
