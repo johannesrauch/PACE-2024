@@ -322,7 +322,7 @@ class branch_and_cut {
      */
     inline std::size_t get_bucket(const double &val) {
         assert(0 < val);
-        assert(val <= 1 + 3 * params.tol_bnd);
+        assert(val <= 1);
         const std::size_t i = static_cast<std::size_t>(val * (PACE2024_CONST_NOF_BUCKETS - 1));
         assert(i < PACE2024_CONST_NOF_BUCKETS);
         return i;
@@ -340,12 +340,12 @@ class branch_and_cut {
 
     inline bool has_row_lb_slack(const int &i) {
         const double x = glp_get_row_prim(lp, i);
-        return has_row_lb(i) && x > params.tol_bnd;
+        return has_row_lb(i) && x > 0.;
     }
 
     inline bool has_row_ub_slack(const int &i) {
         const double x = glp_get_row_prim(lp, i);
-        return has_row_ub(i) && x < 1. - params.tol_bnd;
+        return has_row_ub(i) && x < 1.;
     }
 
     /**
@@ -368,14 +368,14 @@ class branch_and_cut {
      * @brief returns value of x < -1e-7
      */
     inline bool is_3cycle_lb_violated(const double &x) {
-        return x < -params.tol_bnd;
+        return x < 0.;
     }
 
     /**
      * @brief returns value of x > 1 + 1e-7
      */
     inline bool is_3cycle_ub_violated(const double &x) {
-        return x > 1. + params.tol_bnd;
+        return x > 1.;
     }
 
     /**
@@ -397,7 +397,7 @@ class branch_and_cut {
      */
     inline bool is_column_integral(const int &j) {
         double x = glp_get_col_prim(lp, j);
-        if (x > params.tol_bnd && x < 1. - params.tol_bnd) {
+        if (x > 0. && x < 1.) {
             return false;
         }
         return true;
