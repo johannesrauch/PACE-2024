@@ -13,7 +13,7 @@ void test_solver_w_instance(std::filesystem::path filepath_instance) {
     fmt::printf("%s\n", static_cast<std::string>(filepath_instance));
     pace2024::uint16_bipartite_graph graph(filepath_instance);
     pace2024::branch_and_cut<uint16_t, uint32_t> solver(graph);
-    solver.solve(false);
+    solver.solve(true);
 
     uint32_t ref_nof_crossings =
         pace2024::test::get_ref_nof_crossings<uint32_t>(filepath_instance);
@@ -50,9 +50,13 @@ void test_solver_w_medium_test_set() {
  *
  * @return int
  */
-int main() {
-    // test_solver_w_medium_test_set();
-    test_solver_w_instance("medium_test_set/17.gr");
+int main(int argc, char** argv) {
+    if (argc == 1) {
+        test_solver_w_medium_test_set();
+    } else {
+        const std::string input = "medium_test_set/" + std::string{argv[1]} + ".gr";
+        test_solver_w_instance(input);
+    }
 
     std::cout << "TEST::PACE2024::BRANCH_AND_CUT_MEDIUM:\t\tOK" << std::endl;
     return 0;
