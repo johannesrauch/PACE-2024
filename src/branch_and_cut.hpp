@@ -160,6 +160,9 @@ class branch_and_cut {
         probabilistic_median_heuristic<T, R>(graph, ordering).run();
         PACE2024_DEBUG_PRINTF("end   heuristic\n");
         upper_bound = crossing_number_of<T, R>(graph, ordering);
+
+        // perform initial permanent fixing since we already have a heuristic solution
+        fix_variables_permanently();
     }
 
     // delete copy constructor, move constructor, copy assignment and move assignment
@@ -423,7 +426,7 @@ class branch_and_cut {
     //
 
     inline int add_3cycle_row(const int &ij, const int &jk, const int &ik) {
-        PACE2024_DEBUG_PRINTF("\t\tij=%5d, ik=%5d, jk=%d\n", ij, ik, jk);
+        // PACE2024_DEBUG_PRINTF("\t\tij=%5d, ik=%5d, jk=%d\n", ij, ik, jk);
         const int row = glp_add_rows(lp, 1);
         const int indices[4] = {0, ij, ik, jk};
         const double coefficients[4] = {0, 1., -1., 1.};
@@ -565,7 +568,7 @@ class branch_and_cut {
     //
 
     inline void fix_variable(const int &j, const double &&fix) {
-        PACE2024_DEBUG_PRINTF("fixed variable %5d to %1.0f permanently\n", j, fix);
+        PACE2024_DEBUG_PRINTF("fixed variable %5d to %1.0f\n", j, fix);
         glp_set_col_bnds(lp, j, GLP_FX, fix, 0.);  // ub is ignored
     }
 
@@ -643,33 +646,36 @@ class branch_and_cut {
      * @return false otherwise
      */
     inline bool branch_n_cut() {
-        double value = glp_get_obj_val(lp);
-
-        if (static_cast<double>(upper_bound) <= value) {
-            // try to backtrack
-            // if this is not possible (meaning that the stack is empty),
-            // then we found an optimal solution
+        // test if the lp is got infeasible
+        const int status = glp_get_status(lp);
+        if (status != GLP_OPT) {
             return backtrack();
-        } else {
-            // try to generate cutting planes, return if successful
-            bool successful = cut();
-            if (successful) return false;
-
-            const int j = is_solution_integral();
-            if (j == 0) {
-                // the solution is integral; we found a better solution
-                compute_ordering();
-                fix_variables_permanently();
-                return backtrack();
-            } else {
-                // todo: improve solution with heuristic
-                // todo: transitivity
-                // todo: better selection
-                // branch by fixing a column
-                branch(j);
-                return false;
-            }
         }
+
+        // test if we are worse than our current solution
+        const double value = glp_get_obj_val(lp);
+        if (static_cast<double>(upper_bound) <= value) {
+            return backtrack();
+        }
+
+        // try to generate cutting planes
+        bool successful = cut();
+        if (successful) return false;
+
+        const int j = is_solution_integral();
+        // test if solution is integral, then we found a better solution
+        if (j == 0) {
+            compute_ordering();
+            fix_variables_permanently();
+            return backtrack();
+        }
+
+        // todo: improve solution with heuristic
+        // todo: transitivity
+        // todo: better selection
+        // branch by fixing a column
+        branch(j);
+        return false;
     }
 
    public:
@@ -683,12 +689,7 @@ class branch_and_cut {
         // solve the lp
         glp_simplex(lp, &params);
         glp_exact(lp, &params);
-        int status = glp_get_status(lp);
-        (void)status;
-        assert(status == GLP_OPT);
-
-        // perform initial permanent fixing since we already have a heuristic solution
-        fix_variables_permanently();
+        assert(glp_get_status(lp) == GLP_OPT);
 
         // get value of current optimal solution and call branch_n_cut with it
         bool is_optimum = branch_n_cut();
@@ -696,7 +697,7 @@ class branch_and_cut {
 
         // driver loop
         for (std::size_t iteration = 0; !is_optimum; ++iteration) {
-            PACE2024_DEBUG_PRINTF("depth=%d, upper_bound=%d, nof_rows=%d\n",
+            PACE2024_DEBUG_PRINTF("depth=%llu, upper_bound=%lu, nof_rows=%d\n",
                                   stack.size(),
                                   upper_bound,
                                   glp_get_num_rows(lp));
@@ -705,10 +706,7 @@ class branch_and_cut {
             PACE2024_DEBUG_PRINTF("start glp_simplex\n", stack.size());
             glp_simplex(lp, &params);
             glp_exact(lp, &params);
-            status = glp_get_status(lp);
-            PACE2024_DEBUG_PRINTF("end   glp_simplex, status=%d, objective value=%f\n", status, glp_get_obj_val(lp));
-            (void)status;
-            assert(status == GLP_OPT);
+            PACE2024_DEBUG_PRINTF("end   glp_simplex, status=%d, objective value=%f\n", glp_get_status(lp), glp_get_obj_val(lp));
 
             // delete untight ieqs
             remove_positive_slack_ieqs();
