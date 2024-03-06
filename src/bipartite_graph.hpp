@@ -119,6 +119,17 @@ class general_bipartite_graph {
     }
 
     /**
+     * @brief get neighbors of vertex v (which is in the free layer)
+     *
+     * @param v
+     * @return const std::vector<T>&
+     */
+    const std::vector<T> &get_neighbors(const T v) const {
+        assert(v < n1);
+        return adjacency_lists[v];
+    }
+
+    /**
      * @brief returns a reference to all edges
      *
      * @return const std::vector<std::pair<T, T>>&
