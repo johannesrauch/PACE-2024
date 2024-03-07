@@ -68,11 +68,6 @@ class branch_and_cut {
      */
     glp_smcp params;
 
-    /**
-     * @brief obj_val_offset + the obj_val of the lp = number of crossings
-     */
-    R obj_val_offset{0};
-
     //
     // solution related attributes
     //
@@ -190,10 +185,12 @@ class branch_and_cut {
      * - fixes relative positions if possible
      */
     inline void construct_lp() {
+        R obj_val_offset{0};
         int k = glp_add_cols(lp, static_cast<int>(n1_choose_2));
+        
         for (T i = 0; i < n1; ++i) {
             for (T j = i + 1; j < n1; ++j) {
-                add_variable_to_lp(i, j, k);
+                obj_val_offset += add_variable_to_lp(i, j, k);
                 ++k;
             }
         }
@@ -211,7 +208,7 @@ class branch_and_cut {
      * @param j vertex j
      * @param k index k for lp
      */
-    inline void add_variable_to_lp(const T &i, const T &j, const int &k) {
+    inline R add_variable_to_lp(const T &i, const T &j, const int &k) {
         assert(static_cast<std::size_t>(k) <= n1_choose_2);
         auto [c_ij, c_ji] = crossing_numbers_of<T, R>(graph, i, j);
 
@@ -221,9 +218,6 @@ class branch_and_cut {
         } else {
             lower_bound += c_ji;
         }
-
-        // obj_val_offset = sum c_ji (since we subtract the c_ji for the coefficients)
-        obj_val_offset += c_ji;
 
         if (c_ij == 0 && c_ji != 0) {
             // fix i < j in the ordering
@@ -242,6 +236,8 @@ class branch_and_cut {
             const double coeff = static_cast<double>(c_ij) - static_cast<double>(c_ji);
             glp_set_obj_coef(lp, k, coeff);
         }
+
+        return c_ji;
     }
 
     //
@@ -702,7 +698,9 @@ class branch_and_cut {
             PACE2024_DEBUG_PRINTF("start glp_simplex\n", stack.size());
             glp_simplex(lp, &params);
             glp_exact(lp, &params);
-            PACE2024_DEBUG_PRINTF("end   glp_simplex, status=%d, objective value=%f\n", glp_get_status(lp), glp_get_obj_val(lp));
+            PACE2024_DEBUG_PRINTF("end   glp_simplex, status=%d, objective value=%f\n",
+                                  glp_get_status(lp),
+                                  glp_get_obj_val(lp));
 
             // delete untight ieqs
             remove_positive_slack_ieqs();
