@@ -111,7 +111,7 @@ class branch_and_cut {
     /**
      * @brief stack used for branch and cut
      */
-    std::stack<int> stack;
+    std::stack<std::pair<int, bool>> stack;
 
     struct bucket_entry {
         const int ij, jk, ik;
@@ -599,27 +599,23 @@ class branch_and_cut {
      * @return false otherwise
      */
     bool backtrack() {
-        if (stack.empty()) {
-            return true;
+        int j{0};
+        bool fix_opposite = false;
+        for (; !stack.empty();) {
+            std::tie(j, fix_opposite) = stack.top();
+            stack.pop();
+
+            if (fix_opposite) {
+                fix_variable(j, glp_get_col_prim(lp, j) > 0.5 ? 0. : 1.);
+                PACE2024_DEBUG_PRINTF("(backtrack)\n");
+                stack.emplace(j, false);
+                break;
+            } else {
+                glp_set_col_bnds(lp, j, GLP_DB, 0., 1.);
+                PACE2024_DEBUG_PRINTF("unfixed variable %5d\n(backtrack)\n", j);
+            }
         }
-
-        const int j = stack.top();
-        stack.pop();
-
-        assert(glp_get_col_type(lp, j) == GLP_FX);
-        const double fix = glp_get_col_lb(lp, j);
-        assert(fix == 0.);
-
-        // fix the opposite value
-        if (fix > 0.5) {
-            fix_variable(j, 0.);
-            PACE2024_DEBUG_PRINTF("(backtrack)\n");
-        } else {
-            fix_variable(j, 1.);
-            PACE2024_DEBUG_PRINTF("(backtrack)\n");
-        }
-
-        return false;
+        return !fix_opposite;
     }
 
     /**
@@ -633,7 +629,7 @@ class branch_and_cut {
         assert(glp_get_col_type(lp, j) != GLP_FX);
         fix_variable(j, 0.);
         PACE2024_DEBUG_PRINTF("(branch)\n");
-        stack.emplace(j);
+        stack.emplace(j, true);
     }
 
     /**
