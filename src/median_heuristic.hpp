@@ -89,10 +89,12 @@ class median_heuristic {
             return true;
         } else if (medians[a] > medians[b]) {
             return false;
-        } else if (adjacency_lists[a].size() % 2 == 1) {  // from here medians[a] == medians[b]
+        } else if (adjacency_lists[a].size() % 2 == 1 && adjacency_lists[b].size() % 2 == 0) {
             return true;
-        } else {
+        } else if (adjacency_lists[a].size() % 2 == 0 && adjacency_lists[b].size() % 2 == 1) {
             return false;
+        } else {
+            return a < b;
         }
     }
 
@@ -195,9 +197,9 @@ class probabilistic_median_heuristic {
             return true;
         } else if (medians[a] > medians[b]) {  // from here medians[a] == medians[b]
             return false;
-        } else if (adjacency_lists[a].size() % 2 == 1 && adjacency_lists[a].size() % 2 == 0) {
+        } else if (adjacency_lists[a].size() % 2 == 1 && adjacency_lists[b].size() % 2 == 0) {
             return true;
-        } else if (adjacency_lists[a].size() % 2 == 0 && adjacency_lists[a].size() % 2 == 1) {
+        } else if (adjacency_lists[a].size() % 2 == 0 && adjacency_lists[b].size() % 2 == 1) {
             return false;
         } else {
             return a < b;
