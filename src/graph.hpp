@@ -18,15 +18,8 @@ namespace pace2024 {
 template <typename T>
 class general_digraph {
    private:
-    /**
-     * @brief stores all neighbors of each vertex
-     */
+    /// @brief stores all neighbors of each vertex
     std::vector<std::vector<T>> adjacency_lists;
-
-    /**
-     * @brief stores how many neighbors each vertex had in the rollback base
-     */
-    std::vector<std::size_t> nof_neighbors_in_rollback_base;
 
    public:
     using vertextype = T;
@@ -40,7 +33,7 @@ class general_digraph {
     /**
      * @brief constructs an empty digraph with n vertices
      *
-     * @param n
+     * @param n number of vertices
      */
     general_digraph(const std::size_t n)
         : adjacency_lists(n),
@@ -49,18 +42,19 @@ class general_digraph {
     /**
      * @brief add arc (u, v)
      *
-     * @param u
-     * @param v
+     * @param u vertex, 0 <= u < get_n()
+     * @param v vertex, 0 <= v < get_n()
      */
     void add_arc(const T u, const T v) {
-        assert(u < get_n() && v < get_n());
+        assert(u < get_n());
+        assert(v < get_n());
         adjacency_lists[u].emplace_back(v);
     }
 
     /**
      * @brief return number of vertices
      *
-     * @return std::size_t
+     * @return std::size_t number of vertices
      */
     std::size_t get_n() const {
         return adjacency_lists.size();
@@ -69,32 +63,17 @@ class general_digraph {
     /**
      * @brief get neighbors of vertex v
      *
-     * @param v
-     * @return const std::vector<T>&
+     * @param v vertex, 0 <= v < get_n()
+     * @return const std::vector<T>& neighbors of v
      */
     const std::vector<T> &get_adjacency_list(const T v) const {
         return adjacency_lists[v];
     }
 
-    /**
-     * @brief sets the base for the rollback:
-     * - stores the neighbor of vertices each vertex has
-     * - in case of rollback, any new arcs added after the call to set_rollback_base
-     *   are deleted
-     */
-    void set_rollback_base() {
+    /// @brief deletes all arcs
+    void delete_arcs() {
         for (std::size_t i = 0; i < get_n(); ++i) {
-            nof_neighbors_in_rollback_base[i] = adjacency_lists[i].size();
-        }
-    }
-
-    /**
-     * @brief deletes any arcs that got added after the last call to set_rollback_base.
-     * deletes all arcs if set_rollback_base has not been called.
-     */
-    void rollback() {
-        for (std::size_t i = 0; i < get_n(); ++i) {
-            adjacency_lists[i].resize(nof_neighbors_in_rollback_base[i]);
+            adjacency_lists[i].clear();
         }
     }
 
