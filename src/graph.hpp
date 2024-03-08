@@ -35,9 +35,7 @@ class general_digraph {
      *
      * @param n number of vertices
      */
-    general_digraph(const std::size_t n)
-        : adjacency_lists(n),
-          nof_neighbors_in_rollback_base(n) {}
+    general_digraph(const std::size_t n) : adjacency_lists(n) {}
 
     /**
      * @brief add arc (u, v)
