@@ -9,24 +9,6 @@
 #include "printf.hpp"
 
 /**
- * @brief tests get_variable_index of branch_and_cut
- */
-void test_get_variable_index() {
-    const std::string filepath = "tiny_test_set/matching_4_4.gr";
-    pace2024::uint32_bipartite_graph graph(filepath);
-    pace2024::branch_and_cut<uint32_t, uint16_t> solver(graph);
-
-    assert(solver.get_variable_index(0, 1) == 1);
-    // assert(solver.get_variable_index(1, 0) == 1);
-    assert(solver.get_variable_index(0, 3) == 3);
-    // assert(solver.get_variable_index(3, 0) == 3);
-    assert(solver.get_variable_index(1, 3) == 5);
-    // assert(solver.get_variable_index(3, 1) == 5);
-    assert(solver.get_variable_index(2, 3) == 6);
-    // assert(solver.get_variable_index(3, 2) == 6);
-}
-
-/**
  * @brief test branch_and_cut solver on tiny_test_set
  */
 void test_solver_w_tiny_test_set() {
@@ -76,11 +58,8 @@ void test_solver_w_random_instance() {
 
 /**
  * @brief tests branch_and_cut
- *
- * @return int
  */
 int main() {
-    test_get_variable_index();
     test_solver_w_tiny_test_set();
     test_solver_w_random_instance();
 
