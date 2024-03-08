@@ -60,7 +60,7 @@ std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph, T u
 
 /**
  * @brief computes the number of crossings of the given ordering.
- * based on https://doi.org/10.1007/3-540-36151-0_13
+ * from https://doi.org/10.1007/3-540-36151-0_13
  *
  * @tparam T vertex type
  * @tparam R return type
