@@ -214,8 +214,7 @@ class branch_and_cut {
      */
     void solve(bool do_print = true) {
         // solve lp
-        bool delete_rows_after = stack.size() == 0;
-        lp_solver->solve(delete_rows_after);
+        lp_solver->solve(false);
         assert(lp_solver->is_optimal());
 
         // get value of current optimal solution and call branch_and_bound_and_cut with it
@@ -229,7 +228,7 @@ class branch_and_cut {
                                   lp_solver->get_nof_rows());
 
             // solve lp
-            delete_rows_after = stack.size() == 0;
+            bool delete_rows_after = stack.size() == 0;
             lp_solver->solve(delete_rows_after);
 
             // branch or cut

@@ -603,7 +603,7 @@ class clp_wrapper : public lp_wrapper {
    public:
     template <typename T>
     clp_wrapper(const general_bipartite_graph<T> &graph) : lp_wrapper(static_cast<int>(graph.get_n1())) {
-        assert(n1 > 0);
+        assert(n1 > 1);
         lp.setNumberThreads(1);          // only single-threading in pace
         lp.setOptimizationDirection(1);  // 1 = minimize
         options.setSolveType(ClpSolve::useDual);
@@ -698,12 +698,13 @@ class clp_wrapper : public lp_wrapper {
 
     /// @brief returns if an optimal feasible solution has been found
     bool is_optimal() {
-        return lp.isProvenOptimal();
+        return lp.status() == 0;
     }
 
     void solve(bool delete_rows_after) {
         PACE2024_DEBUG_PRINTF("start glp_simplex\n");
-        lp.initialSolve(options);
+        // lp.initialSolve(options);
+        lp.dual();
         PACE2024_DEBUG_PRINTF("end   glp_simplex, objective value=%f\n", lp.objectiveValue());
 
         if (delete_rows_after) {
@@ -742,6 +743,11 @@ class clp_wrapper : public lp_wrapper {
         }
         // set constant term (shift/offset) in the objective function
         lp.setObjectiveOffset(static_cast<double>(obj_val_offset));
+
+        // add one row
+        const int columnIndices[3] = {0, 1, 2};
+        const double columnCoefficients[3] = {1., -1., 1.};
+        lp.addRow(3, columnIndices, columnCoefficients, 0., 1.);
     }
 
     /**
@@ -805,7 +811,7 @@ class clp_wrapper : public lp_wrapper {
     inline int add_3cycle_rows() {
         int nof_new_rows{0};
 
-        CoinBuild build;
+        CoinBuild build{0};
         for (auto r_it = buckets.rbegin(); r_it != buckets.rend(); ++r_it) {
             for (const auto &[ij, jk, ik, ub] : *r_it) {
                 ++nof_new_rows;
@@ -838,6 +844,7 @@ class clp_wrapper : public lp_wrapper {
         assert(ik < jk);
 
         const double x = get_3cycle_value(ij, jk, ik);
+        PACE2024_DEBUG_PRINTF("%f\n", x);
         if (is_3cycle_lb_violated(x)) {
             get_bucket(-x).emplace_back(ij, jk, ik, false);
         }
