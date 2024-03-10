@@ -42,4 +42,5 @@
 .gdb_history
 
 dep
+HiGHS
 *.log
