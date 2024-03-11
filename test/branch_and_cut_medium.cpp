@@ -22,7 +22,7 @@ void test_solver_w_instance(std::filesystem::path filepath_instance) {
     (void)ref_nof_crossings;
 
     uint32_t test_nof_crossings =
-        pace2024::crossing_number_of<uint16_t, uint32_t>(graph, solver.get_ordering());
+        pace2024::number_of_crossings<uint16_t, uint32_t>(graph, solver.get_ordering());
     (void)test_nof_crossings;
 
     PACE2024_DEBUG_PRINTF("%d=%d?\n", ref_nof_crossings, test_nof_crossings);

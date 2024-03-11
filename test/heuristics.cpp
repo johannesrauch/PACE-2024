@@ -22,14 +22,14 @@ void compare_heuristics_on_instance(fs::path filepath) {
     // input
     std::ifstream input(filepath);
     assert(input.good());
-    pace2024::general_bipartite_graph<T> graph(input);
+    pace2024::bipartite_graph<T> graph(input);
     std::vector<T> ordering;
 
     // barycenter
     std::clock_t start = std::clock();
     pace2024::barycenter_heuristic<T>(graph, ordering).run();
     std::clock_t end = std::clock();
-    const R c_b = pace2024::crossing_number_of<T, R>(graph, ordering);
+    const R c_b = pace2024::number_of_crossings<T, R>(graph, ordering);
     const double t_b = time_in_ms(start, end);
 
     // median

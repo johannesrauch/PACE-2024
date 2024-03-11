@@ -22,7 +22,7 @@ namespace pace2024 {
  * @return std::pair<R, R> crossing numbers of u and v
  */
 template <typename T, typename R>
-std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph, T u, T v) {
+std::pair<R, R> crossing_numbers_of(const bipartite_graph<T>& graph, T u, T v) {
     auto& adjacency_lists = graph.get_adjacency_lists();
     auto& nbors_u = adjacency_lists[u];
     auto& nbors_v = adjacency_lists[v];
@@ -68,17 +68,17 @@ std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph, T u
  * @return R
  */
 template <typename T, typename R>
-R crossing_number_of(const general_bipartite_graph<T>& graph, const std::vector<T>& ordering) {
+R number_of_crossings(const bipartite_graph<T>& graph, const std::vector<T>& ordering) {
     // compute the positions of each element
     // (inverse of the permutation ordering)
-    const std::size_t n1 = graph.get_n1();
+    const std::size_t n1 = graph.get_n_free();
     std::vector<T> positions(n1);
     for (std::size_t i = 0; i < n1; ++i) {
         positions[ordering[i]] = i;
     }
 
     // sort, we need the positions of the ends of the edges in the free layer
-    auto& edges = const_cast<general_bipartite_graph<T>&>(graph).get_edges();
+    auto& edges = const_cast<bipartite_graph<T>&>(graph).get_edges();
     std::sort(edges.begin(),
               edges.end(),
               [&](const std::pair<T, T>& a, const std::pair<T, T>& b) {
@@ -122,7 +122,7 @@ R crossing_number_of(const general_bipartite_graph<T>& graph, const std::vector<
  * @return R
  */
 template <typename T, typename R>
-R crossing_number_of(const folded_matrix<R>& cr_matrix, const std::vector<T>& ordering) {
+R number_of_crossings(const folded_matrix<R>& cr_matrix, const std::vector<T>& ordering) {
     const std::size_t n1 = cr_matrix.get_m();
     assert(n1 == ordering.size());
     std::vector<T> positions(n1);

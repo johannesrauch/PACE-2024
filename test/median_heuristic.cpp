@@ -6,6 +6,7 @@
 
 #include "bipartite_graph.hpp"
 #include "crossing_number.hpp"
+#include "input.hpp"
 #include "printf.hpp"
 
 /**
@@ -19,11 +20,11 @@
  * @param expected
  */
 template <typename T, typename R>
-void test_median_heuristics(const pace2024::general_bipartite_graph<T>& graph,
+void test_median_heuristics(const pace2024::bipartite_graph<T>& graph,
                             const R expected) {
-    std::vector<T> ordering(graph.get_n1());
+    std::vector<T> ordering(graph.get_n_free());
     pace2024::median_heuristic<T>(graph, ordering).run();
-    R nof_crossings = pace2024::crossing_number_of<T, R>(graph, ordering);
+    R nof_crossings = pace2024::number_of_crossings<T, R>(graph, ordering);
     // fmt::printf("%s,\n", nof_crossings);
 
     R nof_crossings_ = pace2024::probabilistic_median_heuristic<T, R>(graph, ordering).run();
@@ -42,7 +43,8 @@ int main() {
     for (const auto& file : std::filesystem::directory_iterator("tiny_test_set")) {
         if (!file.is_regular_file()) continue;
 
-        pace2024::uint16_bipartite_graph graph(static_cast<const std::string>(file.path()));
+        pace2024::uint16_bipartite_graph graph;
+        pace2024::parse_input(file.path(), graph);
         test_median_heuristics(graph, expected[i++]);
     }
     assert(i > 0);

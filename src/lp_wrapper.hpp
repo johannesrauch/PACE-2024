@@ -180,9 +180,9 @@ class glpk_wrapper : public lp_wrapper {
 
    public:
     template <typename T>
-    glpk_wrapper(const general_bipartite_graph<T> &graph,
+    glpk_wrapper(const bipartite_graph<T> &graph,
                  const int msg_level = GLP_MSG_OFF)
-        : lp_wrapper(static_cast<int>(graph.get_n1())),
+        : lp_wrapper(static_cast<int>(graph.get_n_free())),
           lp(glp_create_prob()) {
         initialize_parameters(msg_level);
         add_columns(graph);
@@ -343,7 +343,7 @@ class glpk_wrapper : public lp_wrapper {
      * @param graph the input graph
      */
     template <typename T>
-    inline void add_columns(const general_bipartite_graph<T> &graph) {
+    inline void add_columns(const bipartite_graph<T> &graph) {
         int obj_val_offset{0};
         int k = glp_add_cols(lp, n1_choose_2) - 1;
 
@@ -371,7 +371,7 @@ class glpk_wrapper : public lp_wrapper {
      * @return crossing number c_ji (for the objective offset)
      */
     template <typename T>
-    inline int add_column(const general_bipartite_graph<T> &graph,
+    inline int add_column(const bipartite_graph<T> &graph,
                           const T &i,
                           const T &j,
                           const int &k) {
@@ -627,8 +627,8 @@ class highs_wrapper : public lp_wrapper {
 
    public:
     template <typename T>
-    highs_wrapper(const general_bipartite_graph<T> &graph)
-        : lp_wrapper(static_cast<int>(graph.get_n1())) {
+    highs_wrapper(const bipartite_graph<T> &graph)
+        : lp_wrapper(static_cast<int>(graph.get_n_free())) {
         HighsStatus status;
         status = lp.setOptionValue("presolve", "off");
         assert(status == HighsStatus::kOk);
@@ -801,7 +801,7 @@ class highs_wrapper : public lp_wrapper {
      * @param graph the input graph
      */
     template <typename T>
-    inline void add_columns(const general_bipartite_graph<T> &graph) {
+    inline void add_columns(const bipartite_graph<T> &graph) {
         int obj_val_offset = 0;
         std::vector<double> lower_bounds(n1_choose_2, 0.);
         std::vector<double> upper_bounds(n1_choose_2, 1.);
@@ -832,7 +832,7 @@ class highs_wrapper : public lp_wrapper {
      * @return crossing number c_ji (for the objective offset)
      */
     template <typename T>
-    inline int add_column(const general_bipartite_graph<T> &graph,
+    inline int add_column(const bipartite_graph<T> &graph,
                           const T &i,
                           const T &j,
                           const int &k) {

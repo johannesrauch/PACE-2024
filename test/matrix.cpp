@@ -1,3 +1,4 @@
+#include "input.hpp"
 #include "matrix.hpp"
 
 #include <iostream>
@@ -11,9 +12,9 @@
  * @param graph 
  */
 template<typename T>
-void test_matrix_and_compute_crossing_numbers(const pace2024::general_bipartite_graph<T>& graph) {
-    const std::size_t n1{graph.get_n1()};
-    pace2024::uint64_folded_matrix ref_matrix(n1);
+void test_matrix_and_compute_crossing_numbers(const pace2024::bipartite_graph<T>& graph) {
+    const std::size_t n_free{graph.get_n_free()};
+    pace2024::uint64_folded_matrix ref_matrix(n_free);
     pace2024::uint64_matrix tst_matrix_1(graph);
     pace2024::uint64_folded_matrix tst_matrix_2(graph);
     pace2024::test::compute_crossing_numbers_naivly(graph, ref_matrix);
@@ -31,7 +32,8 @@ int main() {
     for (const auto& file : std::filesystem::directory_iterator("tiny_test_set")) {
         if (!file.is_regular_file()) continue;
 
-        pace2024::uint16_bipartite_graph graph(static_cast<const std::string>(file.path()));
+        pace2024::uint16_bipartite_graph graph;
+        pace2024::parse_input(file.path(), graph);
         test_matrix_and_compute_crossing_numbers(graph);        
     }
 

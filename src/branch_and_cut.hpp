@@ -28,7 +28,7 @@ template <typename T, typename R>
 class branch_and_cut {
    private:
     /// @brief a bipartite graph that resembles an instance of one-sided crossing minimization
-    const general_bipartite_graph<T> &graph;
+    const bipartite_graph<T> &graph;
 
     /// @brief  n1 = graph.get_n1()
     const std::size_t n1;
@@ -58,9 +58,9 @@ class branch_and_cut {
      *
      * @param graph input graph
      */
-    branch_and_cut(general_bipartite_graph<T> &graph)
+    branch_and_cut(bipartite_graph<T> &graph)
         : graph(graph),
-          n1(graph.get_n1()),
+          n1(graph.get_n_free()),
           lp_solver(new highs_wrapper(graph)),
           ordering(n1),
           digraph(n1) {
@@ -241,7 +241,7 @@ class branch_and_cut {
         // output
         PACE2024_DEBUG_PRINTF("OPTIMAL VALUE: %lu\n", upper_bound);
         if (do_print) {
-            print_output(graph.get_n0(), ordering);
+            print_output(graph.get_n_fixed(), ordering);
         }
     }
 

@@ -43,7 +43,7 @@ inline T median(const std::vector<T>& vec) {
 template <typename T>
 class median_heuristic {
    private:
-    const general_bipartite_graph<T>& input_graph;
+    const bipartite_graph<T>& input_graph;
     const std::vector<std::vector<T>>& adjacency_lists;
     const std::size_t n1;
     std::vector<T>& ordering;
@@ -56,11 +56,11 @@ class median_heuristic {
      * @param graph the instance
      * @param ordering vector where we store the computed ordering
      */
-    median_heuristic(const general_bipartite_graph<T>& input_graph,
+    median_heuristic(const bipartite_graph<T>& input_graph,
                      std::vector<T>& ordering)
         : input_graph(input_graph),
           adjacency_lists(input_graph.get_adjacency_lists()),
-          n1(input_graph.get_n1()),
+          n1(input_graph.get_n_free()),
           ordering(ordering),
           medians(n1) {
         fill_medians();
@@ -131,7 +131,7 @@ class median_heuristic {
 template <typename T, typename R>
 class probabilistic_median_heuristic {
    private:
-    const general_bipartite_graph<T>& input_graph;
+    const bipartite_graph<T>& input_graph;
     const std::vector<std::vector<T>>& adjacency_lists;
     const std::size_t n1;
     std::vector<T>& ordering;
@@ -149,11 +149,11 @@ class probabilistic_median_heuristic {
      * @param ordering vector where the ordering is stored
      * @param nof_iterations number of iterations
      */
-    probabilistic_median_heuristic(const general_bipartite_graph<T>& input_graph,
+    probabilistic_median_heuristic(const bipartite_graph<T>& input_graph,
                                    std::vector<T>& ordering)
         : input_graph(input_graph),
           adjacency_lists(input_graph.get_adjacency_lists()),
-          n1(input_graph.get_n1()),
+          n1(input_graph.get_n_free()),
           ordering(ordering),
           another_ordering(n1),
           medians(n1),
@@ -162,7 +162,7 @@ class probabilistic_median_heuristic {
     {
         // compute initial solution with normal median heuristic
         median_heuristic<T>(input_graph, ordering).run();
-        best = crossing_number_of<T, R>(input_graph, ordering);
+        best = number_of_crossings<T, R>(input_graph, ordering);
 
         // initialize vectors
         for (T i = 0; i < n1; ++i) another_ordering[i] = i;
@@ -226,7 +226,7 @@ class probabilistic_median_heuristic {
                 return this->compare(a, b);
             });
 
-            R candidate = crossing_number_of<T, R>(input_graph, another_ordering);
+            R candidate = number_of_crossings<T, R>(input_graph, another_ordering);
             if (candidate < best) {
                 best = candidate;
                 ordering = another_ordering;

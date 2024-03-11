@@ -15,7 +15,7 @@ namespace pace2024 {
 template <typename T>
 class barycenter_heuristic {
     /// @brief input instance of one-sided crossing minimization
-    const general_bipartite_graph<T> &graph;
+    const bipartite_graph<T> &graph;
 
     /// @brief number of vertices in the free layer
     const std::size_t n1;
@@ -33,10 +33,10 @@ class barycenter_heuristic {
      * @param graph input instance of one-sided crossing minimization
      * @param ordering in-out parameter, in which the computed ordering is stored
      */
-    barycenter_heuristic(const general_bipartite_graph<T> &graph,
+    barycenter_heuristic(const bipartite_graph<T> &graph,
                          std::vector<T> &ordering)
         : graph(graph),
-          n1(graph.get_n1()),
+          n1(graph.get_n_free()),
           ordering(ordering) {
     }
 
