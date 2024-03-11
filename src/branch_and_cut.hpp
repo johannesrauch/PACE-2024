@@ -91,11 +91,11 @@ class branch_and_cut {
      * @pre lp solution integral
      */
     void compute_ordering() {
-        assert(lp_solver->is_integral() == 0);
+        assert(lp_solver->is_integral() == -1);
         digraph.delete_arcs();
 
         // build the constraint graph
-        int k = 1;
+        int k = 0;
         for (T i = 0; i < n1; ++i) {
             for (T j = i + 1; j < n1; ++j) {
                 const double x = lp_solver->get_column_value(k);
@@ -194,7 +194,7 @@ class branch_and_cut {
 
         const int j = lp_solver->is_integral();
         // test if solution is integral, then we found a better solution
-        if (j == 0) {
+        if (j == -1) {
             compute_ordering();
             lp_solver->fix_columns(static_cast<int>(upper_bound));
             return backtrack();

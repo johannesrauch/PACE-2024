@@ -2,13 +2,13 @@
 #define PACE2024_LP_WRAPPER_HPP
 
 #include <glpk.h>
-#include "Highs.h"
 
 #include <cassert>
 #include <coin/ClpModel.hpp>
 #include <coin/ClpSimplex.hpp>
 #include <coin/CoinBuild.hpp>
 
+#include "Highs.h"
 #include "bipartite_graph.hpp"
 #include "crossing_number.hpp"
 #include "debug_printf.hpp"
@@ -97,6 +97,25 @@ class lp_wrapper {
     }
 
     //
+    // helper methods
+    //
+
+    /**
+     * @brief converts a vertex pair (i, j), i < j, to the lp column index
+     *
+     * @param i vertex
+     * @param j vertex, i < j
+     * @return int column index
+     */
+    inline int get_variable_index(const int &i, const int &j) {
+        assert(i < j);
+        int offset = n1_choose_2 - (n1 - i) * (n1 - i - 1) / 2;
+        int index = offset + j - i - 1;
+        assert(0 <= index && index < n1_choose_2);
+        return index;
+    }
+
+    //
     // lp related attributes
     //
 
@@ -118,7 +137,22 @@ class lp_wrapper {
 
    public:
     lp_wrapper(const int n1) : n1(n1), n1_choose_2(n1 * (n1 - 1) / 2) {}
+
     virtual ~lp_wrapper() {}
+
+    /**
+     * @brief returns -1 if current solution is integral and a column index of a nonintegral variable otherwise
+     */
+    int is_integral() {
+        for (int j = 0; j < n1_choose_2; ++j) {
+            if (!is_column_integral(j)) {
+                return j;
+            }
+        }
+        return -1;
+    }
+
+    // purely virtual methods
     virtual bool cut() = 0;
     virtual void fix_column(const int j, const double fix_to) = 0;
     virtual void fix_columns(const int new_upper_bound) = 0;
@@ -127,7 +161,7 @@ class lp_wrapper {
     virtual int get_nof_rows() = 0;
     virtual double get_objective_value() = 0;
     virtual int64_t get_rounded_objective_value() = 0;
-    virtual int is_integral() = 0;
+    virtual inline bool is_column_integral(const int &j) = 0;
     virtual bool is_optimal() = 0;
     virtual void solve(bool delete_rows_after) = 0;
     virtual void unfix_column(const int j) = 0;
@@ -182,10 +216,10 @@ class glpk_wrapper : public lp_wrapper {
      * @param fix_to
      */
     virtual void fix_column(const int j, const double fix_to) {
-        assert(0 < j);
-        assert(j <= glp_get_num_cols(lp));
+        assert(0 <= j);
+        assert(j < n1_choose_2);
         PACE2024_DEBUG_PRINTF("fixed variable %5d to %1.0f\n", j, fix_to);
-        glp_set_col_bnds(lp, j, GLP_FX, fix_to, 0.);  // ub is ignored
+        glp_set_col_bnds(lp, j + 1, GLP_FX, fix_to, 0.);  // ub is ignored
     }
 
     /**
@@ -200,9 +234,9 @@ class glpk_wrapper : public lp_wrapper {
     virtual void fix_columns(const int new_upper_bound) {
         assert(new_upper_bound < upper_bound);
         upper_bound = new_upper_bound;
-        for (int j = 1; j <= n1_choose_2; ++j) {
+        for (int j = 0; j < n1_choose_2; ++j) {
             const int diff = upper_bound - lower_bound;
-            const double coeff = glp_get_obj_coef(lp, j);
+            const double coeff = get_objective_coefficient(j);
 
             if (std::abs(coeff) >= static_cast<double>(diff) && coeff != 0.) {
                 fix_column(j, coeff > 0 ? 0. : 1.);
@@ -213,7 +247,9 @@ class glpk_wrapper : public lp_wrapper {
 
     /// @brief returns value of column j
     virtual double get_column_value(const int j) {
-        return glp_get_col_prim(lp, j);
+        assert(0 <= j);
+        assert(j < n1_choose_2);
+        return glp_get_col_prim(lp, j + 1);
     }
 
     /// @brief returns the number of cols
@@ -238,21 +274,6 @@ class glpk_wrapper : public lp_wrapper {
         return llround(value);
     }
 
-    /**
-     * @brief returns a value based on the integrality of the current solution
-     *
-     * @return int 0, if solution is integral
-     * @return int j, 1 <= j <= n1_choose_2, of nonintegral column otherwise
-     */
-    int is_integral() {
-        for (int j = 1; j <= n1_choose_2; ++j) {
-            if (!is_column_integral(j)) {
-                return j;
-            }
-        }
-        return 0;
-    }
-
     /// @brief returns if an optimal feasible solution has been found
     virtual bool is_optimal() {
         return glp_get_status(lp) == GLP_OPT;
@@ -274,7 +295,9 @@ class glpk_wrapper : public lp_wrapper {
 
     /// @brief resets bounds of column j to 0 <= . <= 1
     virtual void unfix_column(const int j) {
-        glp_set_col_bnds(lp, j, GLP_DB, 0., 1.);
+        assert(0 <= j);
+        assert(j < n1_choose_2);
+        glp_set_col_bnds(lp, j + 1, GLP_DB, 0., 1.);
     }
 
    private:
@@ -292,7 +315,7 @@ class glpk_wrapper : public lp_wrapper {
     template <typename T>
     inline void add_columns(const general_bipartite_graph<T> &graph) {
         int obj_val_offset{0};
-        int k = glp_add_cols(lp, n1_choose_2);
+        int k = glp_add_cols(lp, n1_choose_2) - 1;
 
         for (T i = 0; i < static_cast<T>(n1); ++i) {
             for (T j = i + 1; j < static_cast<T>(n1); ++j) {
@@ -340,7 +363,7 @@ class glpk_wrapper : public lp_wrapper {
             fix_column(k, 0.);
         } else {
             // set 0 <= x_ij <= 1
-            glp_set_col_bnds(lp, k, GLP_DB, 0., 1.);
+            unfix_column(k);
         }
 
         // todo: if d(i)=d(j), check if fixing is possible
@@ -348,7 +371,7 @@ class glpk_wrapper : public lp_wrapper {
         // set coefficient of added column
         if (c_ij != c_ji) {
             const double coeff = static_cast<double>(c_ij) - static_cast<double>(c_ji);
-            glp_set_obj_coef(lp, k, coeff);
+            glp_set_obj_coef(lp, k + 1, coeff);
         }
 
         return c_ji;
@@ -366,7 +389,7 @@ class glpk_wrapper : public lp_wrapper {
 
     inline int add_3cycle_row(const int &ij, const int &jk, const int &ik) {
         const int row = glp_add_rows(lp, 1);
-        const int indices[4] = {0, ij, ik, jk};
+        const int indices[4] = {0, ij + 1, ik + 1, jk + 1};
         const double coefficients[4] = {0, 1., -1., 1.};
         glp_set_mat_row(lp, row, 3, indices, coefficients);
         return row;
@@ -395,6 +418,7 @@ class glpk_wrapper : public lp_wrapper {
             for (const auto &[ij, jk, ik, ub] : *r_it) {
                 ++nof_new_rows;
 
+                PACE2024_DEBUG_PRINTF("\t\tadd_3cycle_rows (%3d,%3d,%3d)\n", ij, ik, jk);
                 if (ub) {
                     add_3cycle_row_with_ub(ij, jk, ik);
                 } else {
@@ -422,6 +446,7 @@ class glpk_wrapper : public lp_wrapper {
         assert(ik < jk);
 
         const double x = get_3cycle_value(ij, jk, ik);
+        PACE2024_DEBUG_PRINTF("\t\t\tcheck_3cycle %f\n", x);
         if (is_3cycle_lb_violated(x)) {
             get_bucket(-x).emplace_back(ij, jk, ik, false);
         }
@@ -449,7 +474,7 @@ class glpk_wrapper : public lp_wrapper {
         }
 
         const int nof_new_rows = add_3cycle_rows();
-        PACE2024_DEBUG_PRINTF("\tend   check_3cycles, number of new rows=%lld\n", nof_new_rows);
+        PACE2024_DEBUG_PRINTF("\tend   check_3cycles, number of new rows=%d\n", nof_new_rows);
         return nof_new_rows > 0;
     }
 
@@ -462,9 +487,9 @@ class glpk_wrapper : public lp_wrapper {
      * @return double x_ij + x_jk - x_ik
      */
     inline double get_3cycle_value(const int &ij, const int &jk, const int &ik) {
-        const double x_ij = glp_get_col_prim(lp, ij);
-        const double x_jk = glp_get_col_prim(lp, jk);
-        const double x_ik = glp_get_col_prim(lp, ik);
+        const double x_ij = get_column_value(ij);
+        const double x_jk = get_column_value(jk);
+        const double x_ik = get_column_value(ik);
         return x_ij + x_jk - x_ik;
     }
 
@@ -516,7 +541,7 @@ class glpk_wrapper : public lp_wrapper {
      */
     inline bool has_row_lb_slack(const int &i) {
         const double x = glp_get_row_prim(lp, i);
-        return has_row_lb(i) && x > 0.;
+        return has_row_lb(i) && x > params.tol_bnd;
     }
 
     /**
@@ -527,7 +552,7 @@ class glpk_wrapper : public lp_wrapper {
      */
     inline bool has_row_ub_slack(const int &i) {
         const double x = glp_get_row_prim(lp, i);
-        return has_row_ub(i) && x < 1.;
+        return has_row_ub(i) && x < 1. - params.tol_bnd;
     }
 
     /**
@@ -538,24 +563,24 @@ class glpk_wrapper : public lp_wrapper {
     inline void delete_positive_slack_rows() {
         PACE2024_DEBUG_PRINTF("\tstart delete_positive_slack_rows\n");
 
-        std::vector<int> rows_to_remove;
-        rows_to_remove.emplace_back(0);  // padding
+        std::vector<int> rows_to_delete;
+        rows_to_delete.emplace_back(0);  // padding
 
         // gather rows to delete
         const int nof_rows = glp_get_num_rows(lp);
         for (int i = 1; i <= nof_rows; ++i) {
             if (has_row_lb_slack(i)) {
-                rows_to_remove.emplace_back(i);
+                rows_to_delete.emplace_back(i);
             }
             if (has_row_ub_slack(i)) {
-                rows_to_remove.emplace_back(i);
+                rows_to_delete.emplace_back(i);
             }
         }
 
-        const int nof_removed_rows = static_cast<int>(rows_to_remove.size()) - 1;
-        if (nof_removed_rows > 0) {
-            PACE2024_DEBUG_PRINTF("\tend   delete_positive_slack_rows, number of removed rows=%lld\n", nof_removed_rows);
-            glp_del_rows(lp, nof_removed_rows, &rows_to_remove[0]);
+        const int nof_rows_to_delete = static_cast<int>(rows_to_delete.size()) - 1;
+        if (nof_rows_to_delete > 0) {
+            PACE2024_DEBUG_PRINTF("\tend   delete_positive_slack_rows, number of removed rows=%d\n", nof_rows_to_delete);
+            glp_del_rows(lp, nof_rows_to_delete, &rows_to_delete[0]);
         }
     }
 
@@ -570,11 +595,10 @@ class glpk_wrapper : public lp_wrapper {
      * @return true if integral (that is, it is in the params.tol_bnd open neighborhood of an integer)
      * @return false otherwise
      */
-    inline bool
-    is_column_integral(const int &j) {
+    inline bool is_column_integral(const int &j) {
         assert(0 <= j);
         assert(j < n1_choose_2);
-        const double x = glp_get_col_prim(lp, j);
+        const double x = get_column_value(j);
         constexpr double ub = 1. - PACE2024_CONST_INTEGER_TOLERANCE;
         if (x > PACE2024_CONST_INTEGER_TOLERANCE && x < ub) {
             return false;
@@ -583,22 +607,14 @@ class glpk_wrapper : public lp_wrapper {
     }
 
     //
-    // helper methods
+    // getter
     //
 
-    /**
-     * @brief converts a vertex pair (i, j), i < j, to the lp column index
-     *
-     * @param i vertex
-     * @param j vertex, i < j
-     * @return int column index
-     */
-    inline int get_variable_index(const int &i, const int &j) {
-        assert(i < j);
-        int offset = n1_choose_2 - (n1 - i) * (n1 - i - 1) / 2;
-        int index = offset + j - i - 1;
-        assert(1 <= index && index <= n1_choose_2);
-        return index;
+    /// @brief returns the objective coefficient of column j
+    inline double get_objective_coefficient(const int &j) {
+        assert(0 <= j);
+        assert(j < n1_choose_2);
+        return glp_get_obj_coef(lp, j + 1);
     }
 };
 
@@ -937,14 +953,15 @@ class highs_wrapper : public lp_wrapper {
      * @brief returns value of x < -1e-7
      */
     inline bool is_3cycle_lb_violated(const double &x) {
-        return x < -params.tol_bnd;
+        return x < -PACE2024_CONST_FEASIBILITY_TOLERANCE;
     }
 
     /**
      * @brief returns value of x > 1 + 1e-7
      */
     inline bool is_3cycle_ub_violated(const double &x) {
-        return x > 1. + params.tol_bnd;
+        constexpr double ub = 1. + PACE2024_CONST_FEASIBILITY_TOLERANCE;
+        return x > ub;
     }
 
     //
@@ -1000,8 +1017,7 @@ class highs_wrapper : public lp_wrapper {
      * @return true if integral (that is, it is in the params.tol_bnd open neighborhood of an integer)
      * @return false otherwise
      */
-    inline bool
-    is_column_integral(const int &j) {
+    inline bool is_column_integral(const int &j) {
         const double x = get_column_value(j);
         constexpr double ub = 1. - PACE2024_CONST_INTEGER_TOLERANCE;
         if (x > PACE2024_CONST_INTEGER_TOLERANCE && x < ub) {
@@ -1013,21 +1029,6 @@ class highs_wrapper : public lp_wrapper {
     //
     // helper methods
     //
-
-    /**
-     * @brief converts a vertex pair (i, j), i < j, to the lp column index
-     *
-     * @param i vertex
-     * @param j vertex, i < j
-     * @return int column index
-     */
-    inline int get_variable_index(const int &i, const int &j) {
-        assert(i < j);
-        int offset = n1_choose_2 - (n1 - i) * (n1 - i - 1) / 2;
-        int index = offset + j - i - 1;
-        assert(0 <= index && index < n1_choose_2);
-        return index;
-    }
 
     /// @brief returns the objective coefficient of column j
     inline double get_objective_coefficient(const int &j) {
