@@ -154,6 +154,7 @@ class lp_wrapper {
 
     // purely virtual methods
     virtual bool cut() = 0;
+    virtual void delete_positive_slack_rows() = 0;
     virtual void fix_column(const int j, const double fix_to) = 0;
     virtual void fix_columns(const int new_upper_bound) = 0;
     virtual double get_column_value(const int j) = 0;
@@ -207,6 +208,35 @@ class glpk_wrapper : public lp_wrapper {
         bool success = check_3cycles();
         // todo: k-fence
         return success;
+    }
+
+    /**
+     * @brief delete rows with positive slack from the lp
+     * (each row just has either a lower or an upper bound)
+     * (this is only slightly inefficient, since we delete positive slack rows, but it makes life easier)
+     */
+    virtual void delete_positive_slack_rows() {
+        PACE2024_DEBUG_PRINTF("\tstart delete_positive_slack_rows\n");
+
+        std::vector<int> rows_to_delete;
+        rows_to_delete.emplace_back(0);  // padding
+
+        // gather rows to delete
+        const int nof_rows = glp_get_num_rows(lp);
+        for (int i = 1; i <= nof_rows; ++i) {
+            if (has_row_lb_slack(i)) {
+                rows_to_delete.emplace_back(i);
+            }
+            if (has_row_ub_slack(i)) {
+                rows_to_delete.emplace_back(i);
+            }
+        }
+
+        const int nof_rows_to_delete = static_cast<int>(rows_to_delete.size()) - 1;
+        if (nof_rows_to_delete > 0) {
+            PACE2024_DEBUG_PRINTF("\tend   delete_positive_slack_rows, number of removed rows=%d\n", nof_rows_to_delete);
+            glp_del_rows(lp, nof_rows_to_delete, &rows_to_delete[0]);
+        }
     }
 
     /**
@@ -555,35 +585,6 @@ class glpk_wrapper : public lp_wrapper {
         return has_row_ub(i) && x < 1. - params.tol_bnd;
     }
 
-    /**
-     * @brief delete rows with positive slack from the lp
-     * (each row just has either a lower or an upper bound)
-     * (this is only slightly inefficient, since we delete positive slack rows, but it makes life easier)
-     */
-    inline void delete_positive_slack_rows() {
-        PACE2024_DEBUG_PRINTF("\tstart delete_positive_slack_rows\n");
-
-        std::vector<int> rows_to_delete;
-        rows_to_delete.emplace_back(0);  // padding
-
-        // gather rows to delete
-        const int nof_rows = glp_get_num_rows(lp);
-        for (int i = 1; i <= nof_rows; ++i) {
-            if (has_row_lb_slack(i)) {
-                rows_to_delete.emplace_back(i);
-            }
-            if (has_row_ub_slack(i)) {
-                rows_to_delete.emplace_back(i);
-            }
-        }
-
-        const int nof_rows_to_delete = static_cast<int>(rows_to_delete.size()) - 1;
-        if (nof_rows_to_delete > 0) {
-            PACE2024_DEBUG_PRINTF("\tend   delete_positive_slack_rows, number of removed rows=%d\n", nof_rows_to_delete);
-            glp_del_rows(lp, nof_rows_to_delete, &rows_to_delete[0]);
-        }
-    }
-
     //
     // integrality testing methods
     //
@@ -621,18 +622,24 @@ class glpk_wrapper : public lp_wrapper {
 class highs_wrapper : public lp_wrapper {
     /// @brief lp solver
     Highs lp;
-    /// @brief parameters for glp_simplex
-    glp_smcp params;
+    /// @brief number of rows before `cut()` added new rows
+    int nof_old_rows{0};
 
    public:
     template <typename T>
     highs_wrapper(const general_bipartite_graph<T> &graph)
         : lp_wrapper(static_cast<int>(graph.get_n1())) {
-        lp.setOptionValue("presolve", "off");
-        lp.setOptionValue("solver", "simplex");
-        lp.setOptionValue("parallel", "off");
-        lp.setOptionValue("threads", 1);
-        lp.setOptionValue("log_to_console", false);
+        HighsStatus status;
+        status = lp.setOptionValue("presolve", "off");
+        assert(status == HighsStatus::kOk);
+        status = lp.setOptionValue("solver", "simplex");
+        assert(status == HighsStatus::kOk);
+        status = lp.setOptionValue("parallel", "off");
+        assert(status == HighsStatus::kOk);
+        status = lp.setOptionValue("threads", 1);
+        assert(status == HighsStatus::kOk);
+        status = lp.setOptionValue("log_to_console", false);
+        assert(status == HighsStatus::kOk);
         add_columns(graph);
     }
 
@@ -650,9 +657,31 @@ class highs_wrapper : public lp_wrapper {
      * @return false otherwise
      */
     virtual bool cut() {
+        nof_old_rows = get_nof_rows();
         bool success = check_3cycles();
         // todo: k-fence
         return success;
+    }
+
+    /**
+     * @brief delete rows with positive slack from the lp
+     */
+    virtual void delete_positive_slack_rows() {
+        PACE2024_DEBUG_PRINTF("\tstart delete_positive_slack_rows\n");
+
+        // gather rows to delete
+        std::vector<int> rows_to_delete;
+        for (int i = 0; i < nof_old_rows; ++i) {
+            if (has_row_slack(i)) {
+                rows_to_delete.emplace_back(i);
+            }
+        }
+
+        const int nof_rows_to_delete = static_cast<int>(rows_to_delete.size());
+        if (nof_rows_to_delete > 0) {
+            PACE2024_DEBUG_PRINTF("\tend   delete_positive_slack_rows, number of removed rows=%d\n", nof_rows_to_delete);
+            lp.deleteRows(nof_rows_to_delete, &rows_to_delete[0]);
+        }
     }
 
     /**
@@ -746,13 +775,10 @@ class highs_wrapper : public lp_wrapper {
     }
 
     virtual void solve(bool delete_rows_after) {
-        PACE2024_DEBUG_PRINTF("start glp_simplex\n");
+        PACE2024_DEBUG_PRINTF("start highs_simplex\n");
         lp.run();
-        PACE2024_DEBUG_PRINTF("end   glp_simplex, objective value=%f\n", get_objective_value());
-
-        if (delete_rows_after) {
-            delete_positive_slack_rows();
-        }
+        PACE2024_DEBUG_PRINTF("end   highs_simplex, objective value=%f, number of rows=%d\n", get_objective_value(), get_nof_rows());
+        (void)delete_rows_after;
     }
 
     /// @brief resets bounds of column j to 0 <= . <= 1
@@ -853,14 +879,15 @@ class highs_wrapper : public lp_wrapper {
      * @return int number of new rows
      */
     inline int add_3cycle_rows() {
-        const int nof_new_rows = get_nof_bucket_entries();
-        constexpr HighsInt array_length = PACE2024_CONST_NOF_CYCLE_CONSTRAINTS;
-        constexpr HighsInt array_length_x3 = 3 * array_length;
-        double lower_bounds[array_length];
-        double upper_bounds[array_length];
-        HighsInt starts[array_length];
-        HighsInt indices[array_length_x3];
-        double values[array_length_x3];
+        const HighsInt nof_new_rows = std::min(get_nof_bucket_entries(), PACE2024_CONST_NOF_CYCLE_CONSTRAINTS);
+        if (nof_new_rows <= 0) return 0;
+
+        const HighsInt nof_new_rows_x3 = 3 * nof_new_rows;
+        std::vector<double> lower_bounds(nof_new_rows);
+        std::vector<double> upper_bounds(nof_new_rows);
+        std::vector<HighsInt> starts(nof_new_rows);
+        std::vector<HighsInt> indices(nof_new_rows_x3);
+        std::vector<double> values(nof_new_rows_x3);
 
         int i = 0;
         bool go_on = true;
@@ -880,14 +907,18 @@ class highs_wrapper : public lp_wrapper {
                 values[i3 + 2] = 1.;
 
                 ++i;
-                if (i >= array_length) {
+                if (i >= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS) {
                     go_on = false;
                     break;
                 }
             }
         }
+        assert(i == nof_new_rows);
 
-        lp.addRows(nof_new_rows, lower_bounds, upper_bounds, 3 * nof_new_rows, starts, indices, values);
+        lp.addRows(nof_new_rows,
+                   &lower_bounds[0], &upper_bounds[0],
+                   nof_new_rows_x3,
+                   &starts[0], &indices[0], &values[0]);
         return nof_new_rows;
     }
 
@@ -903,11 +934,15 @@ class highs_wrapper : public lp_wrapper {
         assert(ik < jk);
 
         const double x = get_3cycle_value(ij, jk, ik);
+        constexpr double interval_width = 1. + 2e-7;
         if (is_3cycle_lb_violated(x)) {
-            get_bucket(-x).emplace_back(ij, jk, ik, false);
+            const double x_normalized = -x / interval_width;
+            get_bucket(x_normalized).emplace_back(ij, jk, ik, false);
         }
         if (is_3cycle_ub_violated(x)) {
-            get_bucket(x - 1).emplace_back(ij, jk, ik, true);
+            constexpr double ub = 1. + PACE2024_CONST_FEASIBILITY_TOLERANCE;
+            const double x_normalized = (x - ub) / interval_width;
+            get_bucket(x_normalized).emplace_back(ij, jk, ik, true);
         }
     }
 
@@ -979,31 +1014,6 @@ class highs_wrapper : public lp_wrapper {
         const double x = sol.row_value[i];
         constexpr double ub = 1. - PACE2024_CONST_FEASIBILITY_TOLERANCE;
         return x > PACE2024_CONST_FEASIBILITY_TOLERANCE && x < ub;
-    }
-
-    /**
-     * @brief delete rows with positive slack from the lp
-     * (each row just has either a lower or an upper bound)
-     * (this is only slightly inefficient, since we delete positive slack rows, but it makes life easier)
-     */
-    inline void delete_positive_slack_rows() {
-        PACE2024_DEBUG_PRINTF("\tstart delete_positive_slack_rows\n");
-
-        std::vector<int> rows_to_delete;
-
-        // gather rows to delete
-        const int nof_rows = get_nof_rows();
-        for (int i = 0; i < nof_rows; ++i) {
-            if (has_row_slack(i)) {
-                rows_to_delete.emplace_back(i);
-            }
-        }
-
-        const int nof_rows_to_delete = static_cast<int>(rows_to_delete.size());
-        if (nof_rows_to_delete > 0) {
-            PACE2024_DEBUG_PRINTF("\tend   delete_positive_slack_rows, number of removed rows=%d\n", nof_rows_to_delete);
-            lp.deleteRows(nof_rows_to_delete, &rows_to_delete[0]);
-        }
     }
 
     //

@@ -190,7 +190,10 @@ class branch_and_cut {
 
         // try to generate cutting planes
         bool successful = lp_solver->cut();
-        if (successful) return false;
+        if (successful) {
+            if (stack.empty()) lp_solver->delete_positive_slack_rows();
+            return false;
+        }
 
         const int j = lp_solver->is_integral();
         // test if solution is integral, then we found a better solution
