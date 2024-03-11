@@ -66,8 +66,9 @@ class median_heuristic {
         fill_medians();
     }
 
-    // delete copy constructor and assignment function
+    // delete copy and move constructor and copy and move assignment
     median_heuristic(const median_heuristic<T>& other) = delete;
+    median_heuristic(median_heuristic<T>&& other) = delete;
     median_heuristic<T>& operator=(median_heuristic<T>& other) = delete;
     median_heuristic<T>& operator=(const median_heuristic<T>& other) = delete;
 
@@ -168,8 +169,9 @@ class probabilistic_median_heuristic {
         fill_medians();
     }
 
-    // delete copy constructor and assignment function
+    // delete copy and move constructor and copy and move assignment
     probabilistic_median_heuristic(const probabilistic_median_heuristic<T, R>& other) = delete;
+    probabilistic_median_heuristic(probabilistic_median_heuristic<T, R>&& other) = delete;
     probabilistic_median_heuristic<T, R>& operator=(probabilistic_median_heuristic<T, R>& other) = delete;
     probabilistic_median_heuristic<T, R>& operator=(const probabilistic_median_heuristic<T, R>& other) = delete;
 
