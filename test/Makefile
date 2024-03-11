@@ -5,6 +5,7 @@ all: input bipartite_graph matrix crossing_number glpk median_heuristic topologi
 clean:
 	rm *.exe
 	rm *.o
+	rm *.log
 
 %:
 	@if [ $* != "all" ]; then \
