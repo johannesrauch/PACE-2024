@@ -15,7 +15,7 @@ R get_ref_nof_crossings(std::filesystem::path filepath_instance) {
     // fmt::printf("%s\n", static_cast<std::string>(filepath_nof_crossings));
     std::ifstream file_nof_crossings(filepath_nof_crossings);
     assert(file_nof_crossings.good());
-    uint32_t ref_nof_crossings;
+    R ref_nof_crossings;
     file_nof_crossings >> ref_nof_crossings;
     file_nof_crossings.close();
     return ref_nof_crossings;
