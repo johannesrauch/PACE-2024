@@ -2,7 +2,7 @@
 #define PACE2024_LP_WRAPPER_HPP
 
 #include <glpk.h>
-#include <highs/Highs.h>
+#include "Highs.h"
 
 #include <cassert>
 #include <coin/ClpModel.hpp>
