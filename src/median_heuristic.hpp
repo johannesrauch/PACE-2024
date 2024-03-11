@@ -217,7 +217,7 @@ class probabilistic_median_heuristic {
      *
      * @return R number of crossings
      */
-    R run(const std::size_t nof_iterations = 1000) {
+    R run(const std::size_t nof_iterations = 10) {
         // try to find a better solution with probabilistic median heuristic
         for (std::size_t iteration = 0; iteration < nof_iterations; ++iteration) {
             // PACE2024_DEBUG_PRINTF("%s\n", iteration);
