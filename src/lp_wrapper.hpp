@@ -951,8 +951,8 @@ class highs_wrapper : public lp_wrapper {
 
         clear_buckets();
         bool break_for_loops;
-        for (int i = 0; i < n1; ++i) {
-            for (int j = i + 1; j < n1; ++j) {
+        for (int i = 0; i < n1 - 2; ++i) {
+            for (int j = i + 1; j < n1 - 1; ++j) {
                 for (int k = j + 1; k < n1; ++k) {
                     assert(i < j);
                     assert(j < k);
