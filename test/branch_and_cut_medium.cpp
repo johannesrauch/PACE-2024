@@ -5,6 +5,7 @@
 
 #include "branch_and_cut.hpp"
 #include "crossing_number.hpp"
+#include "input.hpp"
 #include "output.hpp"
 #include "printf.hpp"
 #include "test_utils.hpp"
@@ -12,8 +13,9 @@
 void test_solver_w_instance(std::filesystem::path filepath_instance) {
     fmt::printf("%s\n", static_cast<std::string>(filepath_instance));
     std::cout << std::flush;
-    
-    pace2024::uint16_bipartite_graph graph(filepath_instance);
+
+    pace2024::uint16_bipartite_graph graph;
+    pace2024::parse_input(filepath_instance, graph);
     pace2024::branch_and_cut<uint16_t, uint32_t> solver(graph);
     solver.solve(false);
 

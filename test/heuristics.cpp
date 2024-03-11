@@ -5,6 +5,7 @@
 #include "barycenter_heuristic.hpp"
 #include "bipartite_graph.hpp"
 #include "crossing_number.hpp"
+#include "input.hpp"
 #include "median_heuristic.hpp"
 #include "printf.hpp"
 #include "test_utils.hpp"
@@ -22,7 +23,8 @@ void compare_heuristics_on_instance(fs::path filepath) {
     // input
     std::ifstream input(filepath);
     assert(input.good());
-    pace2024::bipartite_graph<T> graph(input);
+    pace2024::bipartite_graph<T> graph;
+    pace2024::parse_input(filepath, graph);
     std::vector<T> ordering;
 
     // barycenter
