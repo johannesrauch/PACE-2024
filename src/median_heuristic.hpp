@@ -1,7 +1,6 @@
 #ifndef PACE2024_MEDIAN_HEURISTIC_HPP
 #define PACE2024_MEDIAN_HEURISTIC_HPP
 
-#include <random>
 #include <vector>
 
 #include "bipartite_graph.hpp"
