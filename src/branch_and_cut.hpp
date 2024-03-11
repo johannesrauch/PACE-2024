@@ -61,7 +61,7 @@ class branch_and_cut {
     branch_and_cut(general_bipartite_graph<T> &graph)
         : graph(graph),
           n1(graph.get_n1()),
-          lp_solver(new clp_wrapper(graph)),
+          lp_solver(new highs_wrapper(graph)),
           ordering(n1),
           digraph(n1) {
         assert(n1 > 0);
