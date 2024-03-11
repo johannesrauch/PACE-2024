@@ -205,6 +205,10 @@ class probabilistic_median_heuristic {
         }
     }
 
+    R get_best() {
+        return best;
+    }
+
     /**
      * @brief runs the probabilistic median heuristic solver
      * and stores the result in ordering
