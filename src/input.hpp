@@ -38,6 +38,8 @@ void parse_input(fs::path filepath, bipartite_graph<T> &graph) {
  */
 template <typename T>
 void parse_input(std::ifstream &input, bipartite_graph<T> &graph) {
+    graph.clear();
+
     std::size_t n_fixed = 0, n_free = 0, m = 0;
     char type_of_line = 0;
     std::string problem_descriptor, comment;
