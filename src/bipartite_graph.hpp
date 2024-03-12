@@ -82,6 +82,18 @@ class bipartite_graph {
     }
 
     /**
+     * @brief clears and resets all attributes of this objects
+     */
+    void clear() {
+        n_fixed = 0;
+        n_free = 0;
+        m = 0;
+        adjacency_lists_fixed.clear();
+        adjacency_lists.clear();
+        edges.clear();
+    }
+
+    /**
      * @brief returns the number of all vertices
      */
     std::size_t get_n() const { return n_fixed + n_free; }
