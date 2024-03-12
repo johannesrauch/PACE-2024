@@ -39,7 +39,12 @@ class bipartite_graph {
     std::size_t m{0};
 
     /**
-     * @brief neighbors of vertices in the free layer; each adjacency list is sorted
+     * @brief neighbors of vertices in the free layer
+     */
+    std::vector<std::vector<T>> adjacency_lists_fixed;
+
+    /**
+     * @brief neighbors of vertices in the free layer
      */
     std::vector<std::vector<T>> adjacency_lists;
 
@@ -63,17 +68,23 @@ class bipartite_graph {
 
     /**
      * @brief adds the edge uv to the graph
-     * 
+     *
      * @param u vertex of fixed layer
      * @param v vertex of free layer
      */
     void add_edge(const T u, const T v) {
         assert(u < n_fixed);
         assert(v < n_free);
+        adjacency_lists_fixed[u].emplace_back(v);
         adjacency_lists[v].emplace_back(u);
         edges.emplace_back(u, v);
         ++m;
     }
+
+    /**
+     * @brief returns the number of all vertices
+     */
+    std::size_t get_n() const { return n_fixed + n_free; }
 
     /**
      * @brief returns number of vertices in the fixed layer
@@ -91,17 +102,22 @@ class bipartite_graph {
     std::size_t get_m() const { return m; }
 
     /**
-     * @brief returns a constant reference to all adjacency lists
+     * @brief returns a constant reference to adjacency lists of free layer
      */
     const std::vector<std::vector<T>> &get_adjacency_lists() const {
         return adjacency_lists;
     }
 
+/**
+     * @brief get neighbors of vertex v, which is in the fixed layer
+     */
+    const std::vector<T> &get_neighbors_fixed(const T v) const {
+        assert(v < n_fixed);
+        return adjacency_lists_fixed[v];
+    }
+
     /**
-     * @brief get neighbors of vertex v (which is in the free layer)
-     *
-     * @param v
-     * @return const std::vector<T>&
+     * @brief get neighbors of vertex v, which is in the free layer
      */
     const std::vector<T> &get_neighbors(const T v) const {
         assert(v < n_free);
@@ -127,6 +143,7 @@ class bipartite_graph {
      */
     void set_n_fixed(const std::size_t n_fixed_) {
         n_fixed = n_fixed_;
+        adjacency_lists_fixed.resize(n_fixed);
     }
 
     /**
@@ -141,6 +158,9 @@ class bipartite_graph {
      * @brief sorts all adjacency lists in ascending order
      */
     void sort_adjacency_lists() {
+        for (auto &adjacency_list : adjacency_lists_fixed) {
+            std::sort(adjacency_lists_fixed.begin(), adjacency_lists_fixed.end());
+        }
         for (auto &adjacency_list : adjacency_lists) {
             std::sort(adjacency_list.begin(), adjacency_list.end());
         }
