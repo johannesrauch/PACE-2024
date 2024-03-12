@@ -33,5 +33,7 @@ int main() {
         pace2024::components components(graph);
         assert(components.get_nof_components() == 0);
     }
+
+    std::cout << "TEST::PACE2024::COMPONENTS:\t\tOK" << std::endl;
     return 0;
 }
