@@ -171,7 +171,7 @@ class bipartite_graph {
      */
     void sort_adjacency_lists() {
         for (auto &adjacency_list : adjacency_lists_fixed) {
-            std::sort(adjacency_lists_fixed.begin(), adjacency_lists_fixed.end());
+            std::sort(adjacency_list.begin(), adjacency_list.end());
         }
         for (auto &adjacency_list : adjacency_lists) {
             std::sort(adjacency_list.begin(), adjacency_list.end());
