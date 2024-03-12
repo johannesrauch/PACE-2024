@@ -4,9 +4,6 @@
 #include <glpk.h>
 
 #include <cassert>
-#include <coin/ClpModel.hpp>
-#include <coin/ClpSimplex.hpp>
-#include <coin/CoinBuild.hpp>
 
 #include "Highs.h"
 #include "bipartite_graph.hpp"
