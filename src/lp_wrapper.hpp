@@ -182,7 +182,7 @@ class glpk_wrapper : public lp_wrapper {
         : lp_wrapper(static_cast<int>(graph.get_n_free())),
           lp(glp_create_prob()) {
         initialize_parameters(msg_level);
-        add_columns(graph);
+        add_variables(graph);
         glp_set_obj_dir(lp, GLP_MIN);
     }
 
@@ -340,13 +340,13 @@ class glpk_wrapper : public lp_wrapper {
      * @param graph the input graph
      */
     template <typename T>
-    inline void add_columns(const bipartite_graph<T> &graph) {
+    inline void add_variables(const bipartite_graph<T> &graph) {
         int obj_val_offset{0};
         int k = glp_add_cols(lp, n1_choose_2) - 1;
 
         for (T i = 0; i < static_cast<T>(n1); ++i) {
             for (T j = i + 1; j < static_cast<T>(n1); ++j) {
-                obj_val_offset += add_column(graph, i, j, k);
+                obj_val_offset += add_variable(graph, i, j, k);
                 ++k;
             }
         }
@@ -368,7 +368,7 @@ class glpk_wrapper : public lp_wrapper {
      * @return crossing number c_ji (for the objective offset)
      */
     template <typename T>
-    inline int add_column(const bipartite_graph<T> &graph,
+    inline int add_variable(const bipartite_graph<T> &graph,
                           const T &i,
                           const T &j,
                           const int &k) {
@@ -637,7 +637,7 @@ class highs_wrapper : public lp_wrapper {
         assert(status == HighsStatus::kOk);
         status = lp.setOptionValue("log_to_console", false);
         assert(status == HighsStatus::kOk);
-        add_columns(graph);
+        add_variables(graph);
     }
 
     highs_wrapper(const highs_wrapper &rhs) = delete;
@@ -798,7 +798,7 @@ class highs_wrapper : public lp_wrapper {
      * @param graph the input graph
      */
     template <typename T>
-    inline void add_columns(const bipartite_graph<T> &graph) {
+    inline void add_variables(const bipartite_graph<T> &graph) {
         int obj_val_offset = 0;
         std::vector<double> lower_bounds(n1_choose_2, 0.);
         std::vector<double> upper_bounds(n1_choose_2, 1.);
@@ -807,7 +807,7 @@ class highs_wrapper : public lp_wrapper {
         int k = 0;
         for (T i = 0; i < static_cast<T>(n1); ++i) {
             for (T j = i + 1; j < static_cast<T>(n1); ++j) {
-                obj_val_offset += add_column(graph, i, j, k);
+                obj_val_offset += add_variable(graph, i, j, k);
                 ++k;
             }
         }
@@ -829,7 +829,7 @@ class highs_wrapper : public lp_wrapper {
      * @return crossing number c_ji (for the objective offset)
      */
     template <typename T>
-    inline int add_column(const bipartite_graph<T> &graph,
+    inline int add_variable(const bipartite_graph<T> &graph,
                           const T &i,
                           const T &j,
                           const int &k) {
@@ -849,6 +849,8 @@ class highs_wrapper : public lp_wrapper {
         } else if (c_ji == 0 && c_ij != 0) {
             // fix j < i in the ordering
             fix_column(k, 0.);
+        } else if (c_ij == 0 && c_ji == 0) {
+            fix_column(k, i < j ? 1. : 0.);
         } else {
             // set 0 <= x_ij <= 1
             unfix_column(k);
