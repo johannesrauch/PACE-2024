@@ -177,6 +177,20 @@ class bipartite_graph {
         return edges;
     }
 
+    /**
+     * @brief returns the degree of vertex `v` in the fixed layer
+     */
+    std::size_t degree_of_fixed(const std::size_t v) {
+        return get_neighbors_of_fixed(v).size();
+    }
+
+    /**
+     * @brief returns the degree of vertex `v` in the free layer
+     */
+    std::size_t degree_of_free(const std::size_t v) {
+        return get_neighbors_of_free(v).size();
+    }
+
     //
     // sorting methods
     //
