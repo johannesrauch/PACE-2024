@@ -45,8 +45,15 @@ class bipartite_graph {
 
     bipartite_graph() {}
 
-    // delete copy constructor, move constructor, copy assignment and move assignment
-    bipartite_graph(const bipartite_graph &rhs) = delete;
+    bipartite_graph(const bipartite_graph &rhs)
+        : adjacency_lists_of_fixed(rhs.adjacency_lists_of_fixed),
+          adjacency_lists_of_free(rhs.adjacency_lists_of_free),
+          edges(rhs.edges) {
+        // assert that copy constructor is only called on empty graphs to avoid copying
+        assert(rhs.get_n() == 0);
+    }
+
+    // delete move constructor, copy assignment and move assignment
     bipartite_graph(bipartite_graph &&rhs) = delete;
     bipartite_graph &operator=(const bipartite_graph &rhs) = delete;
     bipartite_graph &operator=(bipartite_graph &&rhs) = delete;
@@ -72,8 +79,10 @@ class bipartite_graph {
     /**
      * @brief adds a vertex to the fixed layer
      */
-    void add_fixed_vertex() {
+    std::size_t add_fixed_vertex() {
+        const std::size_t ret = get_n_fixed();
         adjacency_lists_of_fixed.emplace_back();
+        return ret;
     }
 
     /**
@@ -86,8 +95,10 @@ class bipartite_graph {
     /**
      * @brief adds a vertex to the free layer
      */
-    void add_free_vertex() {
+    std::size_t add_free_vertex() {
+        const std::size_t ret = get_n_free();
         adjacency_lists_of_free.emplace_back();
+        return ret;
     }
 
     /**
