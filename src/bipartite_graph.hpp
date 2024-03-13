@@ -20,7 +20,7 @@ namespace pace2024 {
  * @tparam T vertex type
  * @tparam std::enable_if_t<std::is_unsigned<T>::value>
  */
-template <typename T, class = typename std::enable_if_t<std::is_integral<T>::value>>
+template <typename T = uint16_t, class = typename std::enable_if_t<std::is_integral<T>::value>>
 class bipartite_graph {
    private:
     /**
