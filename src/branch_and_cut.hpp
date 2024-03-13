@@ -44,10 +44,10 @@ class branch_and_cut {
 
     /**
      * @brief the restrictions graph for the instance.
-     * the vertices of digraph are the vertices of the free layer of the (instance) graph.
-     * an arc (i, j) in digraph means that i < j in the ordering.
+     * the vertices of restriction_graph are the vertices of the free layer of the (instance) graph.
+     * an arc (i, j) in restriction_graph means that i < j in the ordering.
      */
-    general_graph<T> digraph;
+    digraph<T> restriction_graph;
 
     /// @brief for branching
     std::stack<std::pair<int, bool>> stack;
@@ -63,7 +63,7 @@ class branch_and_cut {
           n1(graph.get_n_free()),
           lp_solver(new highs_wrapper(graph)),
           ordering(n1),
-          digraph(n1) {
+          restriction_graph(n1) {
         assert(n1 > 0);
         run_heuristics();  // to initialize `upper_bound` and `ordering`
     }
@@ -84,15 +84,15 @@ class branch_and_cut {
     //
 
     /**
-     * @brief constructs the restrictions graph into digraph.
-     * the topological sort of `digraph` gives an ordering of the vertices of the free layer of `graph`,
+     * @brief constructs the restrictions graph into restriction_graph.
+     * the topological sort of `restriction_graph` gives an ordering of the vertices of the free layer of `graph`,
      * which we store in `ordering`.
      *
      * @pre lp solution integral
      */
     void compute_ordering() {
         assert(lp_solver->is_integral() == -1);
-        digraph.clear_arcs();
+        restriction_graph.clear_arcs();
 
         // build the constraint graph
         int k = 0;
@@ -100,16 +100,16 @@ class branch_and_cut {
             for (T j = i + 1; j < n1; ++j) {
                 const double x = lp_solver->get_column_value(k);
                 if (x < 0.5) {
-                    digraph.add_arc(j, i);
+                    restriction_graph.add_arc(j, i);
                 } else {
-                    digraph.add_arc(i, j);
+                    restriction_graph.add_arc(i, j);
                 }
                 ++k;
             }
         }
 
         // the ordering computed by the lp is the topological sort
-        bool acyclic = topological_sort(digraph, ordering);
+        bool acyclic = topological_sort(restriction_graph, ordering);
         (void)acyclic;  // suppress unused warning
         assert(acyclic);
         upper_bound = static_cast<R>(lp_solver->get_rounded_objective_value());

@@ -3,7 +3,7 @@
 #include <cassert>
 #include <iostream>
 
-#include "graph.hpp"
+#include "digraph.hpp"
 
 /**
  * @brief tests topological_sort.hpp (and graph.hpp a little bit)
@@ -12,7 +12,7 @@
  */
 int main() {
     {
-        pace2024::general_graph<uint8_t> digraph(6);
+        pace2024::digraph<uint8_t> digraph(6);
         digraph.add_arc(5, 2);
         digraph.add_arc(5, 0);
         digraph.add_arc(4, 0);
@@ -30,7 +30,7 @@ int main() {
     }
 
     {
-        pace2024::general_graph<uint8_t> digraph(6);
+        pace2024::digraph<uint8_t> digraph(6);
         digraph.add_arc(0, 1);
         digraph.add_arc(1, 2);
         digraph.add_arc(2, 3);

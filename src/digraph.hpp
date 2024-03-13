@@ -1,5 +1,5 @@
-#ifndef PACE2024_GRAPH_HPP
-#define PACE2024_GRAPH_HPP
+#ifndef PACE2024_DIGRAPH_HPP
+#define PACE2024_DIGRAPH_HPP
 
 #include <cstdint>
 #include <queue>
@@ -15,8 +15,8 @@ namespace pace2024 {
  *
  * @tparam T vertex type
  */
-template <typename T>
-class general_digraph {
+template <typename T = uint16_t>
+class digraph {
    private:
     /// @brief stores all neighbors of each vertex
     std::vector<std::vector<T>> adjacency_lists;
@@ -25,17 +25,17 @@ class general_digraph {
     using vertextype = T;
 
     // delete copy constructor, move constructor, copy assignment and move assignment
-    general_digraph(const general_digraph &rhs) = delete;
-    general_digraph(general_digraph &&rhs) = delete;
-    general_digraph &operator=(const general_digraph &rhs) = delete;
-    general_digraph &operator=(general_digraph &&rhs) = delete;
+    digraph(const digraph &rhs) = delete;
+    digraph(digraph &&rhs) = delete;
+    digraph &operator=(const digraph &rhs) = delete;
+    digraph &operator=(digraph &&rhs) = delete;
 
     /**
      * @brief constructs an empty digraph with n vertices
      *
      * @param n number of vertices
      */
-    general_digraph(const std::size_t n) : adjacency_lists(n) {}
+    digraph(const std::size_t n) : adjacency_lists(n) {}
 
     /**
      * @brief add arc (u, v)
