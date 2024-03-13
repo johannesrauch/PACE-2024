@@ -47,7 +47,7 @@ class branch_and_cut {
      * the vertices of digraph are the vertices of the free layer of the (instance) graph.
      * an arc (i, j) in digraph means that i < j in the ordering.
      */
-    general_digraph<T> digraph;
+    general_graph<T> digraph;
 
     /// @brief for branching
     std::stack<std::pair<int, bool>> stack;
@@ -92,7 +92,7 @@ class branch_and_cut {
      */
     void compute_ordering() {
         assert(lp_solver->is_integral() == -1);
-        digraph.delete_arcs();
+        digraph.clear_arcs();
 
         // build the constraint graph
         int k = 0;
