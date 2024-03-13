@@ -24,29 +24,14 @@ template <typename T, class = typename std::enable_if_t<std::is_integral<T>::val
 class bipartite_graph {
    private:
     /**
-     * @brief number of vertices in the fixed partite set
+     * @brief neighbors of vertices in the free layer
      */
-    std::size_t n_fixed{0};
-
-    /**
-     * @brief number of vertices in the free partite set
-     */
-    std::size_t n_free{0};
-
-    /**
-     * @brief number of edges
-     */
-    std::size_t m{0};
+    std::vector<std::vector<T>> adjacency_lists_of_fixed;
 
     /**
      * @brief neighbors of vertices in the free layer
      */
-    std::vector<std::vector<T>> adjacency_lists_fixed;
-
-    /**
-     * @brief neighbors of vertices in the free layer
-     */
-    std::vector<std::vector<T>> adjacency_lists;
+    std::vector<std::vector<T>> adjacency_lists_of_free;
 
     /**
      * @brief edges
@@ -66,6 +51,10 @@ class bipartite_graph {
     bipartite_graph &operator=(const bipartite_graph &rhs) = delete;
     bipartite_graph &operator=(bipartite_graph &&rhs) = delete;
 
+    //
+    // add modifiers
+    //
+
     /**
      * @brief adds the edge uv to the graph
      *
@@ -73,83 +62,94 @@ class bipartite_graph {
      * @param v vertex of free layer
      */
     void add_edge(const T u, const T v) {
-        assert(u < n_fixed);
-        assert(v < n_free);
-        adjacency_lists_fixed[u].emplace_back(v);
-        adjacency_lists[v].emplace_back(u);
+        assert(u < get_n_fixed());
+        assert(v < get_n_free());
+        adjacency_lists_of_fixed[u].emplace_back(v);
+        adjacency_lists_of_free[v].emplace_back(u);
         edges.emplace_back(u, v);
-        ++m;
     }
 
     /**
      * @brief adds a vertex to the fixed layer
      */
     void add_fixed_vertex() {
-        ++n_fixed;
-        adjacency_lists_fixed.emplace_back();
+        adjacency_lists_of_fixed.emplace_back();
+    }
+
+    /**
+     * @brief adds `n` vertices to the fixed layer
+     */
+    void add_fixed_vertices(const std::size_t n) {
+        adjacency_lists_of_fixed.resize(adjacency_lists_of_fixed.size() + n);
     }
 
     /**
      * @brief adds a vertex to the free layer
      */
     void add_free_vertex() {
-        ++n_free;
-        adjacency_lists.emplace_back();
+        adjacency_lists_of_free.emplace_back();
     }
+
+    /**
+     * @brief adds `n` vertices to the free layer
+     *
+     * @param n
+     */
+    void add_free_vertices(const std::size_t n) {
+        adjacency_lists_of_free.resize(adjacency_lists_of_free.size() + n);
+    }
+
+    //
+    // clear modifiers
+    //
 
     /**
      * @brief clears and resets all attributes of this objects
      */
     void clear() {
-        n_fixed = 0;
-        n_free = 0;
-        m = 0;
-        adjacency_lists_fixed.clear();
-        adjacency_lists.clear();
+        adjacency_lists_of_fixed.clear();
+        adjacency_lists_of_free.clear();
         edges.clear();
     }
+
+    //
+    // getter
+    //
 
     /**
      * @brief returns the number of all vertices
      */
-    std::size_t get_n() const { return n_fixed + n_free; }
+    std::size_t get_n() const { return get_n_fixed() + get_n_free(); }
 
     /**
      * @brief returns number of vertices in the fixed layer
      */
-    std::size_t get_n_fixed() const { return n_fixed; }
+    std::size_t get_n_fixed() const { return adjacency_lists_of_fixed.size(); }
 
     /**
      * @brief returns number of vertices in the free layer
      */
-    std::size_t get_n_free() const { return n_free; }
+    std::size_t get_n_free() const { return adjacency_lists_of_free.size(); }
 
     /**
      * @brief returns number of edges
      */
-    std::size_t get_m() const { return m; }
+    std::size_t get_m() const { return edges.size(); }
 
     /**
-     * @brief returns a constant reference to adjacency lists of free layer
-     */
-    const std::vector<std::vector<T>> &get_adjacency_lists() const {
-        return adjacency_lists;
-    }
-
-/**
      * @brief get neighbors of vertex v, which is in the fixed layer
      */
-    const std::vector<T> &get_neighbors_fixed(const T v) const {
-        assert(v < n_fixed);
-        return adjacency_lists_fixed[v];
+    const std::vector<T> &get_neighbors_of_fixed(const T v) const {
+        assert(v < get_n_fixed());
+        return adjacency_lists_of_fixed[v];
     }
 
     /**
      * @brief get neighbors of vertex v, which is in the free layer
      */
-    const std::vector<T> &get_neighbors(const T v) const {
-        assert(v < n_free);
-        return adjacency_lists[v];
+    const std::vector<T> &get_neighbors_of_free(const T v) const {
+        assert(v < get_n_free());
+        return adjacency_lists_of_free[v];
     }
 
     /**
@@ -166,30 +166,18 @@ class bipartite_graph {
         return edges;
     }
 
-    /**
-     * @brief sets the number of fixed vertices
-     */
-    void set_n_fixed(const std::size_t n_fixed_) {
-        n_fixed = n_fixed_;
-        adjacency_lists_fixed.resize(n_fixed);
-    }
-
-    /**
-     * @brief sets the number of free vertices; resizes adjacency list
-     */
-    void set_n_free(const std::size_t n_free_) {
-        n_free = n_free_;
-        adjacency_lists.resize(n_free);
-    }
+    //
+    // sorting methods
+    //
 
     /**
      * @brief sorts all adjacency lists in ascending order
      */
     void sort_adjacency_lists() {
-        for (auto &adjacency_list : adjacency_lists_fixed) {
+        for (auto &adjacency_list : adjacency_lists_of_fixed) {
             std::sort(adjacency_list.begin(), adjacency_list.end());
         }
-        for (auto &adjacency_list : adjacency_lists) {
+        for (auto &adjacency_list : adjacency_lists_of_free) {
             std::sort(adjacency_list.begin(), adjacency_list.end());
         }
     }

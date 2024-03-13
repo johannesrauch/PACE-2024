@@ -28,9 +28,8 @@ int main() {
     assert(ref_m == graph.get_m());
 
     uint64_t i = 0;
-    auto& adjacency_lists = graph.get_adjacency_lists();
     for (uint64_t y = 0; y < ref_n_free; ++y) {
-        for (uint64_t x : adjacency_lists[y]) {
+        for (const uint64_t& x : graph.get_neighbors_of_free(y)) {
             auto [ref_x, ref_y] = ref_edges[i];
             // std::cout << ref_x << " " << x + 1 << std::endl;
             assert(ref_x == x + 1);

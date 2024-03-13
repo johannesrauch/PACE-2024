@@ -66,8 +66,8 @@ void parse_input(std::ifstream &input, bipartite_graph<T> &graph) {
         }
     } while (type_of_line != 'p' && type_of_line != 'P');
 
-    graph.set_n_fixed(n_fixed);
-    graph.set_n_free(n_free);
+    graph.add_fixed_vertices(n_fixed);
+    graph.add_free_vertices(n_free);
 
     // edges
     graph.get_edges().reserve(m);
