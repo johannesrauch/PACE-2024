@@ -82,6 +82,22 @@ class bipartite_graph {
     }
 
     /**
+     * @brief adds a vertex to the fixed layer
+     */
+    void add_fixed_vertex() {
+        ++n_fixed;
+        adjacency_lists_fixed.emplace_back();
+    }
+
+    /**
+     * @brief adds a vertex to the free layer
+     */
+    void add_free_vertex() {
+        ++n_free;
+        adjacency_lists.emplace_back();
+    }
+
+    /**
      * @brief clears and resets all attributes of this objects
      */
     void clear() {
