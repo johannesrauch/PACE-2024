@@ -25,7 +25,6 @@ namespace fs = std::filesystem;
 template<typename T>
 void parse_input(fs::path filepath, bipartite_graph<T> &graph) {
     std::ifstream input(filepath);
-    assert(input.good());
     parse_input(input, graph);
 }
 
@@ -38,6 +37,7 @@ void parse_input(fs::path filepath, bipartite_graph<T> &graph) {
  */
 template <typename T>
 void parse_input(std::ifstream &input, bipartite_graph<T> &graph) {
+    assert(input.good());
     graph.clear();
 
     std::size_t n_fixed = 0, n_free = 0, m = 0;
