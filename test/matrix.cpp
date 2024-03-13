@@ -37,6 +37,6 @@ int main() {
         test_matrix_and_compute_crossing_numbers(graph);        
     }
 
-    std::cout << "TEST::PACE2024::MATRIX:\t\t\t\tOK" << std::endl;
+    std::cout << "TEST::PACE2024::MATRIX:\t\t\t\t\tOK" << std::endl;
     return 0;
 }
