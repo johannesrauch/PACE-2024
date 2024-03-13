@@ -72,7 +72,7 @@ class barycenter_heuristic {
 
     /// @brief returns (sum of every neighbor j of i) / degree(i)
     inline double barycenter(const T &i) {
-        const std::vector<T> &neighbors = graph.get_neighbors(i);
+        const std::vector<T> &neighbors = graph.get_neighbors_of_free(i);
         if (neighbors.empty()) return 0.;
         double sum = 0.;
         for (const T &j : neighbors) sum += j;
