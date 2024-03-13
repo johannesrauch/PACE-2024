@@ -23,9 +23,8 @@ namespace pace2024 {
  */
 template <typename T, typename R>
 std::pair<R, R> crossing_numbers_of(const bipartite_graph<T>& graph, T u, T v) {
-    auto& adjacency_lists = graph.get_adjacency_lists();
-    auto& nbors_u = adjacency_lists[u];
-    auto& nbors_v = adjacency_lists[v];
+    const auto& nbors_u = graph.get_neighbors_of_free(u);
+    const auto& nbors_v = graph.get_neighbors_of_free(v);
 
     const std::size_t deg_u = nbors_u.size();
     const std::size_t deg_v = nbors_v.size();

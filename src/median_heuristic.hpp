@@ -43,8 +43,7 @@ inline T median(const std::vector<T>& vec) {
 template <typename T>
 class median_heuristic {
    private:
-    const bipartite_graph<T>& input_graph;
-    const std::vector<std::vector<T>>& adjacency_lists;
+    const bipartite_graph<T>& graph;
     const std::size_t n1;
     std::vector<T>& ordering;
     std::vector<T> medians;
@@ -56,11 +55,10 @@ class median_heuristic {
      * @param graph the instance
      * @param ordering vector where we store the computed ordering
      */
-    median_heuristic(const bipartite_graph<T>& input_graph,
+    median_heuristic(const bipartite_graph<T>& graph,
                      std::vector<T>& ordering)
-        : input_graph(input_graph),
-          adjacency_lists(input_graph.get_adjacency_lists()),
-          n1(input_graph.get_n_free()),
+        : graph(graph),
+          n1(graph.get_n_free()),
           ordering(ordering),
           medians(n1) {
         fill_medians();
@@ -89,9 +87,9 @@ class median_heuristic {
             return true;
         } else if (medians[a] > medians[b]) {
             return false;
-        } else if (adjacency_lists[a].size() % 2 == 1 && adjacency_lists[b].size() % 2 == 0) {
+        } else if (graph.degree_of_free(a) % 2 == 1 && graph.degree_of_free(b) % 2 == 0) {
             return true;
-        } else if (adjacency_lists[a].size() % 2 == 0 && adjacency_lists[b].size() % 2 == 1) {
+        } else if (graph.degree_of_free(a) % 2 == 0 && graph.degree_of_free(b) % 2 == 1) {
             return false;
         } else {
             return a < b;
@@ -116,7 +114,7 @@ class median_heuristic {
      */
     void fill_medians() {
         for (std::size_t i = 0; i < n1; ++i) {
-            medians[i] = internal::median(adjacency_lists[i]);
+            medians[i] = internal::median(graph.get_neighbors_of_free(i));
         }
     }
 };
@@ -131,8 +129,7 @@ class median_heuristic {
 template <typename T, typename R>
 class probabilistic_median_heuristic {
    private:
-    const bipartite_graph<T>& input_graph;
-    const std::vector<std::vector<T>>& adjacency_lists;
+    const bipartite_graph<T>& graph;
     const std::size_t n1;
     std::vector<T>& ordering;
     std::vector<T> another_ordering;
@@ -145,15 +142,14 @@ class probabilistic_median_heuristic {
     /**
      * @brief construct a new probabilistic median heuristic object
      *
-     * @param input_graph the instance
+     * @param graph the instance
      * @param ordering vector where the ordering is stored
      * @param nof_iterations number of iterations
      */
-    probabilistic_median_heuristic(const bipartite_graph<T>& input_graph,
+    probabilistic_median_heuristic(const bipartite_graph<T>& graph,
                                    std::vector<T>& ordering)
-        : input_graph(input_graph),
-          adjacency_lists(input_graph.get_adjacency_lists()),
-          n1(input_graph.get_n_free()),
+        : graph(graph),
+          n1(graph.get_n_free()),
           ordering(ordering),
           another_ordering(n1),
           medians(n1),
@@ -161,8 +157,8 @@ class probabilistic_median_heuristic {
           distribution(0.0957, 0.9043)  // from Nagamochi's paper
     {
         // compute initial solution with normal median heuristic
-        median_heuristic<T>(input_graph, ordering).run();
-        best = number_of_crossings<T, R>(input_graph, ordering);
+        median_heuristic<T>(graph, ordering).run();
+        best = number_of_crossings<T, R>(graph, ordering);
 
         // initialize vectors
         for (T i = 0; i < n1; ++i) another_ordering[i] = i;
@@ -198,9 +194,9 @@ class probabilistic_median_heuristic {
             return true;
         } else if (medians[a] > medians[b]) {  // from here medians[a] == medians[b]
             return false;
-        } else if (adjacency_lists[a].size() % 2 == 1 && adjacency_lists[b].size() % 2 == 0) {
+        } else if (graph.degree_of_free(a) % 2 == 1 && graph.degree_of_free(b) % 2 == 0) {
             return true;
-        } else if (adjacency_lists[a].size() % 2 == 0 && adjacency_lists[b].size() % 2 == 1) {
+        } else if (graph.degree_of_free(a) % 2 == 0 && graph.degree_of_free(b) % 2 == 1) {
             return false;
         } else {
             return a < b;
@@ -226,7 +222,7 @@ class probabilistic_median_heuristic {
                 return this->compare(a, b);
             });
 
-            R candidate = number_of_crossings<T, R>(input_graph, another_ordering);
+            R candidate = number_of_crossings<T, R>(graph, another_ordering);
             if (candidate < best) {
                 best = candidate;
                 ordering = another_ordering;
@@ -237,25 +233,26 @@ class probabilistic_median_heuristic {
 
    private:
     /**
-     * @brief returns randomized median of adjacency_lists[i]
+     * @brief returns randomized median of `graph.get_neighbors_of_free(i)`
      *
      * @param i vertex
      * @return T randomized median
      */
     inline T randomized_median(const std::size_t& i) {
-        std::size_t nof_neighbors = adjacency_lists[i].size();
+        const auto& neighbors = graph.get_neighbors_of_free(i);
+        const std::size_t nof_neighbors = graph.degree_of_free(i);
         if (nof_neighbors == 0) {
             return 0;
         } else {
             const std::size_t j = static_cast<std::size_t>(distribution(generator) * nof_neighbors);
             assert(j < nof_neighbors);
-            return adjacency_lists[i][j];
+            return neighbors[j];
         }
     }
 
     /**
-     * @brief computes randomized medians of every adjacency_lists[i] using compute_randomized_median
-     * and stores them in randomized_medians
+     * @brief computes randomized medians of every `graph.get_neighbors_of_free(i)` 
+     * using `randomized_median(i)` and stores them in `randomized_medians`
      */
     void fill_randomized_medians() {
         for (std::size_t i = 0; i < n1; ++i) {
@@ -264,12 +261,12 @@ class probabilistic_median_heuristic {
     }
 
     /**
-     * @brief computes medians of every adjacency_lists[i] using internal::compute_median
-     * and stores them in medians
+     * @brief computes medians of every `graph.get_neighbors_of_free(i)` using `internal::median(...)`
+     * and stores them in `medians`
      */
     void fill_medians() {
         for (std::size_t i = 0; i < n1; ++i) {
-            medians[i] = internal::median(adjacency_lists[i]);
+            medians[i] = internal::median(graph.get_neighbors_of_free(i));
         }
     }
 };

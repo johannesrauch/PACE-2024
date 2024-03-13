@@ -6,6 +6,7 @@
 
 #include "bipartite_graph.hpp"
 #include "printf.hpp"
+#include "vector_intersection.hpp"
 
 namespace pace2024 {
 
@@ -299,30 +300,31 @@ template <typename T, class MATRIX>
 void compute_crossing_numbers_binary_search(
     const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
     assert(graph.get_n_free() == cr_matrix.get_m() && cr_matrix.get_m() == cr_matrix.get_n());
-    std::size_t n1 = graph.get_n_free();
-    auto &adjacency_lists = graph.get_adjacency_lists();
+    const std::size_t n1 = graph.get_n_free();
 
     for (T v = 0; v < n1; ++v) {
-        if (adjacency_lists[v].size() == 0) continue;
-        T rv = adjacency_lists[v][adjacency_lists[v].size() - 1];
+        const auto &neighbors_v = graph.get_neighbors_of_free(v);
+        if (neighbors_v.size() == 0) continue;
+        const T rv = neighbors_v[neighbors_v.size() - 1];
 
         for (T w = 0; w < n1; ++w) {
             if (v == w) continue;
 
             cr_matrix(v, w) = 0;
-            for (T wp : adjacency_lists[w]) {
+            const auto& neighbors_w = graph.get_neighbors_of_free(w);
+            for (const T &wp : neighbors_w) {
                 if (wp >= rv) break;
 
                 // returns it to the first element such that *it >= wp + 1
                 // using binary search
-                auto it = std::lower_bound(adjacency_lists[v].begin(),
-                                           adjacency_lists[v].end(), wp + 1);
+                auto it = std::lower_bound(neighbors_v.begin(),
+                                           neighbors_v.end(), wp + 1);
 
-                if (it != adjacency_lists[v].end()) assert(*it >= wp + 1);
-                if (it != adjacency_lists[v].begin())
+                if (it != neighbors_v.end()) assert(*it >= wp + 1);
+                if (it != neighbors_v.begin())
                     assert(*(it - 1) < wp + 1);
 
-                cr_matrix(v, w) += std::distance(it, adjacency_lists[v].end());
+                cr_matrix(v, w) += std::distance(it, neighbors_v.end());
             }
         }
     }
@@ -343,16 +345,16 @@ void compute_crossing_numbers_augmented_adjacency(
 
     // variables
     std::size_t n0 = graph.get_n_fixed(), n1 = graph.get_n_free();
-    auto &adjacency_lists = graph.get_adjacency_lists();
 
     // compute enhanced adjacency matrix
     // nbors(i, j) = number of nbors of i (free layer)
     // to the right of j (fixed layer)
     matrix<R> nbors(n1, n0);
     for (T i = 0; i < n1; ++i) {
-        auto it_end = adjacency_lists[i].end();
-        auto it = adjacency_lists[i].begin();
-        nbors(i, 0) = adjacency_lists[i].size();
+        const auto &neighbors_i = graph.get_neighbors_of_free(i);
+        auto it_end = neighbors_i.end();
+        auto it = neighbors_i.begin();
+        nbors(i, 0) = neighbors_i.size();
         if (it != it_end && *it <= 0) {
             --nbors(i, 0);
             ++it;
@@ -367,36 +369,26 @@ void compute_crossing_numbers_augmented_adjacency(
     }
 
     for (T v = 0; v < n1; ++v) {
-        const std::size_t deg_v = adjacency_lists[v].size();
+        const auto &neighbors_v = graph.get_neighbors_of_free(v);
+        const std::size_t deg_v = neighbors_v.size();
         if (deg_v == 0) continue;
-        const T rv = adjacency_lists[v][deg_v - 1];
+        const T rv = neighbors_v[deg_v - 1];
 
         for (T w = v + 1; w < n1; ++w) {
             cr_matrix(v, w) = 0;
 
-            std::size_t deg_w = adjacency_lists[w].size();
+            const auto &neighbors_w = graph.get_neighbors_of_free(w);
+            std::size_t deg_w = neighbors_w.size();
             if (deg_w == 0) continue;
 
-            for (T wp : adjacency_lists[w]) {
+            for (const T &wp : neighbors_w) {
                 if (wp >= rv) break;
 
                 cr_matrix(v, w) += nbors(v, wp);
             }
 
-            R nof_common_nbors = 0;
-            for (T i = 0, j = 0; i < deg_v && j < deg_w;) {
-                if (adjacency_lists[v][i] == adjacency_lists[w][j]) {
-                    ++nof_common_nbors;
-                    ++i;
-                    ++j;
-                } else if (adjacency_lists[v][i] < adjacency_lists[w][j]) {
-                    ++i;
-                } else {
-                    ++j;
-                }
-            }
-            cr_matrix(w, v) =
-                deg_v * deg_w - nof_common_nbors - cr_matrix(v, w);
+            R nof_common_nbors = vector_intersection(neighbors_v, neighbors_w);
+            cr_matrix(w, v) = deg_v * deg_w - nof_common_nbors - cr_matrix(v, w);
         }
     }
 }
@@ -418,11 +410,10 @@ void compute_crossing_numbers_naivly(const bipartite_graph<T> &graph,
     assert(graph.get_n_free() == matrix.get_m());
 
     const std::size_t n1 = matrix.get_m();
-    auto &adjacency_lists = graph.get_adjacency_lists();
     for (T i = 0; i < n1 - 1; ++i) {
         for (T j = i + 1; j < n1; ++j) {
-            for (const T &x : adjacency_lists[i]) {
-                for (const T &y : adjacency_lists[j]) {
+            for (const T &x : graph.get_neighbors_of_free(i)) {
+                for (const T &y : graph.get_neighbors_of_free(j)) {
                     if (x < y)
                         ++matrix(j, i);
                     else if (x > y)
