@@ -45,15 +45,8 @@ class bipartite_graph {
 
     bipartite_graph() {}
 
-    bipartite_graph(const bipartite_graph &rhs)
-        : adjacency_lists_of_fixed(rhs.adjacency_lists_of_fixed),
-          adjacency_lists_of_free(rhs.adjacency_lists_of_free),
-          edges(rhs.edges) {
-        // assert that copy constructor is only called on empty graphs to avoid copying
-        assert(rhs.get_n() == 0);
-    }
-
-    // delete move constructor, copy assignment and move assignment
+    // delete copy and move constructor, copy assignment and move assignment
+    bipartite_graph(const bipartite_graph &rhs) = delete;
     bipartite_graph(bipartite_graph &&rhs) = delete;
     bipartite_graph &operator=(const bipartite_graph &rhs) = delete;
     bipartite_graph &operator=(bipartite_graph &&rhs) = delete;
