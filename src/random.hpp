@@ -1,21 +1,24 @@
 #ifndef PACE2024_RANDOM_HPP
 #define PACE2024_RANDOM_HPP
 
+#ifndef PACE2024_CONST_SEED
+#define PACE2024_CONST_SEED 42
+#endif
+
 #include <random>
 
 namespace pace2024 {
 
-std::mt19937 generator(std::random_device{}());
+std::mt19937 generator(PACE2024_CONST_SEED);
 
 /**
- * @brief returns true or false with 50% probability each
- *
- * @return true
- * @return false
+ * @brief returns true with probability p
  */
-inline bool coinflip() {
+inline bool coinflip(const double p = 0.5) {
+    assert(0 <= p);
+    assert(p <= 1);
     std::uniform_real_distribution<> distribution(0., 1.);
-    return distribution(generator) < 0.5;
+    return distribution(generator) < p;
 }
 
 namespace test {
