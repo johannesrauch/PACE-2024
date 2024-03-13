@@ -3,11 +3,14 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <iostream>
 
 #include "input.hpp"
 #include "crossing_number.hpp"
 #include "output.hpp"
 #include "printf.hpp"
+#include "test_utils.hpp"
+#include "debug_printf.hpp"
 
 namespace fs = std::filesystem;
 
@@ -19,23 +22,14 @@ void test_solver_w_tiny_test_set() {
         if (!file.is_regular_file()) continue;
 
         const auto filepath_instance = file.path();
+        std::cout << filepath_instance << std::endl << std::flush;
         pace2024::uint32_bipartite_graph graph;
         pace2024::parse_input(filepath_instance, graph);
         pace2024::branch_and_cut<uint32_t, uint32_t> solver(graph);
         solver.solve(false);
 
-        uint32_t ref_nof_crossings;
-        {
-            auto filepath_nof_crossings =
-                filepath_instance.parent_path() / "nof_crossings" / filepath_instance.filename();
-            filepath_nof_crossings.replace_extension(".txt");
-            // fmt::printf("%s\n", static_cast<std::string>(filepath_nof_crossings));
-            std::ifstream file_nof_crossings(filepath_nof_crossings);
-            assert(file_nof_crossings.good());
-            file_nof_crossings >> ref_nof_crossings;
-            file_nof_crossings.close();
-        }
-
+        uint32_t ref_nof_crossings = pace2024::test::get_ref_nof_crossings(filepath_instance);
+        PACE2024_DEBUG_PRINTF("%u=%u?\n", ref_nof_crossings, solver.get_nof_crossings());
         assert(ref_nof_crossings == solver.get_nof_crossings());
         // fmt::printf("%s,%s\n", solver.get_nof_crossings(), solutions[i]);
         uint32_t test_nof_crossings =

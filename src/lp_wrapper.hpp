@@ -4,6 +4,7 @@
 #include <glpk.h>
 
 #include <cassert>
+#include <unordered_map>
 
 #include "Highs.h"
 #include "bipartite_graph.hpp"
@@ -11,7 +12,7 @@
 #include "debug_printf.hpp"
 
 #ifndef PACE2024_CONST_NOF_CYCLE_CONSTRAINTS
-#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 512
+#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 1
 #endif
 
 #ifndef PACE2024_CONST_NOF_BUCKETS
@@ -154,11 +155,11 @@ class lp_wrapper {
     virtual void delete_positive_slack_rows() = 0;
     virtual void fix_column(const int j, const double fix_to) = 0;
     virtual void fix_columns(const int new_upper_bound) = 0;
-    virtual double get_column_value(const int j) = 0;
+    virtual double get_variable_value(const int j) = 0;
     virtual int get_nof_cols() = 0;
     virtual int get_nof_rows() = 0;
     virtual double get_objective_value() = 0;
-    virtual int64_t get_rounded_objective_value() = 0;
+    virtual long get_rounded_objective_value() = 0;
     virtual inline bool is_column_integral(const int &j) = 0;
     virtual bool is_optimal() = 0;
     virtual void solve(bool delete_rows_after) = 0;
@@ -273,7 +274,7 @@ class glpk_wrapper : public lp_wrapper {
     }
 
     /// @brief returns value of column j
-    virtual double get_column_value(const int j) {
+    virtual double get_variable_value(const int j) {
         assert(0 <= j);
         assert(j < n1_choose_2);
         return glp_get_col_prim(lp, j + 1);
@@ -295,10 +296,10 @@ class glpk_wrapper : public lp_wrapper {
     }
 
     /// @brief returns the objective value of the lp rounded to the next integer
-    virtual int64_t get_rounded_objective_value() {
+    virtual long get_rounded_objective_value() {
         const double value = get_objective_value();
         assert(value >= 0);
-        return llround(value);
+        return lround(value);
     }
 
     /// @brief returns if an optimal feasible solution has been found
@@ -369,9 +370,9 @@ class glpk_wrapper : public lp_wrapper {
      */
     template <typename T>
     inline int add_variable(const bipartite_graph<T> &graph,
-                          const T &i,
-                          const T &j,
-                          const int &k) {
+                            const T &i,
+                            const T &j,
+                            const int &k) {
         assert(k <= n1_choose_2);
         const auto [c_ij, c_ji] = crossing_numbers_of<T, int>(graph, i, j);
 
@@ -514,9 +515,9 @@ class glpk_wrapper : public lp_wrapper {
      * @return double x_ij + x_jk - x_ik
      */
     inline double get_3cycle_value(const int &ij, const int &jk, const int &ik) {
-        const double x_ij = get_column_value(ij);
-        const double x_jk = get_column_value(jk);
-        const double x_ik = get_column_value(ik);
+        const double x_ij = get_variable_value(ij);
+        const double x_jk = get_variable_value(jk);
+        const double x_ik = get_variable_value(ik);
         return x_ij + x_jk - x_ik;
     }
 
@@ -596,7 +597,7 @@ class glpk_wrapper : public lp_wrapper {
     inline bool is_column_integral(const int &j) {
         assert(0 <= j);
         assert(j < n1_choose_2);
-        const double x = get_column_value(j);
+        const double x = get_variable_value(j);
         constexpr double ub = 1. - PACE2024_CONST_INTEGER_TOLERANCE;
         if (x > PACE2024_CONST_INTEGER_TOLERANCE && x < ub) {
             return false;
@@ -619,13 +620,19 @@ class glpk_wrapper : public lp_wrapper {
 class highs_wrapper : public lp_wrapper {
     /// @brief lp solver
     Highs lp;
+
     /// @brief number of rows before `cut()` added new rows
     int nof_old_rows{0};
+
+    std::vector<int> magic;
+
+    int offset{0};
 
    public:
     template <typename T>
     highs_wrapper(const bipartite_graph<T> &graph)
-        : lp_wrapper(static_cast<int>(graph.get_n_free())) {
+        : lp_wrapper(static_cast<int>(graph.get_n_free())),
+          magic(n1_choose_2) {
         HighsStatus status;
         status = lp.setOptionValue("presolve", "off");
         assert(status == HighsStatus::kOk);
@@ -676,9 +683,9 @@ class highs_wrapper : public lp_wrapper {
 
         const int nof_rows_to_delete = static_cast<int>(rows_to_delete.size());
         if (nof_rows_to_delete > 0) {
-            PACE2024_DEBUG_PRINTF("\tend   delete_positive_slack_rows, number of removed rows=%d\n", nof_rows_to_delete);
             lp.deleteRows(nof_rows_to_delete, &rows_to_delete[0]);
         }
+        PACE2024_DEBUG_PRINTF("\tend   delete_positive_slack_rows, number of removed rows=%d\n", nof_rows_to_delete);
     }
 
     /**
@@ -718,14 +725,15 @@ class highs_wrapper : public lp_wrapper {
     }
 
     /// @brief returns value of column j
-    virtual double get_column_value(const int j) {
-        if (j >= n1_choose_2) {
-            PACE2024_DEBUG_PRINTF("now\n");
-        }
+    virtual double get_variable_value(const int j) {
         assert(0 <= j);
         assert(j < n1_choose_2);
-        const HighsSolution &sol = lp.getSolution();
-        return sol.col_value[j];
+        if (magic[j] < 0) {
+            return static_cast<double>(~magic[j]);
+        } else {
+            const HighsSolution &sol = lp.getSolution();
+            return sol.col_value[magic[j]];
+        }
     }
 
     /// @brief returns the number of rows
@@ -744,10 +752,10 @@ class highs_wrapper : public lp_wrapper {
     }
 
     /// @brief returns the objective value of the lp rounded to the next integer
-    virtual int64_t get_rounded_objective_value() {
+    virtual long get_rounded_objective_value() {
         const double value = get_objective_value();
         assert(value >= 0);
-        return llround(value);
+        return lround(value);
     }
 
     /**
@@ -774,7 +782,9 @@ class highs_wrapper : public lp_wrapper {
     virtual void solve(bool delete_rows_after) {
         PACE2024_DEBUG_PRINTF("start highs_simplex\n");
         lp.run();
-        PACE2024_DEBUG_PRINTF("end   highs_simplex, objective value=%f, number of rows=%d\n", get_objective_value(), get_nof_rows());
+        PACE2024_DEBUG_PRINTF("end   highs_simplex, objective value=%f, number of rows=%d\n",
+                              get_objective_value(),
+                              get_nof_rows());
         (void)delete_rows_after;
     }
 
@@ -800,9 +810,6 @@ class highs_wrapper : public lp_wrapper {
     template <typename T>
     inline void add_variables(const bipartite_graph<T> &graph) {
         int obj_val_offset = 0;
-        std::vector<double> lower_bounds(n1_choose_2, 0.);
-        std::vector<double> upper_bounds(n1_choose_2, 1.);
-        lp.addVars(n1_choose_2, &lower_bounds[0], &upper_bounds[0]);
 
         int k = 0;
         for (T i = 0; i < static_cast<T>(n1); ++i) {
@@ -814,7 +821,7 @@ class highs_wrapper : public lp_wrapper {
         // set constant term (shift/offset) in the objective function
         lp.changeObjectiveOffset(static_cast<double>(obj_val_offset));
 
-        assert(n1_choose_2 == get_nof_cols());
+        assert(get_nof_cols() <= n1_choose_2);
     }
 
     /**
@@ -830,10 +837,10 @@ class highs_wrapper : public lp_wrapper {
      */
     template <typename T>
     inline int add_variable(const bipartite_graph<T> &graph,
-                          const T &i,
-                          const T &j,
-                          const int &k) {
-        assert(k <= n1_choose_2);
+                            const T &i,
+                            const T &j,
+                            const int &k) {
+        assert(k < n1_choose_2);
         const auto [c_ij, c_ji] = crossing_numbers_of<T, int>(graph, i, j);
 
         // lower_bound = sum min(c_ij, c_ji)
@@ -843,28 +850,26 @@ class highs_wrapper : public lp_wrapper {
             lower_bound += c_ji;
         }
 
+        // todo: if d(i)=d(j), check if fixing is possible
         if (c_ij == 0 && c_ji != 0) {
             // fix i < j in the ordering
-            fix_column(k, 1.);
+            magic[k] = -2;
+            return 0;
         } else if (c_ji == 0 && c_ij != 0) {
             // fix j < i in the ordering
-            fix_column(k, 0.);
-        } else if (c_ij == 0 && c_ji == 0) {
-            fix_column(k, i < j ? 1. : 0.);
+            magic[k] = -1;
+            return 0;
         } else {
             // set 0 <= x_ij <= 1
-            unfix_column(k);
+            const int l = lp.getNumCol();
+            magic[k] = l;
+            const HighsStatus status = lp.addVar(0., 1.);
+            assert(status == HighsStatus::kOk);
+            if (c_ij != c_ji) {
+                lp.changeColCost(l, static_cast<double>(c_ij) - static_cast<double>(c_ji));
+            }
+            return c_ji;
         }
-
-        // todo: if d(i)=d(j), check if fixing is possible
-
-        // set coefficient of added column
-        if (c_ij != c_ji) {
-            const double coeff = static_cast<double>(c_ij) - static_cast<double>(c_ji);
-            lp.changeColCost(k, coeff);
-        }
-
-        return c_ji;
     }
 
     //
@@ -881,29 +886,43 @@ class highs_wrapper : public lp_wrapper {
         const HighsInt nof_new_rows = std::min(get_nof_bucket_entries(), PACE2024_CONST_NOF_CYCLE_CONSTRAINTS);
         if (nof_new_rows <= 0) return 0;
 
+        std::vector<double> lower_bounds;
+        std::vector<double> upper_bounds;
+        std::vector<HighsInt> starts;
+        lower_bounds.reserve(nof_new_rows);
+        upper_bounds.reserve(nof_new_rows);
+        starts.reserve(nof_new_rows);
+
         const HighsInt nof_new_rows_x3 = 3 * nof_new_rows;
-        std::vector<double> lower_bounds(nof_new_rows);
-        std::vector<double> upper_bounds(nof_new_rows);
-        std::vector<HighsInt> starts(nof_new_rows);
-        std::vector<HighsInt> indices(nof_new_rows_x3);
-        std::vector<double> values(nof_new_rows_x3);
+        std::vector<HighsInt> indices;
+        std::vector<double> values;
+        indices.reserve(nof_new_rows_x3);
+        values.reserve(nof_new_rows_x3);
 
         int i = 0;
         bool go_on = true;
         for (auto r_it = buckets.rbegin(); r_it != buckets.rend() && go_on; ++r_it) {
             for (const auto &[ij, jk, ik, ub] : *r_it) {
-                int i3 = 3 * i;
                 (void)ub;  // suppress unused warning
 
-                lower_bounds[i] = 0.;
-                upper_bounds[i] = 1.;
-                starts[i] = i3;
-                indices[i3] = ij;
-                indices[i3 + 1] = ik;
-                indices[i3 + 2] = jk;
-                values[i3] = 1.;
-                values[i3 + 1] = -1.;
-                values[i3 + 2] = 1.;
+                PACE2024_DEBUG_PRINTF("%d %d %d\n", ij, ik, jk);
+                const double bound_offset = get_3cycle_bound_offset(ij, jk, ik);
+                lower_bounds.emplace_back(0. + bound_offset);
+                upper_bounds.emplace_back(1. + bound_offset);
+                starts.emplace_back(indices.size());
+                if (magic[ij] >= 0) {
+                    indices.emplace_back(magic[ij]);
+                    values.emplace_back(1.);
+                }
+                if (magic[ik] >= 0) {
+                    indices.emplace_back(magic[ik]);
+                    values.emplace_back(-1.);
+                }
+                if (magic[jk] >= 0) {
+                    indices.emplace_back(magic[jk]);
+                    values.emplace_back(1.);
+                }
+                assert(magic[ij] >= 0 || magic[ik] >= 0 || magic[jk] >= 0);
 
                 ++i;
                 if (i >= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS) {
@@ -916,7 +935,7 @@ class highs_wrapper : public lp_wrapper {
 
         lp.addRows(nof_new_rows,
                    &lower_bounds[0], &upper_bounds[0],
-                   nof_new_rows_x3,
+                   indices.size(),
                    &starts[0], &indices[0], &values[0]);
         return nof_new_rows;
     }
@@ -956,8 +975,9 @@ class highs_wrapper : public lp_wrapper {
                     assert(i < j);
                     assert(j < k);
                     check_3cycle(i, j, k);
+                    break_for_loops = is_last_bucket_full();
+                    if (break_for_loops) break;
                 }
-                break_for_loops = is_last_bucket_full();
                 if (break_for_loops) break;
             }
             if (break_for_loops) break;
@@ -977,9 +997,9 @@ class highs_wrapper : public lp_wrapper {
      * @return double x_ij + x_jk - x_ik
      */
     inline double get_3cycle_value(const int &ij, const int &jk, const int &ik) {
-        const double x_ij = get_column_value(ij);
-        const double x_jk = get_column_value(jk);
-        const double x_ik = get_column_value(ik);
+        const double x_ij = get_variable_value(ij);
+        const double x_jk = get_variable_value(jk);
+        const double x_ik = get_variable_value(ik);
         return x_ij + x_jk - x_ik;
     }
 
@@ -1009,10 +1029,9 @@ class highs_wrapper : public lp_wrapper {
      * @return has_row_lb(i) && x > 0.
      */
     inline bool has_row_slack(const int &i) {
-        const HighsSolution &sol = lp.getSolution();
-        const double x = sol.row_value[i];
-        constexpr double ub = 1. - PACE2024_CONST_FEASIBILITY_TOLERANCE;
-        return x > PACE2024_CONST_FEASIBILITY_TOLERANCE && x < ub;
+        const double x = get_row_value(i);
+        const auto [lb, ub] = get_row_bounds(i);
+        return x > lb + PACE2024_CONST_FEASIBILITY_TOLERANCE && x < ub - PACE2024_CONST_FEASIBILITY_TOLERANCE;
     }
 
     //
@@ -1027,7 +1046,7 @@ class highs_wrapper : public lp_wrapper {
      * @return false otherwise
      */
     inline bool is_column_integral(const int &j) {
-        const double x = get_column_value(j);
+        const double x = get_variable_value(j);
         constexpr double ub = 1. - PACE2024_CONST_INTEGER_TOLERANCE;
         if (x > PACE2024_CONST_INTEGER_TOLERANCE && x < ub) {
             return false;
@@ -1044,6 +1063,43 @@ class highs_wrapper : public lp_wrapper {
         assert(0 <= j);
         assert(j < n1_choose_2);
         return lp.getLp().col_cost_[j];
+    }
+
+    /**
+     * @brief returns the lower and upper bound offset for 3-cycle inequalities ijk
+     * due to permanently fixed variables that are not incorporated in the lp
+     */
+    inline int get_3cycle_bound_offset(const int &ij, const int &jk, const int &ik) {
+        double offset = 0.;
+        if (magic[ij] < 0) {
+            offset += ~magic[ij];
+        }
+        if (magic[ik] < 0) {
+            offset -= ~magic[ik];
+        }
+        if (magic[jk] < 0) {
+            offset += ~magic[jk];
+        }
+        return offset;
+    }
+
+    /**
+     * @brief returns the lower and upper bound offset for 3-cycle inequality with index i
+     * due to permanently fixed variables that are not incorporated in the lp
+     */
+    inline std::pair<double, double> get_row_bounds(const int &i) {
+        HighsInt num_row, num_nz, start;
+        double lb, ub;
+        HighsInt indices[3];
+        double values[3];
+        lp.getRows(i, i, num_row, &lb, &ub, num_nz, &start, indices, values);
+        assert(num_row == 1);
+        return std::make_pair(lb, ub);
+    }
+
+    /// @brief returns the value of row i
+    inline double get_row_value(const int &i) {
+        return lp.getSolution().row_value[i];
     }
 };
 

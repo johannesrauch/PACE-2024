@@ -65,7 +65,6 @@ class branch_and_cut {
           ordering(n1),
           restriction_graph(n1) {
         assert(n1 > 0);
-        run_heuristics();  // to initialize `upper_bound` and `ordering`
     }
 
     // delete copy constructor, move constructor, copy assignment and move assignment
@@ -98,7 +97,8 @@ class branch_and_cut {
         int k = 0;
         for (T i = 0; i < n1; ++i) {
             for (T j = i + 1; j < n1; ++j) {
-                const double x = lp_solver->get_column_value(k);
+                const double x = lp_solver->get_variable_value(k);
+                PACE2024_DEBUG_PRINTF("%u, %u, %f\n", i +5, j+5, x);
                 if (x < 0.5) {
                     restriction_graph.add_arc(j, i);
                 } else {
@@ -112,7 +112,9 @@ class branch_and_cut {
         bool acyclic = topological_sort(restriction_graph, ordering);
         (void)acyclic;  // suppress unused warning
         assert(acyclic);
-        upper_bound = static_cast<R>(lp_solver->get_rounded_objective_value());
+        const R new_upper_bound = static_cast<R>(lp_solver->get_rounded_objective_value());
+        assert(new_upper_bound < upper_bound);
+        upper_bound = new_upper_bound;
     }
 
     //
@@ -147,7 +149,7 @@ class branch_and_cut {
             stack.pop();
 
             if (fix_opposite) {
-                lp_solver->fix_column(j, lp_solver->get_column_value(j) > 0.5 ? 0. : 1.);
+                lp_solver->fix_column(j, lp_solver->get_variable_value(j) > 0.5 ? 0. : 1.);
                 PACE2024_DEBUG_PRINTF("(backtrack)\n");
                 stack.emplace(j, false);
                 break;
@@ -216,6 +218,9 @@ class branch_and_cut {
      * @param do_print to print or not to print (the solution)
      */
     void solve(bool do_print = true) {
+        run_heuristics();  // to initialize `upper_bound` and `ordering`
+        if (upper_bound == 0) return;
+
         // solve lp
         lp_solver->solve(false);
         assert(lp_solver->is_optimal());
