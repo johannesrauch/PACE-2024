@@ -7,7 +7,7 @@ namespace pace2024 {
 
 namespace test {
 
-template <typename R>
+template <typename R = uint32_t>
 R get_ref_nof_crossings(std::filesystem::path filepath_instance) {
     auto filepath_nof_crossings =
         filepath_instance.parent_path() / "nof_crossings" / filepath_instance.filename();
