@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "barycenter_heuristic.hpp"
 #include "bipartite_graph.hpp"
 #include "crossing_number.hpp"
 #include "debug_printf.hpp"
@@ -121,7 +122,19 @@ class branch_and_cut {
      */
     void run_heuristics() {
         PACE2024_DEBUG_PRINTF("start heuristic\n");
-        upper_bound = probabilistic_median_heuristic<T, R>(graph, ordering).run();
+
+        median_heuristic(graph, ordering).run();
+        upper_bound = number_of_crossings(graph, ordering);
+
+        std::vector<T> ordering_;
+        barycenter_heuristic(graph, ordering_).run();
+        const R upper_bound_ = number_of_crossings(graph, ordering_);
+
+        if (upper_bound_ < upper_bound) {
+            upper_bound = upper_bound_;
+            ordering = ordering_;
+        }
+
         PACE2024_DEBUG_PRINTF("end   heuristic\n");
     }
 
