@@ -15,7 +15,7 @@
 
 #include "barycenter_heuristic.hpp"
 #include "bipartite_graph.hpp"
-#include "crossing_number.hpp"
+#include "crossings.hpp"
 #include "debug_printf.hpp"
 #include "lp_wrapper.hpp"
 #include "matrix.hpp"

@@ -1,5 +1,5 @@
-#ifndef PACE2024_CROSSING_NUMBER_HPP
-#define PACE2024_CROSSING_NUMBER_HPP
+#ifndef PACE2024_CROSSINGS_HPP
+#define PACE2024_CROSSINGS_HPP
 
 #include <algorithm>
 #include <utility>

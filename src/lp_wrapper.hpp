@@ -6,7 +6,7 @@
 
 #include "Highs.h"
 #include "bipartite_graph.hpp"
-#include "crossing_number.hpp"
+#include "crossings.hpp"
 #include "debug_printf.hpp"
 
 #ifndef PACE2024_CONST_NOF_CYCLE_CONSTRAINTS

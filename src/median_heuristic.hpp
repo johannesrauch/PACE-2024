@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "bipartite_graph.hpp"
-#include "crossing_number.hpp"
+#include "crossings.hpp"
 #include "debug_printf.hpp"
 #include "random.hpp"
 
