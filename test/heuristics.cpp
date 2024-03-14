@@ -66,7 +66,7 @@ void compare_heuristics_on_medium_test_set() {
                 "median", "t in ms", "off by %%",
                 "probmedian", "t in ms", "off by %%", "delta",
                 "best", "fastest");
-    fmt::printf("---------------------------------------------------------------------------------------------------------------------------------------------------------------\n");
+    pace2024::test::print_line(161);
     for (const auto& file : fs::directory_iterator("medium_test_set")) {
         if (!file.is_regular_file()) continue;
         compare_heuristics_on_instance(file.path());
