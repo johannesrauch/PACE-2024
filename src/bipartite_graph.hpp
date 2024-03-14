@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "debug_printf.hpp"
-#include "input.hpp"
 
 namespace pace2024 {
 
@@ -47,10 +46,6 @@ class bipartite_graph {
     using vertextype = T;
 
     bipartite_graph() {}
-
-    bipartite_graph(const std::filesystem::path filepath) {
-        parse_input(filepath, *this);
-    }
 
     // delete copy and move constructor, copy assignment and move assignment
     bipartite_graph(const bipartite_graph &rhs) = delete;
