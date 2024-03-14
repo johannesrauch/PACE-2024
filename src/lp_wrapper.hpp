@@ -14,7 +14,7 @@
 #endif
 
 #ifndef PACE2024_CONST_NOF_BUCKETS
-#define PACE2024_CONST_NOF_BUCKETS 10
+#define PACE2024_CONST_NOF_BUCKETS 8
 #endif
 
 #ifndef PACE2024_CONST_FEASIBILITY_TOLERANCE
@@ -506,7 +506,13 @@ class highs_wrapper : public lp_wrapper {
     // 3-cycle helper methods
     //
 
-    inline void check_3cycle(const int &i, const int &j, const int &k) {
+    /**
+     * @brief checks if the 3-cycle inequality for ijk/ikj is violated
+     *
+     * @return true if so
+     * @return false otherwise
+     */
+    inline bool check_3cycle(const int &i, const int &j, const int &k) {
         const int ij = get_variable_index(i, j);
         const int jk = get_variable_index(j, k);
         const int ik = get_variable_index(i, k);
@@ -518,14 +524,23 @@ class highs_wrapper : public lp_wrapper {
         if (is_3cycle_lb_violated(x)) {
             const double x_normalized = -x / interval_width;
             get_bucket(x_normalized).emplace_back(ij, jk, ik, false);
+            return true;
         }
         if (is_3cycle_ub_violated(x)) {
             constexpr double ub = 1. + PACE2024_CONST_FEASIBILITY_TOLERANCE;
             const double x_normalized = (x - ub) / interval_width;
             get_bucket(x_normalized).emplace_back(ij, jk, ik, true);
+            return true;
         }
+        return false;
     }
 
+    /**
+     * @brief checks if the 3-cycle inequalities are violated
+     *
+     * @return true if so
+     * @return false otherwise
+     */
     bool check_3cycles() {
         PACE2024_DEBUG_PRINTF("\tstart check_3cycles\n");
 
@@ -536,11 +551,13 @@ class highs_wrapper : public lp_wrapper {
                 for (int k = j + 1; k < n1; ++k) {
                     assert(i < j);
                     assert(j < k);
-                    check_3cycle(i, j, k);
-                    break_for_loops = is_last_bucket_full();
-                    if (break_for_loops) {
-                        PACE2024_DEBUG_PRINTF("\t\tlast bucket full\n");
-                        break;
+                    bool violated = check_3cycle(i, j, k);
+                    if (violated) {
+                        break_for_loops = is_last_bucket_full();
+                        if (break_for_loops) {
+                            PACE2024_DEBUG_PRINTF("\t\tlast bucket full\n");
+                            break;
+                        }
                     }
                 }
                 if (break_for_loops) break;
