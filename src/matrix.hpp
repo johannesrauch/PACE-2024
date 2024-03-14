@@ -451,13 +451,7 @@ void print_matrix(const matrix<R> &matrix) {
  * - they have the same dimension and
  * - their elements equal.
  *
- * @tparam MATRIX1
- * @tparam MATRIX2
- * @param A
- * @param B
  * @param skip_diagonal set to true if you want to skip checking the diagonals
- * @return true
- * @return false
  */
 template <typename MATRIX1, typename MATRIX2>
 bool equals(const MATRIX1 &A, const MATRIX2 &B, bool skip_diagonal = false) {
