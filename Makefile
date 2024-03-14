@@ -1,6 +1,6 @@
 CXX = gcc -std=c++17 -Wall -Werror
 CXXFLAGS = -I../src -I/usr/local/include/highs
-LFLAGS = -lglpk -lhighs -lstdc++ -lm
+LFLAGS = -lhighs -lstdc++ -lm
 
 ifdef PRODUCTION
 	CXXFLAGS += -O3 -DNDEBUG
