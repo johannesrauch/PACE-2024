@@ -12,7 +12,7 @@
 #include "debug_printf.hpp"
 
 #ifndef PACE2024_CONST_NOF_CYCLE_CONSTRAINTS
-#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 1
+#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 1024
 #endif
 
 #ifndef PACE2024_CONST_NOF_BUCKETS
@@ -67,9 +67,9 @@ class lp_wrapper {
      * @return std::vector<bucket_entry>& the corresponding bucket
      */
     inline std::vector<bucket_entry> &get_bucket(const double &val) {
-        assert(0 < val);
-        assert(val <= 1);
-        const int i = static_cast<int>(val * PACE2024_CONST_NOF_BUCKETS - 1);
+        assert(0 <= val);
+        assert(val < 1);
+        const int i = static_cast<int>(val * PACE2024_CONST_NOF_BUCKETS);
         assert(0 <= i);
         assert(i < PACE2024_CONST_NOF_BUCKETS);
         return buckets[i];
@@ -626,13 +626,22 @@ class highs_wrapper : public lp_wrapper {
 
     std::vector<int> magic;
 
-    int offset{0};
+    // for `delete_positive_slack_rows()`
+    std::vector<int> rows_to_delete;
+
+    // for `add_3cycle_rows()`
+    std::vector<double> lower_bounds;
+    std::vector<double> upper_bounds;
+    std::vector<HighsInt> starts;
+    std::vector<HighsInt> indices;
+    std::vector<double> values;
 
    public:
     template <typename T>
     highs_wrapper(const bipartite_graph<T> &graph)
         : lp_wrapper(static_cast<int>(graph.get_n_free())),
           magic(n1_choose_2) {
+        // configure highs lp solver
         HighsStatus status;
         status = lp.setOptionValue("presolve", "off");
         assert(status == HighsStatus::kOk);
@@ -644,7 +653,16 @@ class highs_wrapper : public lp_wrapper {
         assert(status == HighsStatus::kOk);
         status = lp.setOptionValue("log_to_console", false);
         assert(status == HighsStatus::kOk);
+
         add_variables(graph);
+
+        rows_to_delete.reserve(PACE2024_CONST_NOF_CYCLE_CONSTRAINTS);
+        lower_bounds.reserve(PACE2024_CONST_NOF_CYCLE_CONSTRAINTS);
+        upper_bounds.reserve(PACE2024_CONST_NOF_CYCLE_CONSTRAINTS);
+        starts.reserve(PACE2024_CONST_NOF_CYCLE_CONSTRAINTS);
+        constexpr std::size_t PACE2024_CONST_NOF_CYCLE_CONSTRAINTS_x3 = 3 * PACE2024_CONST_NOF_CYCLE_CONSTRAINTS;
+        indices.reserve(PACE2024_CONST_NOF_CYCLE_CONSTRAINTS_x3);
+        values.reserve(PACE2024_CONST_NOF_CYCLE_CONSTRAINTS_x3);
     }
 
     highs_wrapper(const highs_wrapper &rhs) = delete;
@@ -674,7 +692,7 @@ class highs_wrapper : public lp_wrapper {
         PACE2024_DEBUG_PRINTF("\tstart delete_positive_slack_rows\n");
 
         // gather rows to delete
-        std::vector<int> rows_to_delete;
+        rows_to_delete.clear();
         for (int i = 0; i < nof_old_rows; ++i) {
             if (has_row_slack(i)) {
                 rows_to_delete.emplace_back(i);
@@ -712,8 +730,9 @@ class highs_wrapper : public lp_wrapper {
      */
     virtual void fix_columns(const int new_upper_bound) {
         assert(new_upper_bound < upper_bound);
+        assert(lower_bound <= new_upper_bound);
         upper_bound = new_upper_bound;
-        for (int j = 0; j < n1_choose_2; ++j) {
+        for (int j = 0; j < lp.getNumCol(); ++j) {
             const int diff = upper_bound - lower_bound;
             const double coeff = get_objective_coefficient(j);
 
@@ -731,8 +750,7 @@ class highs_wrapper : public lp_wrapper {
         if (magic[j] < 0) {
             return static_cast<double>(~magic[j]);
         } else {
-            const HighsSolution &sol = lp.getSolution();
-            return sol.col_value[magic[j]];
+            return lp.getSolution().col_value[magic[j]];
         }
     }
 
@@ -886,18 +904,11 @@ class highs_wrapper : public lp_wrapper {
         const HighsInt nof_new_rows = std::min(get_nof_bucket_entries(), PACE2024_CONST_NOF_CYCLE_CONSTRAINTS);
         if (nof_new_rows <= 0) return 0;
 
-        std::vector<double> lower_bounds;
-        std::vector<double> upper_bounds;
-        std::vector<HighsInt> starts;
-        lower_bounds.reserve(nof_new_rows);
-        upper_bounds.reserve(nof_new_rows);
-        starts.reserve(nof_new_rows);
-
-        const HighsInt nof_new_rows_x3 = 3 * nof_new_rows;
-        std::vector<HighsInt> indices;
-        std::vector<double> values;
-        indices.reserve(nof_new_rows_x3);
-        values.reserve(nof_new_rows_x3);
+        lower_bounds.clear();
+        upper_bounds.clear();
+        starts.clear();
+        indices.clear();
+        values.clear();
 
         int i = 0;
         bool go_on = true;
@@ -905,7 +916,6 @@ class highs_wrapper : public lp_wrapper {
             for (const auto &[ij, jk, ik, ub] : *r_it) {
                 (void)ub;  // suppress unused warning
 
-                PACE2024_DEBUG_PRINTF("%d %d %d\n", ij, ik, jk);
                 const double bound_offset = get_3cycle_bound_offset(ij, jk, ik);
                 lower_bounds.emplace_back(0. + bound_offset);
                 upper_bounds.emplace_back(1. + bound_offset);
@@ -976,7 +986,10 @@ class highs_wrapper : public lp_wrapper {
                     assert(j < k);
                     check_3cycle(i, j, k);
                     break_for_loops = is_last_bucket_full();
-                    if (break_for_loops) break;
+                    if (break_for_loops) {
+                        PACE2024_DEBUG_PRINTF("\t\tlast bucket full\n");
+                        break;
+                    }
                 }
                 if (break_for_loops) break;
             }
@@ -1061,7 +1074,7 @@ class highs_wrapper : public lp_wrapper {
     /// @brief returns the objective coefficient of column j
     inline double get_objective_coefficient(const int &j) {
         assert(0 <= j);
-        assert(j < n1_choose_2);
+        assert(j < lp.getNumCol());
         return lp.getLp().col_cost_[j];
     }
 
@@ -1072,13 +1085,13 @@ class highs_wrapper : public lp_wrapper {
     inline int get_3cycle_bound_offset(const int &ij, const int &jk, const int &ik) {
         double offset = 0.;
         if (magic[ij] < 0) {
-            offset += ~magic[ij];
+            offset -= ~magic[ij];
         }
         if (magic[ik] < 0) {
-            offset -= ~magic[ik];
+            offset += ~magic[ik];
         }
         if (magic[jk] < 0) {
-            offset += ~magic[jk];
+            offset -= ~magic[jk];
         }
         return offset;
     }
