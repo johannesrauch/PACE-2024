@@ -1,25 +1,24 @@
 
-#include "input.hpp"
 #include "bipartite_graph.hpp"
 
 #include <cassert>
 #include <fstream>
 
+#include "input.hpp"
+
 namespace fs = std::filesystem;
 
-uint64_t ref_n_fixed = 4;
-uint64_t ref_n_free = 4;
-uint64_t ref_m = 8;
-std::vector<std::pair<uint64_t, uint64_t>> ref_edges = {
-    {1, 5}, {2, 5}, {2, 6}, {4, 6}, {1, 7}, {3, 7}, {3, 8}, {4, 8}};
+constexpr uint64_t ref_n_fixed = 4;
+constexpr uint64_t ref_n_free = 4;
+constexpr uint64_t ref_m = 8;
+const std::vector<std::pair<uint64_t, uint64_t>> ref_edges =
+    {{1, 5}, {2, 5}, {2, 6}, {4, 6}, {1, 7}, {3, 7}, {3, 8}, {4, 8}};
 
 /**
  * @brief tests bipartite_graph.hpp a little
- * 
- * @return int 
  */
 int main() {
-    const fs::path filepath = "tiny_test_set/cycle_8_sorted.gr";
+    const fs::path filepath = "tiny_test_set/instances/cycle_8_sorted.gr";
     pace2024::uint64_bipartite_graph graph;
     pace2024::parse_input(filepath, graph);
 

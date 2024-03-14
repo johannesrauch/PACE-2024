@@ -21,7 +21,7 @@ namespace pace2024 {
  * @param v vertex
  * @return std::pair<R, R> crossing numbers of u and v
  */
-template <typename T, typename R = uint32_t>
+template <typename T, typename R = uint16_t>
 std::pair<R, R> crossing_numbers_of(const bipartite_graph<T>& graph, T u, T v) {
     const auto& nbors_u = graph.get_neighbors_of_free(u);
     const auto& nbors_v = graph.get_neighbors_of_free(v);
@@ -114,14 +114,14 @@ R number_of_crossings(const bipartite_graph<T>& graph, const std::vector<T>& ord
 /**
  * @brief returns the number of crossings in the given ordering
  *
- * @tparam T
- * @tparam R
+ * @tparam T vertex type
+ * @tparam R data type
  * @param cr_matrix crossing number matrix
  * @param ordering ordering of the free layer
- * @return R
+ * @return uint32_t number of crossings
  */
-template <typename T, typename R = uint32_t>
-R number_of_crossings(const folded_matrix<R>& cr_matrix, const std::vector<T>& ordering) {
+template <typename T, typename R = uint16_t>
+uint32_t number_of_crossings(const folded_matrix<R>& cr_matrix, const std::vector<T>& ordering) {
     const std::size_t n1 = cr_matrix.get_m();
     assert(n1 == ordering.size());
     std::vector<T> positions(n1);
@@ -132,7 +132,7 @@ R number_of_crossings(const folded_matrix<R>& cr_matrix, const std::vector<T>& o
         positions[ordering[i]] = i;
     }
 
-    R nof_crossings = 0;
+    uint32_t nof_crossings = 0;
     for (std::size_t i = 0; i < n1; ++i) {
         for (std::size_t j = i + 1; j < n1; ++j) {
             if (positions[i] < positions[j])

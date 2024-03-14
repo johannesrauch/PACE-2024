@@ -1,6 +1,6 @@
 .PHONY: all
 
-all: bipartite_graph matrix crossing_number median_heuristic topological_sort branch_and_cut
+all: bipartite_graph matrix crossings heuristics topological_sort branch_and_cut_tiny
 
 clean:
 	rm *.exe

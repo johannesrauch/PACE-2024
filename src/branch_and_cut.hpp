@@ -25,7 +25,7 @@
 
 namespace pace2024 {
 
-template <typename T, typename R>
+template <typename T>
 class branch_and_cut {
    private:
     /// @brief a bipartite graph that resembles an instance of one-sided crossing minimization
@@ -38,7 +38,7 @@ class branch_and_cut {
     highs_wrapper lp_solver;
 
     /// @brief best upper bound on the optimal value of the instance
-    R upper_bound{0};
+    uint32_t upper_bound{0};
 
     /// @brief ordering corresponding to upper_bound
     std::vector<T> ordering;
@@ -108,7 +108,7 @@ class branch_and_cut {
         bool acyclic = topological_sort(restriction_graph, ordering);
         (void)acyclic;  // suppress unused warning
         assert(acyclic);
-        const R new_upper_bound = static_cast<R>(lp_solver.get_rounded_objective_value());
+        const uint32_t new_upper_bound = static_cast<uint32_t>(lp_solver.get_rounded_objective_value());
         assert(new_upper_bound < upper_bound);
         upper_bound = new_upper_bound;
     }
@@ -128,7 +128,7 @@ class branch_and_cut {
 
         std::vector<T> ordering_;
         barycenter_heuristic(graph, ordering_).run();
-        const R upper_bound_ = number_of_crossings(graph, ordering_);
+        const uint32_t upper_bound_ = number_of_crossings(graph, ordering_);
 
         if (upper_bound_ < upper_bound) {
             upper_bound = upper_bound_;
@@ -264,10 +264,8 @@ class branch_and_cut {
 
     /**
      * @brief get number of crossings of current ordering
-     *
-     * @return R
      */
-    R get_nof_crossings() {
+    uint32_t get_nof_crossings() {
         return upper_bound;
     }
 

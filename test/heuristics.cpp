@@ -4,7 +4,7 @@
 
 #include "barycenter_heuristic.hpp"
 #include "bipartite_graph.hpp"
-#include "crossing_number.hpp"
+#include "crossings.hpp"
 #include "input.hpp"
 #include "median_heuristic.hpp"
 #include "printf.hpp"
@@ -51,23 +51,23 @@ void compare_heuristics_on_instance(fs::path filepath) {
     const std::string best = c_b < c_p ? "b" : (c_b == c_p ? "=" : (c_m == c_p ? "m" : "p"));
     const std::string fastest = t_b < t_m ? "b" : "m";
     const R optimal = pace2024::test::get_ref_nof_crossings<R>(filepath);
-    fmt::printf("%11u%11s|%11u%11.3f%11.1f|%11u%11.3f%11.1f|%11u%11.3f%11.1f%11u|%11s%11s\n",
+    fmt::printf("%11u%11s|%11u%11.3f%11.1f|%11u%11.3f%11.1f|%11u%11.3f%11.1f%11u|%11s%11.1f%11s\n",
                 filepath.filename(), optimal,
                 c_b, t_b, (static_cast<double>(c_b) / optimal - 1) * 100,
                 c_m, t_m, (static_cast<double>(c_m) / optimal - 1) * 100,
                 c_p, t_p, (static_cast<double>(c_p) / optimal - 1) * 100, c_m - c_p,
-                best, fastest);
+                best, (static_cast<double>(std::min(c_p, c_b)) / optimal - 1) * 100, fastest);
 }
 
 void compare_heuristics_on_medium_test_set() {
-    fmt::printf("%11s%11s|%11s%11s%11s|%11s%11s%11s|%11s%11s%11s%11s|%11s%11s\n",
+    fmt::printf("%11s%11s|%11s%11s%11s|%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%11s\n",
                 "instance", "optimal",
                 "barycenter", "t in ms", "off by %%",
                 "median", "t in ms", "off by %%",
                 "probmedian", "t in ms", "off by %%", "delta",
-                "best", "fastest");
-    pace2024::test::print_line(161);
-    for (const auto& file : fs::directory_iterator("medium_test_set")) {
+                "best", "off by %%", "fastest");
+    pace2024::test::print_line(172);
+    for (const auto& file : fs::directory_iterator("medium_test_set/instances")) {
         if (!file.is_regular_file()) continue;
         compare_heuristics_on_instance(file.path());
     }

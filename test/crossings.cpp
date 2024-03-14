@@ -1,4 +1,4 @@
-#include "crossing_number.hpp"
+#include "crossings.hpp"
 
 #include <cassert>
 #include <filesystem>
@@ -10,6 +10,9 @@
 #include "matrix.hpp"
 #include "printf.hpp"
 #include "random.hpp"
+#include "test_utils.hpp"
+
+namespace fs = std::filesystem;
 
 /**
  * @brief tests crossing_numbers_of function against crossing number matrix
@@ -23,8 +26,8 @@ template <typename T, typename R>
 void test_crossing_numbers_of(const pace2024::bipartite_graph<T>& graph,
                               const pace2024::folded_matrix<R>& matrix) {
     const std::size_t n_free = graph.get_n_free();
-    for (uint16_t u = 0; u < n_free; ++u) {
-        for (uint16_t v = u + 1; v < n_free; ++v) {
+    for (T u = 0; u < n_free; ++u) {
+        for (T v = u + 1; v < n_free; ++v) {
             auto [c_uv, c_vu] = pace2024::crossing_numbers_of<T, R>(graph, u, v);
             assert(matrix(u, v) == c_uv);
             assert(matrix(v, u) == c_vu);
@@ -45,29 +48,40 @@ void test_number_of_crossings(const pace2024::bipartite_graph<T>& graph,
                              const pace2024::folded_matrix<R>& matrix) {
     std::vector<uint16_t> ordering(graph.get_n_free());
     pace2024::test::shuffle(ordering);
-    R ref = pace2024::number_of_crossings<T, R>(matrix, ordering);
-    R tst = pace2024::number_of_crossings<T, R>(graph, ordering);
-    // fmt::printf("%s,%s\n", ref, tst);
+
+    std::clock_t start = std::clock();
+    const R ref = pace2024::number_of_crossings<T, R>(matrix, ordering);
+    std::clock_t end = std::clock();
+    const double t_m = pace2024::test::time_in_ms(start, end);
+
+    start = std::clock();
+    const R tst = pace2024::number_of_crossings<T, R>(graph, ordering);
+    end = std::clock();
+    const double t_g = pace2024::test::time_in_ms(start, end);
+
+    const char fastest = t_m < t_g ? 'm' : 'g';
+    fmt::printf("%11.3f%11.3f%11c\n", t_m, t_g, fastest);
     assert(ref == tst);
 }
 
 /**
- * @brief tests crossing_number.hpp
- *
- * @return int
+ * @brief tests crossings.hpp
  */
 int main() {
-    for (const auto& file : std::filesystem::directory_iterator("tiny_test_set")) {
+    fmt::printf("%11s%11s%11s%11s\n", "instance", "matrix", "graph", "fastest");
+    pace2024::test::print_line(45);
+    for (const auto& file : std::filesystem::directory_iterator("medium_test_set/instances")) {
         if (!file.is_regular_file()) continue;
 
-        pace2024::uint16_bipartite_graph graph;
+        pace2024::bipartite_graph graph;
         pace2024::parse_input(file.path(), graph);
-        pace2024::uint16_folded_matrix matrix(graph);
+        pace2024::folded_matrix matrix(graph);
 
+        fmt::printf("%11s", file.path().filename());
         test_crossing_numbers_of(graph, matrix);
         test_number_of_crossings(graph, matrix);
     }
-
+    pace2024::test::print_line(45);
     std::cout << "TEST::PACE2024::CROSSING_NUMBER:\t\tOK" << std::endl;
     return 0;
 }

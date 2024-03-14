@@ -37,7 +37,7 @@ void compute_crossing_numbers_augmented_adjacency(
  *
  * @tparam R element type
  */
-template <typename R>
+template <typename R = uint16_t>
 class matrix {
    private:
     /**
@@ -152,7 +152,7 @@ using uint16_matrix = matrix<uint16_t>;
  *
  * @tparam R element type
  */
-template <typename R>
+template <typename R = uint16_t>
 class folded_matrix {
    private:
     /**
