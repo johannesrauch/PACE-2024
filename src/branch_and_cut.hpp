@@ -73,8 +73,6 @@ class branch_and_cut {
     branch_and_cut &operator=(const branch_and_cut &rhs) = delete;
     branch_and_cut &operator=(branch_and_cut &&rhs) = delete;
 
-    ~branch_and_cut() {}
-
    private:
     //
     // solution related methods
