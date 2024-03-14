@@ -226,8 +226,9 @@ class branch_and_cut {
         bool is_optimum = branch_and_bound_and_cut();
 
         // driver loop
-        for (std::size_t iteration = 0; !is_optimum; ++iteration) {
-            PACE2024_DEBUG_PRINTF("depth=%llu, upper_bound=%lu, nof_rows=%d\n",
+        for (std::size_t iteration = 2; !is_optimum; ++iteration) {
+            PACE2024_DEBUG_PRINTF("iteration=%5llu, depth=%5llu, upper_bound=%5lu, nof_rows=%5d\n",
+                                  iteration,
                                   stack.size(),
                                   upper_bound,
                                   lp_solver.get_nof_rows());

@@ -136,18 +136,6 @@ class lp_wrapper {
 
     virtual ~lp_wrapper() {}
 
-    /**
-     * @brief returns -1 if current solution is integral and a column index of a nonintegral variable otherwise
-     */
-    int is_integral() {
-        for (int j = 0; j < n1_choose_2; ++j) {
-            if (!is_column_integral(j)) {
-                return j;
-            }
-        }
-        return -1;
-    }
-
     // purely virtual methods
     virtual bool cut() = 0;
     virtual void delete_positive_slack_rows() = 0;
@@ -159,6 +147,7 @@ class lp_wrapper {
     virtual double get_objective_value() = 0;
     virtual long get_rounded_objective_value() = 0;
     virtual inline bool is_column_integral(const int &j) = 0;
+    virtual int is_integral() = 0;
     virtual bool is_optimal() = 0;
     virtual void solve() = 0;
     virtual void unfix_column(const int j) = 0;
@@ -332,7 +321,7 @@ class highs_wrapper : public lp_wrapper {
      * @return int j, 1 <= j <= n1_choose_2, of nonintegral column otherwise
      */
     virtual int is_integral() {
-        for (int j = 0; j < n1_choose_2; ++j) {
+        for (int j = 0; j < lp.getNumCol(); ++j) {
             if (!is_column_integral(j)) {
                 return j;
             }
@@ -622,7 +611,9 @@ class highs_wrapper : public lp_wrapper {
      * @return false otherwise
      */
     inline bool is_column_integral(const int &j) {
-        const double x = get_variable_value(j);
+        assert(0 <= j);
+        assert(j < lp.getNumCol());
+        const double x = lp.getSolution().col_value[j];
         constexpr double ub = 1. - PACE2024_CONST_INTEGER_TOLERANCE;
         if (x > PACE2024_CONST_INTEGER_TOLERANCE && x < ub) {
             return false;
@@ -664,12 +655,11 @@ class highs_wrapper : public lp_wrapper {
      * due to permanently fixed variables that are not incorporated in the lp
      */
     inline std::pair<double, double> get_row_bounds(const int &i) {
-        HighsInt num_row, num_nz, start;
-        double lb, ub;
-        HighsInt indices[3];
-        double values[3];
-        lp.getRows(i, i, num_row, &lb, &ub, num_nz, &start, indices, values);
-        assert(num_row == 1);
+        assert(0 <= i);
+        assert(i < lp.getNumRow());
+        const HighsLp &lp_ = lp.getLp();
+        const double lb = lp_.row_lower_[i];
+        const double ub = lp_.row_upper_[i];
         return std::make_pair(lb, ub);
     }
 
