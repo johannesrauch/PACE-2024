@@ -174,10 +174,11 @@ class folded_matrix {
    public:
     using datatype = R;
 
-    // delete copy constructor and = operator
-    folded_matrix(const folded_matrix &rhs) = delete;
-    folded_matrix &operator=(const folded_matrix &rhs) = delete;
-    folded_matrix &operator=(folded_matrix &&rhs) = delete;
+    // delete copy and move constructor as well as copy and move assignment
+    folded_matrix(const folded_matrix &other) = delete;
+    folded_matrix(folded_matrix &&other) = delete;
+    folded_matrix &operator=(const folded_matrix &other) = delete;
+    folded_matrix &operator=(folded_matrix &&other) = delete;
 
     /**
      * @brief constructs the crossing number matrix from a bipartite graph
