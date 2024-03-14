@@ -317,8 +317,8 @@ class highs_wrapper : public lp_wrapper {
     /**
      * @brief returns a value based on the integrality of the current solution
      *
-     * @return int 0, if solution is integral
-     * @return int j, 1 <= j <= n1_choose_2, of nonintegral column otherwise
+     * @return int -1, if solution is integral
+     * @return int j, 0 <= j < lp.getNumCol(), of nonintegral column otherwise
      */
     virtual int is_integral() {
         for (int j = 0; j < lp.getNumCol(); ++j) {
@@ -326,7 +326,7 @@ class highs_wrapper : public lp_wrapper {
                 return j;
             }
         }
-        return 0;
+        return -1;
     }
 
     /// @brief returns if an optimal feasible solution has been found
