@@ -59,10 +59,11 @@ class matrix {
    public:
     using datatype = R;
 
-    // delete copy constructor and = operator
-    matrix(const matrix &rhs) = delete;
-    matrix &operator=(const matrix &rhs) = delete;
-    matrix &operator=(matrix &&rhs) = delete;
+    // delete copy and move constructor as well as copy and move assignment
+    matrix(const matrix &other) = delete;
+    matrix(matrix &&other) = delete;
+    matrix &operator=(const matrix &other) = delete;
+    matrix &operator=(matrix &&other) = delete;
 
     /**
      * @brief constructs the crossing number matrix from a bipartite graph
