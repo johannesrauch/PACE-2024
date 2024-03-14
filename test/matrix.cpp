@@ -1,42 +1,61 @@
-#include "input.hpp"
 #include "matrix.hpp"
 
 #include <iostream>
-#include <filesystem>
+
+#include "input.hpp"
+#include "test_utils.hpp"
+
+namespace fs = std::filesystem;
 
 /**
  * @brief tests the different matrices and the different
- * ways to compute the crossing number matrix.
- * 
- * @tparam T vertex type
- * @param graph 
+ * ways to compute the crossing number matrix
  */
-template<typename T>
-void test_matrix_and_compute_crossing_numbers(const pace2024::bipartite_graph<T>& graph) {
+void test_matrix_and_compute_crossing_numbers(const fs::path filepath) {
+    pace2024::uint16_bipartite_graph graph;
+    pace2024::parse_input(filepath, graph);
     const std::size_t n_free{graph.get_n_free()};
-    pace2024::uint64_folded_matrix ref_matrix(n_free);
-    pace2024::uint64_matrix tst_matrix_1(graph);
-    pace2024::uint64_folded_matrix tst_matrix_2(graph);
+
+    // reference; naive computation
+    pace2024::uint16_folded_matrix ref_matrix(n_free);
+    std::clock_t start = std::clock();
     pace2024::test::compute_crossing_numbers_naivly(graph, ref_matrix);
-    
+    std::clock_t end = std::clock();
+    const double t_r = pace2024::test::time_in_ms(start, end);
+
+    // normal matrix
+    start = std::clock();
+    pace2024::uint16_matrix tst_matrix_1(graph);
+    end = std::clock();
+    const double t_m = pace2024::test::time_in_ms(start, end);
+
+    // cache optimized matrix
+    start = std::clock();
+    pace2024::uint16_folded_matrix tst_matrix_2(graph);
+    end = std::clock();
+    const double t_f = pace2024::test::time_in_ms(start, end);
+
+    // test equality
     assert(pace2024::test::equals(ref_matrix, tst_matrix_1, true));
     assert(pace2024::test::equals(ref_matrix, tst_matrix_2, true));
+
+    const char fastest = t_f <= t_m ? 'f' : 'm';
+    fmt::printf("%11s%11.3f%11.3f%11.3f%11c\n", filepath.filename(), t_r, t_m, t_f, fastest);
 }
 
 /**
  * @brief tests matrix.hpp; its classes and functions
- * 
- * @return int 
+ *
+ * @return int
  */
 int main() {
-    for (const auto& file : std::filesystem::directory_iterator("tiny_test_set")) {
+    fmt::printf("%11s%11s%11s%11s%11s\n", "instance", "reference", "matrix", "folded", "fastest");
+    pace2024::test::print_line(56);
+    for (const auto& file : std::filesystem::directory_iterator("medium_test_set")) {
         if (!file.is_regular_file()) continue;
-
-        pace2024::uint16_bipartite_graph graph;
-        pace2024::parse_input(file.path(), graph);
-        test_matrix_and_compute_crossing_numbers(graph);        
+        test_matrix_and_compute_crossing_numbers(file.path());
     }
-
+    pace2024::test::print_line(56);
     std::cout << "TEST::PACE2024::MATRIX:\t\t\t\t\tOK" << std::endl;
     return 0;
 }

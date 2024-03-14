@@ -1,11 +1,25 @@
 #ifndef PACE2024_TEST_UTILS_HPP
 #define PACE2024_TEST_UTILS_HPP
 
+#include <ctime>
 #include <filesystem>
+
+#include "printf.hpp"
 
 namespace pace2024 {
 
 namespace test {
+
+/// @brief prints a line :o
+void print_line(std::size_t length) {
+    for (std::size_t i = 0; i < length; ++i) fmt::printf("-");
+    fmt::printf("\n");
+}
+
+/// @brief returns the elapsed time between `start` and `end` in ms
+double time_in_ms(const std::clock_t start, const std::clock_t end) {
+    return 1000.0 * (end - start) / CLOCKS_PER_SEC;
+}
 
 template <typename R = uint32_t>
 R get_ref_nof_crossings(std::filesystem::path filepath_instance) {
