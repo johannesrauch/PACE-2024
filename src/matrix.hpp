@@ -21,12 +21,10 @@ template <typename R>
 class folded_matrix;
 
 template <typename T, class MATRIX>
-void compute_crossing_numbers_binary_search(
-    const bipartite_graph<T> &graph, MATRIX &cr_matrix);
+void compute_crossing_numbers_binary_search(const bipartite_graph<T> &graph, MATRIX &cr_matrix);
 
 template <typename T, typename R>
-void compute_crossing_numbers_augmented_adjacency(
-    const bipartite_graph<T> &graph, folded_matrix<R> &cr_matrix);
+void fill_crossing_matrix(const bipartite_graph<T> &graph, folded_matrix<R> &cr_matrix);
 
 //
 // matrix types
@@ -88,8 +86,7 @@ class matrix {
      * @param m
      * @param n
      */
-    matrix(const std::size_t m, const std::size_t n)
-        : m(m), n(n), data(new R[m * n]()) {
+    matrix(const std::size_t m, const std::size_t n) : m(m), n(n), data(new R[m * n]()) {
         // the additional () initializes memory to 0
         assert(m > 0);
         assert(n > 0);
@@ -135,9 +132,7 @@ class matrix {
      * @param j
      * @return const R&
      */
-    const R &operator()(std::size_t i, std::size_t j) const {
-        return data[i * n + j];
-    }
+    const R &operator()(std::size_t i, std::size_t j) const { return data[i * n + j]; }
 };
 
 using uint64_matrix = matrix<uint64_t>;
@@ -189,18 +184,15 @@ class folded_matrix {
      * @param graph
      */
     template <typename T>
-    folded_matrix(const bipartite_graph<T> &graph)
-        : n1(graph.get_n_free()), n2(n1 * (n1 - 1)), data(new R[n2]()) {
-        // the additional () above initializes memory to 0
+    folded_matrix(const bipartite_graph<T> &graph) : folded_matrix(graph.get_n_fixed()) {
         assert(n1 > 1);
-        compute_crossing_numbers_augmented_adjacency(graph, *this);
+        fill_crossing_matrix(graph, *this);
     }
 
     /**
      * @brief constructs folded_matrix with square length `n1` initialized with 0s
      */
-    folded_matrix(const std::size_t n1)
-        : n1(n1), n2(n1 * (n1 - 1)), data(new R[n2]()) {
+    folded_matrix(const std::size_t n1) : n1(n1), n2(n1 * (n1 - 1)), data(new R[n2]()) {
         // the additional () above initializes memory to 0
         assert(n1 > 1);
     }
@@ -229,8 +221,7 @@ class folded_matrix {
      * @brief converts indices i (row) and j (column) to the
      * correct position of the corresponding element in data.
      */
-    inline std::size_t get_index(const std::size_t i,
-                                 const std::size_t j) const {
+    inline std::size_t get_index(const std::size_t i, const std::size_t j) const {
         assert(i < n1);
         assert(j < n1);
         assert(i != j);
@@ -250,9 +241,7 @@ class folded_matrix {
      * @brief returns reference to the element in row i and column j.
      * we require i != j.
      */
-    R &operator()(const std::size_t i, const std::size_t j) {
-        return data[get_index(i, j)];
-    }
+    R &operator()(const std::size_t i, const std::size_t j) { return data[get_index(i, j)]; }
 
     /**
      * @brief returns constant reference to the element in row i and column j.
@@ -281,8 +270,7 @@ using uint16_folded_matrix = folded_matrix<uint16_t>;
  * @param cr_matrix
  */
 template <typename T, class MATRIX>
-void compute_crossing_numbers_binary_search(
-    const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
+void compute_crossing_numbers_binary_search(const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
     assert(graph.get_n_free() == cr_matrix.get_m() && cr_matrix.get_m() == cr_matrix.get_n());
     const std::size_t n1 = graph.get_n_free();
 
@@ -295,18 +283,16 @@ void compute_crossing_numbers_binary_search(
             if (v == w) continue;
 
             cr_matrix(v, w) = 0;
-            const auto& neighbors_w = graph.get_neighbors_of_free(w);
+            const auto &neighbors_w = graph.get_neighbors_of_free(w);
             for (const T &wp : neighbors_w) {
                 if (wp >= rv) break;
 
                 // returns it to the first element such that *it >= wp + 1
                 // using binary search
-                auto it = std::lower_bound(neighbors_v.begin(),
-                                           neighbors_v.end(), wp + 1);
+                auto it = std::lower_bound(neighbors_v.begin(), neighbors_v.end(), wp + 1);
 
                 if (it != neighbors_v.end()) assert(*it >= wp + 1);
-                if (it != neighbors_v.begin())
-                    assert(*(it - 1) < wp + 1);
+                if (it != neighbors_v.begin()) assert(*(it - 1) < wp + 1);
 
                 cr_matrix(v, w) += std::distance(it, neighbors_v.end());
             }
@@ -316,15 +302,15 @@ void compute_crossing_numbers_binary_search(
 
 /**
  * @brief fills a folded_matrix with crossing numbers.
- * adapted from Dujmovic and Whitesides https://doi.org/10.1007/s00453-004-1093-2
+ * adapted from Dujmovic and Whitesides https://doi.org/10.1007/s00453-004-1093-2,
+ * uses augmented adjacency matrix.
  *
  * @tparam T vertex type
  * @param graph
  * @param cr_matrix
  */
 template <typename T, typename R>
-void compute_crossing_numbers_augmented_adjacency(
-    const bipartite_graph<T> &graph, folded_matrix<R> &cr_matrix) {
+void fill_crossing_matrix(const bipartite_graph<T> &graph, folded_matrix<R> &cr_matrix) {
     assert(graph.get_n_free() == cr_matrix.get_n());
 
     // variables
@@ -389,8 +375,7 @@ namespace test {
  * @param matrix
  */
 template <typename T, typename R>
-void compute_crossing_numbers_naivly(const bipartite_graph<T> &graph,
-                                     folded_matrix<R> &matrix) {
+void compute_crossing_numbers_naivly(const bipartite_graph<T> &graph, folded_matrix<R> &matrix) {
     assert(graph.get_n_free() == matrix.get_m());
 
     const std::size_t n1 = matrix.get_m();
