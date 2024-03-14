@@ -168,6 +168,9 @@ class highs_wrapper : public lp_wrapper {
     /// @brief lp solver
     Highs lp;
 
+    /// @brief highs status field
+    HighsStatus status;
+
     /// @brief number of rows before `cut()` added new rows
     int nof_old_rows{0};
 
@@ -189,7 +192,6 @@ class highs_wrapper : public lp_wrapper {
         : lp_wrapper(static_cast<int>(graph.get_n_free())),
           magic(n1_choose_2) {
         // configure highs lp solver
-        HighsStatus status;
         status = lp.setOptionValue("presolve", "off");
         assert(status == HighsStatus::kOk);
         status = lp.setOptionValue("solver", "simplex");
@@ -357,10 +359,15 @@ class highs_wrapper : public lp_wrapper {
     virtual void unfix_column(const int j) {
         assert(0 <= j);
         assert(j < n1_choose_2);
-        lp.changeColBounds(j, 0., 1.);
+        change_column_bounds(j, 0., 1.);
     }
 
    private:
+    inline void change_column_bounds(const int &j, const double &&lb, const double &&ub) {
+        status = lp.changeColBounds(j, lb, ub);
+        assert(status == HighsStatus::kOk);
+    }
+
     //
     // initialization methods
     //
@@ -428,13 +435,22 @@ class highs_wrapper : public lp_wrapper {
             // set 0 <= x_ij <= 1
             const int l = lp.getNumCol();
             magic[k] = l;
-            const HighsStatus status = lp.addVar(0., 1.);
-            assert(status == HighsStatus::kOk);
+            add_var();
             if (c_ij != c_ji) {
-                lp.changeColCost(l, static_cast<double>(c_ij) - static_cast<double>(c_ji));
+                change_column_cost(l, static_cast<double>(c_ij) - static_cast<double>(c_ji));
             }
             return c_ji;
         }
+    }
+
+    inline void add_var() {
+        status = lp.addVar(0., 1.);
+        assert(status == HighsStatus::kOk);
+    }
+
+    inline void change_column_cost(const int &l, const double &&cost) {
+        status = lp.changeColCost(l, cost);
+        assert(status == HighsStatus::kOk);
     }
 
     //
