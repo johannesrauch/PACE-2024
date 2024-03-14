@@ -4,12 +4,14 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
 
 #include "debug_printf.hpp"
+#include "input.hpp"
 
 namespace pace2024 {
 
@@ -20,7 +22,8 @@ namespace pace2024 {
  * @tparam T vertex type
  * @tparam std::enable_if_t<std::is_unsigned<T>::value>
  */
-template <typename T = uint16_t, class = typename std::enable_if_t<std::is_integral<T>::value>>
+template <typename T = uint16_t,
+          class = typename std::enable_if_t<std::is_integral<T>::value>>
 class bipartite_graph {
    private:
     /**
@@ -44,6 +47,10 @@ class bipartite_graph {
     using vertextype = T;
 
     bipartite_graph() {}
+
+    bipartite_graph(const std::filesystem::path filepath) {
+        parse_input(filepath, *this);
+    }
 
     // delete copy and move constructor, copy assignment and move assignment
     bipartite_graph(const bipartite_graph &rhs) = delete;
@@ -159,16 +166,12 @@ class bipartite_graph {
     /**
      * @brief returns a reference to all edges
      */
-    std::vector<std::pair<T, T>> &get_edges() {
-        return edges;
-    }
+    std::vector<std::pair<T, T>> &get_edges() { return edges; }
 
     /**
      * @brief returns a constant reference to all edges
      */
-    const std::vector<std::pair<T, T>> &get_edges() const {
-        return edges;
-    }
+    const std::vector<std::pair<T, T>> &get_edges() const { return edges; }
 
     /**
      * @brief returns the degree of vertex `v` in the fixed layer
