@@ -197,9 +197,7 @@ class folded_matrix {
     }
 
     /**
-     * @brief constructs folded_matrix initialized with 0s
-     *
-     * @param n1
+     * @brief constructs folded_matrix with square length `n1` initialized with 0s
      */
     folded_matrix(const std::size_t n1)
         : n1(n1), n2(n1 * (n1 - 1)), data(new R[n2]()) {
@@ -219,25 +217,17 @@ class folded_matrix {
 
     /**
      * @brief returns number of rows (matrix is square)
-     *
-     * @return std::size_t
      */
     std::size_t get_m() const { return n1; }
 
     /**
      * @brief returns number of columns (matrix is square)
-     *
-     * @return std::size_t
      */
     std::size_t get_n() const { return n1; }
 
     /**
      * @brief converts indices i (row) and j (column) to the
      * correct position of the corresponding element in data.
-     *
-     * @param i
-     * @param j
-     * @return std::size_t
      */
     inline std::size_t get_index(const std::size_t i,
                                  const std::size_t j) const {
@@ -259,10 +249,6 @@ class folded_matrix {
     /**
      * @brief returns reference to the element in row i and column j.
      * we require i != j.
-     *
-     * @param i
-     * @param j
-     * @return T&
      */
     R &operator()(const std::size_t i, const std::size_t j) {
         return data[get_index(i, j)];
@@ -271,10 +257,6 @@ class folded_matrix {
     /**
      * @brief returns constant reference to the element in row i and column j.
      * we require i != j.
-     *
-     * @param i
-     * @param j
-     * @return const T&
      */
     const R &operator()(const std::size_t i, const std::size_t j) const {
         return data[get_index(i, j)];
