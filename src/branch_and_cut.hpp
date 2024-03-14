@@ -98,7 +98,6 @@ class branch_and_cut {
         for (T i = 0; i < n1; ++i) {
             for (T j = i + 1; j < n1; ++j) {
                 const double x = lp_solver->get_variable_value(k);
-                PACE2024_DEBUG_PRINTF("%u, %u, %f\n", i +5, j+5, x);
                 if (x < 0.5) {
                     restriction_graph.add_arc(j, i);
                 } else {
