@@ -21,19 +21,17 @@ namespace pace2024 {
  * @tparam T vertex type
  * @tparam std::enable_if_t<std::is_unsigned<T>::value>
  */
-template <typename T = uint16_t,
-          class = typename std::enable_if_t<std::is_integral<T>::value>>
+template <typename T = uint16_t, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
 class bipartite_graph {
-   private:
     /**
-     * @brief neighbors of vertices in the free layer
+     * @brief number of vertices in the fixed layer
      */
-    std::vector<std::vector<T>> adjacency_lists_of_fixed;
+    std::size_t n_fixed{0};
 
     /**
      * @brief neighbors of vertices in the free layer
      */
-    std::vector<std::vector<T>> adjacency_lists_of_free;
+    std::vector<std::vector<T>> adjacency_lists;
 
     /**
      * @brief edges
@@ -43,7 +41,7 @@ class bipartite_graph {
     std::vector<std::pair<T, T>> edges;
 
    public:
-    using vertextype = T;
+    using vertex_t = T;
 
     bipartite_graph() {}
 
@@ -66,43 +64,22 @@ class bipartite_graph {
     void add_edge(const T u, const T v) {
         assert(u < get_n_fixed());
         assert(v < get_n_free());
-        adjacency_lists_of_fixed[u].emplace_back(v);
-        adjacency_lists_of_free[v].emplace_back(u);
+        adjacency_lists[v].emplace_back(u);
         edges.emplace_back(u, v);
-    }
-
-    /**
-     * @brief adds a vertex to the fixed layer
-     */
-    std::size_t add_fixed_vertex() {
-        const std::size_t ret = get_n_fixed();
-        adjacency_lists_of_fixed.emplace_back();
-        return ret;
     }
 
     /**
      * @brief adds `n` vertices to the fixed layer
      */
     void add_fixed_vertices(const std::size_t n) {
-        adjacency_lists_of_fixed.resize(adjacency_lists_of_fixed.size() + n);
-    }
-
-    /**
-     * @brief adds a vertex to the free layer
-     */
-    std::size_t add_free_vertex() {
-        const std::size_t ret = get_n_free();
-        adjacency_lists_of_free.emplace_back();
-        return ret;
+        n_fixed += n;
     }
 
     /**
      * @brief adds `n` vertices to the free layer
-     *
-     * @param n
      */
     void add_free_vertices(const std::size_t n) {
-        adjacency_lists_of_free.resize(adjacency_lists_of_free.size() + n);
+        adjacency_lists.resize(adjacency_lists.size() + n);
     }
 
     //
@@ -113,8 +90,7 @@ class bipartite_graph {
      * @brief clears and resets all attributes of this objects
      */
     void clear() {
-        adjacency_lists_of_fixed.clear();
-        adjacency_lists_of_free.clear();
+        adjacency_lists.clear();
         edges.clear();
     }
 
@@ -130,12 +106,12 @@ class bipartite_graph {
     /**
      * @brief returns number of vertices in the fixed layer
      */
-    std::size_t get_n_fixed() const { return adjacency_lists_of_fixed.size(); }
+    std::size_t get_n_fixed() const { return n_fixed; }
 
     /**
      * @brief returns number of vertices in the free layer
      */
-    std::size_t get_n_free() const { return adjacency_lists_of_free.size(); }
+    std::size_t get_n_free() const { return adjacency_lists.size(); }
 
     /**
      * @brief returns number of edges
@@ -143,19 +119,11 @@ class bipartite_graph {
     std::size_t get_m() const { return edges.size(); }
 
     /**
-     * @brief get neighbors of vertex v, which is in the fixed layer
-     */
-    const std::vector<T> &get_neighbors_of_fixed(const T v) const {
-        assert(v < get_n_fixed());
-        return adjacency_lists_of_fixed[v];
-    }
-
-    /**
      * @brief get neighbors of vertex v, which is in the free layer
      */
     const std::vector<T> &get_neighbors_of_free(const T v) const {
         assert(v < get_n_free());
-        return adjacency_lists_of_free[v];
+        return adjacency_lists[v];
     }
 
     /**
@@ -167,13 +135,6 @@ class bipartite_graph {
      * @brief returns a constant reference to all edges
      */
     const std::vector<std::pair<T, T>> &get_edges() const { return edges; }
-
-    /**
-     * @brief returns the degree of vertex `v` in the fixed layer
-     */
-    std::size_t degree_of_fixed(const std::size_t v) const {
-        return get_neighbors_of_fixed(v).size();
-    }
 
     /**
      * @brief returns the degree of vertex `v` in the free layer
@@ -190,10 +151,7 @@ class bipartite_graph {
      * @brief sorts all adjacency lists in ascending order
      */
     void sort_adjacency_lists() {
-        for (auto &adjacency_list : adjacency_lists_of_fixed) {
-            std::sort(adjacency_list.begin(), adjacency_list.end());
-        }
-        for (auto &adjacency_list : adjacency_lists_of_free) {
+        for (auto &adjacency_list : adjacency_lists) {
             std::sort(adjacency_list.begin(), adjacency_list.end());
         }
     }
