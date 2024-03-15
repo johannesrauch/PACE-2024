@@ -23,7 +23,7 @@ void test_shift_heuristic(const fs::path filepath) {
     const uint32_t c_m = pace2024::number_of_crossings(matrix, ordering);
     const uint32_t c_sm = pace2024::shift_heuristic(matrix, ordering, c_m).run();
 
-    pace2024::probabilistic_median_heuristic heuristic(graph, ordering);
+    pace2024::probmedian_heuristic heuristic(graph, ordering);
     const uint32_t c_p = heuristic.run();
     const uint32_t c_sp = pace2024::shift_heuristic(matrix, ordering, c_p).run();
 

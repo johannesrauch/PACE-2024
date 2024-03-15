@@ -11,14 +11,14 @@
 
 /**
  * @brief tests the heuristic solvers median_heuristic and
- * probabilistic_median_heuristic (against values of median_heuristic; should be better).
+ * probmedian_heuristic (against values of median_heuristic; should be better).
  */
 template <typename T>
 void test_median_heuristics(const pace2024::bipartite_graph<T>& graph) {
     std::vector<T> ordering(graph.get_n_free());
     pace2024::median_heuristic<T>(graph, ordering).run();
     uint32_t nof_crossings = pace2024::number_of_crossings(graph, ordering);
-    uint32_t nof_crossings_ = pace2024::probabilistic_median_heuristic(graph, ordering).run();
+    uint32_t nof_crossings_ = pace2024::probmedian_heuristic(graph, ordering).run();
     assert(nof_crossings_ <= nof_crossings);
 }
 

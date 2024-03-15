@@ -36,7 +36,7 @@ void compare_heuristics_on_instance(fs::path filepath) {
 
     // median
     start = std::clock();
-    pace2024::probabilistic_median_heuristic heuristic(graph, ordering);
+    pace2024::probmedian_heuristic heuristic(graph, ordering);
     end = std::clock();
     const R c_m = heuristic.get_upper_bound();
     const double t_m = time_in_ms(start, end);

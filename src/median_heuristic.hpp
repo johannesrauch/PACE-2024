@@ -121,7 +121,7 @@ class median_heuristic {
  * @tparam T vertex type
  */
 template <typename T>
-class probabilistic_median_heuristic {
+class probmedian_heuristic {
    private:
     const bipartite_graph<T>& graph;
     const std::size_t n_free;
@@ -140,7 +140,7 @@ class probabilistic_median_heuristic {
      * @param ordering vector where the ordering is stored
      * @param nof_iterations number of iterations
      */
-    probabilistic_median_heuristic(const bipartite_graph<T>& graph, std::vector<T>& ordering)
+    probmedian_heuristic(const bipartite_graph<T>& graph, std::vector<T>& ordering)
         : graph(graph),
           n_free(graph.get_n_free()),
           ordering(ordering),
@@ -159,10 +159,10 @@ class probabilistic_median_heuristic {
     }
 
     // delete copy and move constructor and copy and move assignment
-    probabilistic_median_heuristic(const probabilistic_median_heuristic<T>& other) = delete;
-    probabilistic_median_heuristic(probabilistic_median_heuristic<T>&& other) = delete;
-    probabilistic_median_heuristic<T>& operator=(probabilistic_median_heuristic<T>& other) = delete;
-    probabilistic_median_heuristic<T>& operator=(const probabilistic_median_heuristic<T>& other) =
+    probmedian_heuristic(const probmedian_heuristic<T>& other) = delete;
+    probmedian_heuristic(probmedian_heuristic<T>&& other) = delete;
+    probmedian_heuristic<T>& operator=(probmedian_heuristic<T>& other) = delete;
+    probmedian_heuristic<T>& operator=(const probmedian_heuristic<T>& other) =
         delete;
 
     /**
@@ -222,7 +222,7 @@ class probabilistic_median_heuristic {
         return upper_bound;
     }
 
-   private:
+   protected:
     /**
      * @brief returns randomized median of `graph.get_neighbors_of_free(i)`
      *
