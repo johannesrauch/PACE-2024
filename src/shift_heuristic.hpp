@@ -9,6 +9,7 @@
 
 #include "bipartite_graph.hpp"
 #include "crossings.hpp"
+#include "debug_printf.hpp"
 #include "matrix.hpp"
 
 namespace pace2024 {
@@ -30,14 +31,17 @@ class shift_heuristic {
         assert(matrix.get_m() > 0);
     }
 
-    uint32_t run(const std::size_t iterations = 1000) {
+    uint32_t run(const std::size_t nof_iterations = 1024) {
+        PACE2024_DEBUG_PRINTF("start shift_heuristic\n");
         bool go_on = true;
-        for (std::size_t iteration = 0; iteration < iterations; ++iteration) {
+        std::size_t iteration;
+        for (iteration = 0; iteration < nof_iterations && go_on; ++iteration) {
             go_on = false;
             for (std::size_t i = 0; i < ordering.size(); ++i) {
                 go_on |= improve(i);
             }
         }
+        PACE2024_DEBUG_PRINTF("end   shift_heuristic, iterations=%llu\n", iteration);
         return upper_bound;
     }
 
