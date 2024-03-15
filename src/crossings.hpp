@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "bipartite_graph.hpp"
+#include "inverse.hpp"
 #include "matrix.hpp"
 #include "vector_intersection.hpp"
 
@@ -78,16 +79,14 @@ R number_of_crossings(const bipartite_graph<T>& graph, const std::vector<T>& ord
 
     // sort, we need the positions of the ends of the edges in the free layer
     auto& edges = const_cast<bipartite_graph<T>&>(graph).get_edges();
-    std::sort(edges.begin(),
-              edges.end(),
-              [&](const std::pair<T, T>& a, const std::pair<T, T>& b) {
-                  if (a.first < b.first)
-                      return true;
-                  else if (a.first > b.first)
-                      return false;
-                  else
-                      return positions[a.second] < positions[b.second];
-              });
+    std::sort(edges.begin(), edges.end(), [&](const std::pair<T, T>& a, const std::pair<T, T>& b) {
+        if (a.first < b.first)
+            return true;
+        else if (a.first > b.first)
+            return false;
+        else
+            return positions[a.second] < positions[b.second];
+    });
 
     /* build the accumulator tree */
     std::size_t q = ordering.size();
@@ -125,11 +124,7 @@ uint32_t number_of_crossings(const folded_matrix<R>& cr_matrix, const std::vecto
     const std::size_t n1 = cr_matrix.get_m();
     assert(n1 == ordering.size());
     std::vector<T> positions(n1);
-
-    // compute the positions first to access `cr_matrix` cache-friendly
-    for (std::size_t i = 0; i < n1; ++i) {
-        positions[ordering[i]] = i;
-    }
+    inverse(ordering, positions);  // to access `cr_matrix` cache-friendly
 
     uint32_t nof_crossings = 0;
     for (std::size_t i = 0; i < n1; ++i) {
