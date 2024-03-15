@@ -130,7 +130,7 @@ class probabilistic_median_heuristic {
     std::vector<T> medians;
     std::vector<T> randomized_medians;
     std::uniform_real_distribution<> distribution;
-    uint32_t best;
+    uint32_t upper_bound;
 
    public:
     /**
@@ -151,7 +151,7 @@ class probabilistic_median_heuristic {
     {
         // compute initial solution with normal median heuristic
         median_heuristic<T>(graph, ordering).run();
-        best = number_of_crossings(graph, ordering);
+        upper_bound = number_of_crossings(graph, ordering);
 
         // initialize vectors
         for (T i = 0; i < n_free; ++i) another_ordering[i] = i;
@@ -197,15 +197,15 @@ class probabilistic_median_heuristic {
         }
     }
 
-    uint32_t get_best() { return best; }
+    uint32_t get_upper_bound() { return upper_bound; }
 
     /**
      * @brief runs the probabilistic median heuristic solver
      * and stores the result in ordering
      *
-     * @return R number of crossings
+     * @return uint32_t number of crossings
      */
-    uint32_t run(const std::size_t nof_iterations = 10) {
+    virtual uint32_t run(const std::size_t nof_iterations = 10) {
         // try to find a better solution with probabilistic median heuristic
         for (std::size_t iteration = 0; iteration < nof_iterations; ++iteration) {
             // PACE2024_DEBUG_PRINTF("%s\n", iteration);
@@ -214,12 +214,12 @@ class probabilistic_median_heuristic {
                  [=](const T& a, const T& b) -> bool { return this->compare(a, b); });
 
             uint32_t candidate = number_of_crossings(graph, another_ordering);
-            if (candidate < best) {
-                best = candidate;
+            if (candidate < upper_bound) {
+                upper_bound = candidate;
                 ordering = another_ordering;
             }
         }
-        return best;
+        return upper_bound;
     }
 
    private:

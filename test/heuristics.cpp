@@ -23,22 +23,22 @@ void compare_heuristics_on_instance(fs::path filepath) {
     // input
     std::ifstream input(filepath);
     assert(input.good());
-    pace2024::bipartite_graph<T> graph;
+    pace2024::bipartite_graph graph;
     pace2024::parse_input(filepath, graph);
     std::vector<T> ordering;
 
     // barycenter
     std::clock_t start = std::clock();
-    pace2024::barycenter_heuristic<T>(graph, ordering).run();
+    pace2024::barycenter_heuristic(graph, ordering).run();
     std::clock_t end = std::clock();
-    const R c_b = pace2024::number_of_crossings<T, R>(graph, ordering);
+    const R c_b = pace2024::number_of_crossings(graph, ordering);
     const double t_b = time_in_ms(start, end);
 
     // median
     start = std::clock();
-    pace2024::probabilistic_median_heuristic<T, R> heuristic(graph, ordering);
+    pace2024::probabilistic_median_heuristic heuristic(graph, ordering);
     end = std::clock();
-    const R c_m = heuristic.get_best();
+    const R c_m = heuristic.get_upper_bound();
     const double t_m = time_in_ms(start, end);
 
     // probabilistic median
@@ -57,6 +57,7 @@ void compare_heuristics_on_instance(fs::path filepath) {
                 c_m, t_m, (static_cast<double>(c_m) / optimal - 1) * 100,
                 c_p, t_p, (static_cast<double>(c_p) / optimal - 1) * 100, c_m - c_p,
                 best, (static_cast<double>(std::min(c_p, c_b)) / optimal - 1) * 100, fastest);
+    std::cout << std::flush;
 }
 
 void compare_heuristics_on_medium_test_set() {
