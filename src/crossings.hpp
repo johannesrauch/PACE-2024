@@ -126,8 +126,7 @@ uint32_t number_of_crossings(const folded_matrix<R>& cr_matrix, const std::vecto
     assert(n1 == ordering.size());
     std::vector<T> positions(n1);
 
-    // compute the positions first
-    // then are able to access the matrix cache friendly
+    // compute the positions first to access `cr_matrix` cache-friendly
     for (std::size_t i = 0; i < n1; ++i) {
         positions[ordering[i]] = i;
     }
