@@ -2,6 +2,7 @@
 #define PACE2024_MATRIX_HPP
 
 #include <cstdint>
+#include <iterator>
 #include <type_traits>
 
 #include "bipartite_graph.hpp"
@@ -23,8 +24,8 @@ class folded_matrix;
 template <typename T, class MATRIX>
 void fill_crossing_matrix_binary_search(const bipartite_graph<T> &graph, MATRIX &cr_matrix);
 
-template <typename T, typename R>
-void fill_crossing_matrix(const bipartite_graph<T> &graph, folded_matrix<R> &cr_matrix);
+template <typename T, class MATRIX>
+void fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix);
 
 //
 // matrix types
@@ -257,6 +258,71 @@ using uint32_folded_matrix = folded_matrix<uint32_t>;
 using uint16_folded_matrix = folded_matrix<uint16_t>;
 
 //
+// sparse random access matrix
+//
+
+template <typename T = uint16_t, typename R = uint16_t>
+class sparse_matrix {
+    struct costum_less {
+        inline bool operator()(const std::pair<T, T> &p1, const std::pair<T, T> &p2) const {
+            const bool flip_p1 = p1.first > p1.second;
+            const bool flip_p2 = p2.first > p2.second;
+            const std::pair<T, T> p1_ = flip_p1 ? std::make_pair(p1.second, p1.first) : p1;
+            const std::pair<T, T> p2_ = flip_p2 ? std::make_pair(p2.second, p2.first) : p2;
+            if (p1_ < p2_) return true;
+            if (p1_ == p2_ && !flip_p1 && flip_p2) return true;
+            return false; 
+        }
+    };
+
+    const std::size_t n_free;
+
+    std::vector<std::pair<T, T>> indices;
+
+    std::vector<R> data;
+
+   public:
+    using datatype = R;
+
+    sparse_matrix(const std::size_t n_free) : n_free(n_free) {
+        indices.reserve(n_free);
+        data.reserve(n_free);
+    }
+
+    R operator()(const T u, const T v) const {
+        assert(u < n_free);
+        assert(v < n_free);
+        const std::pair<T, T> p{u, v};
+        auto it = std::lower_bound(indices.first(), indices.end(), p);
+        if (it == indices.end() || *it != p) return 0;
+        const auto i = std::distance(indices.begin(), it);
+        assert(0 <= i);
+        assert(i < data.size());
+        return data[i];
+    }
+
+    void clear() {
+        indices.clear();
+        data.clear();
+    }
+
+    std::size_t get_m() const { return n_free; }
+
+    std::size_t get_n() const { return n_free; }
+
+    void insert(const T &u, const T &v, const R &value) {
+        assert(u != v);
+        assert(u < n_free);
+        assert(v < n_free);
+        if (value == 0) return;
+        const std::pair<T, T> p{u, v};
+        assert(p > *(--indices.end()));
+        indices.emplace_back(p);
+        data.emplace_back(value);
+    }
+};
+
+//
 // compute crossing numbers
 //
 
@@ -288,8 +354,7 @@ void fill_crossing_matrix_binary_search(const bipartite_graph<T> &graph, MATRIX 
             for (const T &wp : neighbors_w) {
                 if (wp >= rv) break;
 
-                // returns it to the first element such that *it >= wp + 1
-                // using binary search
+                // returns it to the first element such that *it >= wp + 1 using binary search
                 auto it = std::lower_bound(neighbors_v.begin(), neighbors_v.end(), wp + 1);
 
                 if (it != neighbors_v.end()) assert(*it >= wp + 1);
@@ -306,22 +371,22 @@ void fill_crossing_matrix_binary_search(const bipartite_graph<T> &graph, MATRIX 
 /**
  * @brief fills a folded_matrix with crossing numbers.
  * adapted from Dujmovic and Whitesides https://doi.org/10.1007/s00453-004-1093-2,
- * uses augmented adjacency matrix.
+ * uses an "enhanced" adjacency matrix.
  *
  * @tparam T vertex type
  * @param graph
  * @param cr_matrix
  */
-template <typename T, typename R>
-void fill_crossing_matrix(const bipartite_graph<T> &graph, folded_matrix<R> &cr_matrix) {
+template <typename T, class MATRIX>
+void fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
     assert(graph.get_n_free() == cr_matrix.get_n());
+    using R = typename MATRIX::datatype;
 
     // variables
     std::size_t n0 = graph.get_n_fixed(), n1 = graph.get_n_free();
 
-    // compute enhanced adjacency matrix
-    // nbors(i, j) = number of nbors of i (free layer)
-    // to the right of j (fixed layer)
+    // fill enhanced adjacency matrix
+    // nbors(i, j) = number of nbors of i (free layer) to the right of j (fixed layer)
     matrix<R> nbors(n1, n0);
     for (T i = 0; i < n1; ++i) {
         const auto &neighbors_i = graph.get_neighbors_of_free(i);
@@ -362,6 +427,7 @@ void fill_crossing_matrix(const bipartite_graph<T> &graph, folded_matrix<R> &cr_
 
             const R nof_common_nbors = vector_intersection(neighbors_v, neighbors_w);
             cr_matrix(v, w) = c_vw;
+            assert(deg_v * deg_w >= nof_common_nbors + c_vw);
             cr_matrix(w, v) = deg_v * deg_w - nof_common_nbors - c_vw;
         }
     }
@@ -379,7 +445,7 @@ namespace test {
  * @param matrix
  */
 template <typename T, typename R>
-void compute_crossing_numbers_naivly(const bipartite_graph<T> &graph, folded_matrix<R> &matrix) {
+void fill_crossing_matrix_naivly(const bipartite_graph<T> &graph, folded_matrix<R> &matrix) {
     assert(graph.get_n_free() == matrix.get_m());
 
     const std::size_t n1 = matrix.get_m();
