@@ -53,10 +53,10 @@ class shift_heuristic {
         assert(0 <= j && j < ordering.size());
         assert(i != j);
 
-        const std::ptrdiff_t delta = i < j ? -1 : 1;
+        const std::ptrdiff_t delta = i < j ? 1 : -1;
         const T tmp = ordering[i];
-        for (std::size_t k = j; k != i; k += delta) {
-            ordering[k + delta] = ordering[k];
+        for (std::size_t k = i; k != j; k += delta) {
+            ordering[k] = ordering[k + delta];
         }
         ordering[j] = tmp;
     }
@@ -68,12 +68,12 @@ class shift_heuristic {
             if (j > i) break;
 
             const std::size_t k = i - j;
-            c_old += matrix(k, i);
-            c_new += matrix(i, k);
+            c_old += matrix(ordering[k], ordering[i]);
+            c_new += matrix(ordering[i], ordering[k]);
 
             if (c_new < c_old) {
                 shift(i, k);
-                assert(c_old - c_new >= upper_bound);
+                assert(c_old - c_new <= upper_bound);
                 upper_bound -= c_old - c_new;
                 assert(number_of_crossings(matrix, ordering) == upper_bound);
                 return true;
@@ -87,14 +87,15 @@ class shift_heuristic {
             if (i + j >= ordering.size()) break;
 
             const std::size_t k = i + j;
-            c_old += matrix(i, k);
-            c_new += matrix(k, i);
+            c_old += matrix(ordering[i], ordering[k]);
+            c_new += matrix(ordering[k], ordering[i]);
 
             if (c_new < c_old) {
                 shift(i, k);
-                assert(c_old - c_new >= upper_bound);
+                assert(c_old - c_new <= upper_bound);
                 upper_bound -= c_old - c_new;
-                assert(number_of_crossings(matrix, ordering) == upper_bound);
+                uint32_t ref_ub = number_of_crossings(matrix, ordering);
+                assert(ref_ub == upper_bound);
                 return true;
             }
         }

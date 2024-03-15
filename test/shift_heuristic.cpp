@@ -19,18 +19,30 @@ void test_shift_heuristic(const fs::path filepath) {
     const uint32_t c_b = pace2024::number_of_crossings(matrix, ordering);
     const uint32_t c_sb = pace2024::shift_heuristic(matrix, ordering, c_b).run();
 
-    pace2024::probabilistic_median_heuristic heuristic(graph, ordering);
-    const uint32_t c_m = heuristic.get_best();
+    pace2024::median_heuristic(graph, ordering).run();
+    const uint32_t c_m = pace2024::number_of_crossings(matrix, ordering);
     const uint32_t c_sm = pace2024::shift_heuristic(matrix, ordering, c_m).run();
 
+    pace2024::probabilistic_median_heuristic heuristic(graph, ordering);
     const uint32_t c_p = heuristic.run();
     const uint32_t c_sp = pace2024::shift_heuristic(matrix, ordering, c_p).run();
 
-    fmt::printf("%11s%11u%11u%11u\n", filepath.filename(), c_b - c_sb, c_m - c_sm, c_p - c_sp);
+    const uint32_t optimal = pace2024::test::get_ref_nof_crossings(filepath);
+    fmt::printf("%11s%11u|%11u%11u%11.4f%11u|%11u%11u%11.4f%11u|%11u%11u%11.4f%11u\n", 
+                filepath.filename(), optimal, 
+                c_b, c_sb, (static_cast<double>(c_sb) / optimal - 1) * 100, c_b - c_sb,
+                c_m, c_sm, (static_cast<double>(c_sm) / optimal - 1) * 100, c_m - c_sm, 
+                c_p, c_sp, (static_cast<double>(c_sp) / optimal - 1) * 100, c_p - c_sp);
+    std::cout << std::flush;
 }
 
 int main() {
-    fmt::printf("%11s%11s%11s%11s\n", "barycenter", "median", "probmedian");
+    fmt::printf("%11s%11s|%11s%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%11s%11s\n", 
+                "instance", "optimal",
+                "barycenter", "shift", "off by %%", "delta",
+                "median", "shift", "off by %%", "delta", 
+                "probmedian", "shift", "off by %%", "delta");
+    pace2024::test::print_line(158);
     for (const auto& file : fs::directory_iterator("medium_test_set/instances")) {
         if (!file.is_regular_file()) continue;
         test_shift_heuristic(file.path());
