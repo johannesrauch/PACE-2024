@@ -122,7 +122,7 @@ class median_heuristic {
  */
 template <typename T>
 class probmedian_heuristic {
-   private:
+   protected:
     const bipartite_graph<T>& graph;
     const std::size_t n_free;
     std::vector<T>& ordering;
@@ -162,8 +162,7 @@ class probmedian_heuristic {
     probmedian_heuristic(const probmedian_heuristic<T>& other) = delete;
     probmedian_heuristic(probmedian_heuristic<T>&& other) = delete;
     probmedian_heuristic<T>& operator=(probmedian_heuristic<T>& other) = delete;
-    probmedian_heuristic<T>& operator=(const probmedian_heuristic<T>& other) =
-        delete;
+    probmedian_heuristic<T>& operator=(const probmedian_heuristic<T>& other) = delete;
 
     /**
      * @brief compares the randomized medians of a and b
@@ -205,15 +204,10 @@ class probmedian_heuristic {
      *
      * @return uint32_t number of crossings
      */
-    virtual uint32_t run(const std::size_t nof_iterations = 10) {
+    uint32_t run(const std::size_t nof_iterations = 10) {
         // try to find a better solution with probabilistic median heuristic
         for (std::size_t iteration = 0; iteration < nof_iterations; ++iteration) {
-            // PACE2024_DEBUG_PRINTF("%s\n", iteration);
-            fill_randomized_medians();
-            sort(another_ordering.begin(), another_ordering.end(),
-                 [=](const T& a, const T& b) -> bool { return this->compare(a, b); });
-
-            uint32_t candidate = number_of_crossings(graph, another_ordering);
+            uint32_t candidate = generate_another_ordering();
             if (candidate < upper_bound) {
                 upper_bound = candidate;
                 ordering = another_ordering;
@@ -223,6 +217,13 @@ class probmedian_heuristic {
     }
 
    protected:
+    inline uint32_t generate_another_ordering() {
+        fill_randomized_medians();
+        sort(another_ordering.begin(), another_ordering.end(),
+             [=](const T& a, const T& b) -> bool { return this->compare(a, b); });
+        return number_of_crossings(graph, another_ordering);
+    }
+
     /**
      * @brief returns randomized median of `graph.get_neighbors_of_free(i)`
      *
