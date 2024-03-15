@@ -21,7 +21,7 @@ template <typename R>
 class folded_matrix;
 
 template <typename T, class MATRIX>
-void compute_crossing_numbers_binary_search(const bipartite_graph<T> &graph, MATRIX &cr_matrix);
+void fill_crossing_matrix_binary_search(const bipartite_graph<T> &graph, MATRIX &cr_matrix);
 
 template <typename T, typename R>
 void fill_crossing_matrix(const bipartite_graph<T> &graph, folded_matrix<R> &cr_matrix);
@@ -77,7 +77,7 @@ class matrix {
           data(new R[m * n]()) {
         // the additional () above initializes memory to 0
         assert(graph.get_n_free() > 0);
-        compute_crossing_numbers_binary_search(graph, *this);
+        fill_crossing_matrix_binary_search(graph, *this);
     }
 
     /**
@@ -270,9 +270,10 @@ using uint16_folded_matrix = folded_matrix<uint16_t>;
  * @param cr_matrix
  */
 template <typename T, class MATRIX>
-void compute_crossing_numbers_binary_search(const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
+void fill_crossing_matrix_binary_search(const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
     assert(graph.get_n_free() == cr_matrix.get_m() && cr_matrix.get_m() == cr_matrix.get_n());
     const std::size_t n1 = graph.get_n_free();
+    using R = typename MATRIX::datatype;
 
     for (T v = 0; v < n1; ++v) {
         const auto &neighbors_v = graph.get_neighbors_of_free(v);
@@ -282,7 +283,7 @@ void compute_crossing_numbers_binary_search(const bipartite_graph<T> &graph, MAT
         for (T w = 0; w < n1; ++w) {
             if (v == w) continue;
 
-            cr_matrix(v, w) = 0;
+            R c_vw = 0;
             const auto &neighbors_w = graph.get_neighbors_of_free(w);
             for (const T &wp : neighbors_w) {
                 if (wp >= rv) break;
@@ -294,8 +295,10 @@ void compute_crossing_numbers_binary_search(const bipartite_graph<T> &graph, MAT
                 if (it != neighbors_v.end()) assert(*it >= wp + 1);
                 if (it != neighbors_v.begin()) assert(*(it - 1) < wp + 1);
 
-                cr_matrix(v, w) += std::distance(it, neighbors_v.end());
+                c_vw += std::distance(it, neighbors_v.end());
             }
+
+            cr_matrix(v, w) = c_vw;
         }
     }
 }
@@ -345,7 +348,7 @@ void fill_crossing_matrix(const bipartite_graph<T> &graph, folded_matrix<R> &cr_
         const T rv = neighbors_v[deg_v - 1];
 
         for (T w = v + 1; w < n1; ++w) {
-            cr_matrix(v, w) = 0;
+            R c_vw = 0;
 
             const auto &neighbors_w = graph.get_neighbors_of_free(w);
             std::size_t deg_w = neighbors_w.size();
@@ -354,11 +357,12 @@ void fill_crossing_matrix(const bipartite_graph<T> &graph, folded_matrix<R> &cr_
             for (const T &wp : neighbors_w) {
                 if (wp >= rv) break;
 
-                cr_matrix(v, w) += nbors(v, wp);
+                c_vw += nbors(v, wp);
             }
 
-            R nof_common_nbors = vector_intersection(neighbors_v, neighbors_w);
-            cr_matrix(w, v) = deg_v * deg_w - nof_common_nbors - cr_matrix(v, w);
+            const R nof_common_nbors = vector_intersection(neighbors_v, neighbors_w);
+            cr_matrix(v, w) = c_vw;
+            cr_matrix(w, v) = deg_v * deg_w - nof_common_nbors - c_vw;
         }
     }
 }
