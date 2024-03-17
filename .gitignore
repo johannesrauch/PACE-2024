@@ -44,3 +44,4 @@
 dep
 HiGHS
 *.log
+build/
