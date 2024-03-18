@@ -7,7 +7,7 @@
 
 #include "bipartite_graph.hpp"
 #include "printf.hpp"
-#include "vector_intersection.hpp"
+#include "vector_utils.hpp"
 
 namespace pace2024 {
 
@@ -425,7 +425,7 @@ void fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
                 c_vw += nbors(v, wp);
             }
 
-            const R nof_common_nbors = vector_intersection(neighbors_v, neighbors_w);
+            const R nof_common_nbors = sorted_vector_intersection(neighbors_v, neighbors_w);
             cr_matrix(v, w) = c_vw;
             assert(deg_v * deg_w >= nof_common_nbors + c_vw);
             cr_matrix(w, v) = deg_v * deg_w - nof_common_nbors - c_vw;
