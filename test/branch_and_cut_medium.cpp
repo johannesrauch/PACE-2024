@@ -4,7 +4,7 @@
 #include <string>
 
 #include "branch_and_cut.hpp"
-#include "crossing_number.hpp"
+#include "crossings.hpp"
 #include "input.hpp"
 #include "output.hpp"
 #include "printf.hpp"
@@ -16,7 +16,7 @@ void test_solver_w_instance(std::filesystem::path filepath_instance) {
 
     pace2024::uint16_bipartite_graph graph;
     pace2024::parse_input(filepath_instance, graph);
-    pace2024::branch_and_cut<uint16_t, uint32_t> solver(graph);
+    pace2024::branch_and_cut solver(graph);
     solver.solve(false);
 
     uint32_t ref_nof_crossings =
