@@ -263,7 +263,7 @@ using uint16_folded_matrix = folded_matrix<uint16_t>;
 
 template <typename T = uint16_t, typename R = uint16_t>
 class sparse_matrix {
-    struct costum_less {
+    struct custom_less {
         inline bool operator()(const std::pair<T, T> &p1, const std::pair<T, T> &p2) const {
             const bool flip_p1 = p1.first > p1.second;
             const bool flip_p2 = p2.first > p2.second;
