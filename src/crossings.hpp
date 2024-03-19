@@ -22,7 +22,7 @@ namespace pace2024 {
  * @param v vertex
  * @return std::pair<R, R> crossing numbers of u and v
  */
-template <typename T, typename R = uint16_t>
+template <typename T, typename R = uint32_t>
 std::pair<R, R> crossing_numbers_of(const bipartite_graph<T>& graph, T u, T v) {
     const auto& nbors_u = graph.get_neighbors_of_free(u);
     const auto& nbors_v = graph.get_neighbors_of_free(v);
@@ -119,7 +119,7 @@ R number_of_crossings(const bipartite_graph<T>& graph, const std::vector<T>& ord
  * @param ordering ordering of the free layer
  * @return uint32_t number of crossings
  */
-template <typename T, typename R = uint16_t>
+template <typename T, typename R>
 uint32_t number_of_crossings(const folded_matrix<R>& cr_matrix, const std::vector<T>& ordering) {
     const std::size_t n1 = cr_matrix.get_m();
     assert(n1 == ordering.size());
