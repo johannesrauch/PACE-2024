@@ -36,7 +36,7 @@ void fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix);
  *
  * @tparam R element type
  */
-template <typename R = uint16_t>
+template <typename R = uint32_t>
 class matrix {
    private:
     /**
@@ -148,7 +148,7 @@ using uint16_matrix = matrix<uint16_t>;
  *
  * @tparam R element type
  */
-template <typename R = uint16_t>
+template <typename R = uint32_t>
 class folded_matrix {
    private:
     /**
@@ -238,6 +238,8 @@ class folded_matrix {
         return index;
     }
 
+    void insert(const std::size_t i, const std::size_t j, const R value) { (*this)(i, j) = value; }
+
     /**
      * @brief returns reference to the element in row i and column j.
      * we require i != j.
@@ -261,8 +263,16 @@ using uint16_folded_matrix = folded_matrix<uint16_t>;
 // sparse random access matrix
 //
 
-template <typename T = uint16_t, typename R = uint16_t>
+/**
+ * @brief quadratic sparse matrix class where the elements are intended to be stored in the some
+ * order as in `folded_matrix`
+ *
+ * @tparam T index or vertex type
+ * @tparam R element type
+ */
+template <typename T = uint16_t, typename R = uint32_t>
 class sparse_matrix {
+    /// @brief orders the index pairs (i,j) as in folded_matrix
     struct custom_less {
         inline bool operator()(const std::pair<T, T> &p1, const std::pair<T, T> &p2) const {
             const bool flip_p1 = p1.first > p1.second;
@@ -270,34 +280,44 @@ class sparse_matrix {
             const std::pair<T, T> p1_ = flip_p1 ? std::make_pair(p1.second, p1.first) : p1;
             const std::pair<T, T> p2_ = flip_p2 ? std::make_pair(p2.second, p2.first) : p2;
             if (p1_ < p2_) return true;
-            if (p1_ == p2_ && !flip_p1 && flip_p2) return true;
-            return false; 
+            return p1_ == p2_ && !flip_p1 && flip_p2;
         }
     };
 
+    /// @brief also the dimension of the quadratic sparse matrix
     const std::size_t n_free;
 
+    /// @brief if indices[k] = (i, j), data[k] is in the i-th row and j-th column
     std::vector<std::pair<T, T>> indices;
 
+    /// @brief if indices[k] = (i, j), data[k] is in the i-th row and j-th column
     std::vector<R> data;
 
    public:
     using datatype = R;
 
+    /// @brief just sets the dimension to (n_free x n_free)
     sparse_matrix(const std::size_t n_free) : n_free(n_free) {
         indices.reserve(n_free);
         data.reserve(n_free);
     }
 
+    /// @brief creates the crossing number matrix of `graph`
+    sparse_matrix(const bipartite_graph<T> &graph) : sparse_matrix(graph.get_n_free()) {
+        fill_crossing_matrix(graph, *this);
+    }
+
+    /// @brief returns the element at (u, v) if it exists and 0 otherwise
     R operator()(const T u, const T v) const {
+        assert(u != v);
         assert(u < n_free);
         assert(v < n_free);
         const std::pair<T, T> p{u, v};
-        auto it = std::lower_bound(indices.first(), indices.end(), p);
+        auto it = std::lower_bound(indices.begin(), indices.end(), p, custom_less{});
         if (it == indices.end() || *it != p) return 0;
-        const auto i = std::distance(indices.begin(), it);
+        const std::ptrdiff_t i = std::distance(indices.begin(), it);
         assert(0 <= i);
-        assert(i < data.size());
+        assert(static_cast<std::size_t>(i) < data.size());
         return data[i];
     }
 
@@ -310,15 +330,28 @@ class sparse_matrix {
 
     std::size_t get_n() const { return n_free; }
 
-    void insert(const T &u, const T &v, const R &value) {
+    /// @brief inserts value at the back, (u, v) must be greater than the last index
+    void insert(const T u, const T v, const R value) {
         assert(u != v);
         assert(u < n_free);
         assert(v < n_free);
         if (value == 0) return;
         const std::pair<T, T> p{u, v};
-        assert(p > *(--indices.end()));
+        assert(custom_less{}(*(--indices.end()), p));
         indices.emplace_back(p);
         data.emplace_back(value);
+    }
+
+    /// @brief returns if the matrix is good, that is, data.size() == indices.size() and indices are
+    /// ordered according to custom_less
+    bool good() const {
+        const std::size_t len = indices.size();
+        if (len != data.size()) return false;
+        if (len <= 1) return true;
+        for (std::size_t i = 0; i < len - 1; ++i) {
+            if (!custom_less{}(indices[i], indices[i + 1])) return false;
+        }
+        return true;
     }
 };
 
@@ -426,9 +459,12 @@ void fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
             }
 
             const R nof_common_nbors = sorted_vector_intersection(neighbors_v, neighbors_w);
-            cr_matrix(v, w) = c_vw;
+            cr_matrix.insert(v, w, c_vw);
+            // cr_matrix(v, w) = c_vw;
             assert(deg_v * deg_w >= nof_common_nbors + c_vw);
-            cr_matrix(w, v) = deg_v * deg_w - nof_common_nbors - c_vw;
+            const R c_wv = deg_v * deg_w - nof_common_nbors - c_vw;
+            cr_matrix.insert(w, v, c_wv);
+            // cr_matrix(w, v) = c_wv;
         }
     }
 }

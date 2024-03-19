@@ -25,25 +25,30 @@ void test_matrix_and_compute_crossing_numbers(const fs::path filepath) {
 
     // normal matrix
     start = std::clock();
-    pace2024::matrix tst_matrix_1(graph);
+    pace2024::matrix matrix(graph);
     end = std::clock();
     const double t_m = pace2024::test::time_in_ms(start, end);
 
     // cache optimized matrix
     start = std::clock();
-    pace2024::folded_matrix tst_matrix_2(graph);
+    pace2024::folded_matrix folded_matrix(graph);
     end = std::clock();
     const double t_f = pace2024::test::time_in_ms(start, end);
 
     // sparse matrix
-    pace2024::sparse_matrix tst_matrix_3(graph.get_n_free());
+    start = std::clock();    
+    pace2024::sparse_matrix sparse_matrix(graph);
+    end = std::clock();
+    assert(sparse_matrix.good());
+    const double t_s = pace2024::test::time_in_ms(start, end);
 
     // test equality
-    assert(pace2024::test::equals(ref_matrix, tst_matrix_1, true));
-    assert(pace2024::test::equals(ref_matrix, tst_matrix_2, true));
+    assert(pace2024::test::equals(ref_matrix, matrix, true));
+    assert(pace2024::test::equals(ref_matrix, folded_matrix, true));
+    assert(pace2024::test::equals(ref_matrix, sparse_matrix, true));
 
-    const char fastest = t_f <= t_m ? 'f' : 'm';
-    fmt::printf("%11s%11.3f%11.3f%11.3f%11c\n", filepath.filename(), t_r, t_m, t_f, fastest);
+    const char fastest = t_f <= t_m ? (t_f <= t_s ? 'f' : 's') : 'm';
+    fmt::printf("%11s%11.3f%11.3f%11.3f%11.3f%11c\n", filepath.filename(), t_r, t_m, t_f, t_s, fastest);
 }
 
 /**
@@ -52,13 +57,13 @@ void test_matrix_and_compute_crossing_numbers(const fs::path filepath) {
  * @return int
  */
 int main() {
-    fmt::printf("%11s%11s%11s%11s%11s\n", "instance", "reference", "matrix", "folded", "fastest");
-    pace2024::test::print_line(56);
+    fmt::printf("%11s%11s%11s%11s%11s%11s\n", "instance", "reference", "matrix", "folded", "sparse", "fastest");
+    pace2024::test::print_line(67);
     for (const auto& file : std::filesystem::directory_iterator("medium_test_set/instances")) {
         if (!file.is_regular_file()) continue;
         test_matrix_and_compute_crossing_numbers(file.path());
     }
-    pace2024::test::print_line(56);
+    pace2024::test::print_line(67);
     std::cout << "TEST::PACE2024::MATRIX:\t\t\t\t\tOK" << std::endl;
     return 0;
 }
