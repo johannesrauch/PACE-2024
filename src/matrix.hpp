@@ -330,6 +330,12 @@ class sparse_matrix {
 
     std::size_t get_n() const { return n_free; }
 
+    std::size_t get_nof_nonzero_elements() const { return data.size(); }
+
+    const R &get_datum(const std::size_t i) const { return data[i]; }
+
+    const std::pair<T, T> &get_indices(const std::size_t i) const { return indices[i]; }
+
     /// @brief inserts value at the back, (u, v) must be greater than the last index
     void insert(const T u, const T v, const R value) {
         assert(u != v);
