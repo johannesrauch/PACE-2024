@@ -76,6 +76,8 @@ void sorted_vector_union(const std::vector<T> &vec1, const std::vector<T> &vec2,
             ++j;
         }
     }
+    while (i < len1) out.emplace_back(vec1[i++]);
+    while (j < len2) out.emplace_back(vec2[j++]);
 }
 
 };  // namespace pace2024
