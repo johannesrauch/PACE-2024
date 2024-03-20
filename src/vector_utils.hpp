@@ -24,6 +24,26 @@ inline void inverse(const std::vector<T> &in, std::vector<T> &out) {
 }
 
 /**
+ * @brief returns the median of the vector vec
+ *
+ * @tparam T element type of vec
+ * @param vec vector
+ * @return T the median of vec
+ */
+template <typename T>
+inline T median(const std::vector<T>& vec) {
+    const std::size_t len = vec.size();
+    if (len == 0) {
+        return 0;
+    } else if (len == 1) {
+        return vec[0];
+    } else {
+        const std::size_t len2 = len / 2;
+        return len % 2 == 0 ? (vec[len2 - 1] + vec[len2]) / 2 : vec[len / 2];
+    }
+}
+
+/**
  * @brief returns the number of common elements in the ascending ordered vectors
  *
  * @tparam T element type of vectors
