@@ -15,14 +15,14 @@ namespace pace2024 {
  *
  * @tparam T vertex type
  */
-template <typename T = uint16_t>
+template <typename T = uint32_t>
 class digraph {
    private:
     /// @brief stores all neighbors of each vertex
     std::vector<std::vector<T>> adjacency_lists;
 
    public:
-    using vertextype = T;
+    using vertex_type = T;
 
     // delete copy constructor, move constructor, copy assignment and move assignment
     digraph(const digraph &rhs) = delete;
