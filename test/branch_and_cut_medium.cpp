@@ -38,7 +38,7 @@ void test_solver_w_instance(std::filesystem::path filepath_instance) {
 void test_solver_w_medium_test_set() {
     // sort first
     std::set<std::filesystem::path> sorted_directory;
-    for (const auto& file : std::filesystem::directory_iterator("medium_test_set")) {
+    for (const auto& file : std::filesystem::directory_iterator("medium_test_set/instances")) {
         if (!file.is_regular_file()) continue;
         sorted_directory.insert(file.path());
     }
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
     if (argc == 1) {
         test_solver_w_medium_test_set();
     } else {
-        const std::string input = "medium_test_set/" + std::string{argv[1]} + ".gr";
+        const std::string input = "medium_test_set/instances/" + std::string{argv[1]} + ".gr";
         test_solver_w_instance(input);
     }
 
