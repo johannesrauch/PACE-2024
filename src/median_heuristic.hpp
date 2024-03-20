@@ -1,12 +1,17 @@
 #ifndef PACE_MEDIAN_HEURISTIC_HPP
 #define PACE_MEDIAN_HEURISTIC_HPP
 
+#ifndef PACE_CONST_PROBMEDIAN_ITERATIONS
+#define PACE_CONST_PROBMEDIAN_ITERATIONS 128
+#endif
+
 #include <vector>
 
-#include "bipartite_graph.hpp"
 #include "crossings.hpp"
 #include "debug_printf.hpp"
+#include "instance.hpp"
 #include "random.hpp"
+#include "shift_heuristic.hpp"
 #include "vector_utils.hpp"
 
 namespace pace {
@@ -15,46 +20,42 @@ namespace pace {
  * @brief median heuristic solver
  * based on Eades' and Wormald's paper https://doi.org/10.1007/BF01187020
  *
- * @tparam T vertex type of the instance
+ * @tparam T vertex type
+ * @tparam R crossing number type
  */
-template <typename T>
+template <typename T, typename R>
 class median_heuristic {
-   private:
     const bipartite_graph<T>& graph;
     const std::size_t n_free;
-    std::vector<T>& ordering;
     std::vector<T> medians;
+    shift_heuristic<T, R> shift_h;
 
    public:
     /**
-     * @brief construct a new median heuristic object
-     *
-     * @param graph the instance
-     * @param ordering vector where we store the computed ordering
+     * @brief initializes median heuristic for `instance`
      */
-    median_heuristic(const bipartite_graph<T>& graph, std::vector<T>& ordering)
-        : graph(graph), n_free(graph.get_n_free()), ordering(ordering), medians(n_free) {
+    median_heuristic(const instance<T, R>& instance)
+        : graph(instance.graph()),  //
+          n_free(graph.get_n_free()),
+          medians(n_free),
+          shift_h(instance) {
         fill_medians();
     }
 
     // delete copy and move constructor and copy and move assignment
-    median_heuristic(const median_heuristic<T>& other) = delete;
-    median_heuristic(median_heuristic<T>&& other) = delete;
-    median_heuristic<T>& operator=(median_heuristic<T>& other) = delete;
-    median_heuristic<T>& operator=(const median_heuristic<T>& other) = delete;
+    median_heuristic(const median_heuristic<T, R>& other) = delete;
+    median_heuristic(median_heuristic<T, R>&& other) = delete;
+    median_heuristic<T, R>& operator=(median_heuristic<T, R>& other) = delete;
+    median_heuristic<T, R>& operator=(const median_heuristic<T, R>& other) = delete;
 
     /**
      * @brief compares the medians of a and b
      * we break ties by considering the parity of the degrees of a and b
-     * if both degrees are odd, we flip a coin
      *
-     * @param a
-     * @param b
      * @return true a < b (according to medians)
      * @return false a >= b (according to medians)
      */
     bool compare(const T& a, const T& b) const {
-        assert(n_free == medians.size());
         assert(a < n_free && b < n_free);
         if (medians[a] < medians[b]) {
             return true;
@@ -71,24 +72,63 @@ class median_heuristic {
 
     /**
      * @brief runs the median heuristic and stores the result in `ordering`
+     *
+     * @param ordering out parameter where result is stored
+     * @return uint32_t number of crossings
      */
-    void run() {
+    template <bool SHIFT = true>
+    uint32_t operator()(std::vector<T>& ordering) {
         ordering.resize(n_free);
         for (T i = 0; i < n_free; ++i) ordering[i] = i;
         sort(ordering.begin(), ordering.end(),
              [=](const T& a, const T& b) -> bool { return this->compare(a, b); });
+        if constexpr (SHIFT) {
+            return shift_h(ordering);
+        } else {
+            return number_of_crossings(graph, ordering);
+        }
     }
 
    private:
     /**
-     * @brief computes medians of every adjacency_lists[i] using `internal::median(...)`
+     * @brief computes medians of every adjacency_lists[i] using `median(...)`
      * and stores them in medians
      */
-    void fill_medians() {
+    inline void fill_medians() {
         for (std::size_t i = 0; i < n_free; ++i) {
             medians[i] = median(graph.get_neighbors_of_free(i));
         }
     }
+
+    /**
+     * @brief comparator using `medians`
+     */
+    struct compare {
+        const std::size_t& n_free;
+        const std::vector<T>& medians;
+
+        /**
+         * @brief compares the medians of a and b
+         * we break ties by considering the parity of the degrees of a and b
+         *
+         * @return true a < b (according to medians)
+         * @return false a >= b (according to medians)
+         */
+        bool operator()(const T& a, const T& b) const {
+            assert(a < n_free && b < n_free);
+            if (medians[a] < medians[b]) {
+                return true;
+            } else if (medians[a] > medians[b]) {
+                return false;
+            } else if (graph.degree_of_free(a) % 2 == 1 && graph.degree_of_free(b) % 2 == 0) {
+                return true;
+            } else if (graph.degree_of_free(a) % 2 == 0 && graph.degree_of_free(b) % 2 == 1) {
+                return false;
+            } else {
+                return a < b;
+            }
+        }
+    };
 };
 
 /**
@@ -97,17 +137,18 @@ class median_heuristic {
  *
  * @tparam T vertex type
  */
-template <typename T>
+template <typename T, typename R>
 class probmedian_heuristic {
    protected:
     const bipartite_graph<T>& graph;
     const std::size_t n_free;
-    std::vector<T>& ordering;
     std::vector<T> another_ordering;
     std::vector<T> medians;
     std::vector<T> randomized_medians;
-    std::uniform_real_distribution<> distribution;
-    uint32_t upper_bound;
+    std::uniform_real_distribution<> distribution{0.0957, 0.9043};  // from Nagamochi's paper
+    uint32_t upper_bound{0};
+    median_heuristic<T, R> median_h;
+    shift_heuristic<T, R> shift_h;
 
    public:
     /**
@@ -117,29 +158,23 @@ class probmedian_heuristic {
      * @param ordering vector where the ordering is stored
      * @param nof_iterations number of iterations
      */
-    probmedian_heuristic(const bipartite_graph<T>& graph, std::vector<T>& ordering)
-        : graph(graph),
+    probmedian_heuristic(const instance<T, R>& instance)
+        : graph(instance.graph()),
           n_free(graph.get_n_free()),
-          ordering(ordering),
           another_ordering(n_free),
           medians(n_free),
           randomized_medians(n_free),
-          distribution(0.0957, 0.9043)  // from Nagamochi's paper
-    {
-        // compute initial solution with normal median heuristic
-        median_heuristic<T>(graph, ordering).run();
-        upper_bound = number_of_crossings(graph, ordering);
-
-        // initialize vectors
+          median_h(instance),
+          shift_h(instance) {
         for (T i = 0; i < n_free; ++i) another_ordering[i] = i;
         fill_medians();
     }
 
     // delete copy and move constructor and copy and move assignment
-    probmedian_heuristic(const probmedian_heuristic<T>& other) = delete;
-    probmedian_heuristic(probmedian_heuristic<T>&& other) = delete;
-    probmedian_heuristic<T>& operator=(probmedian_heuristic<T>& other) = delete;
-    probmedian_heuristic<T>& operator=(const probmedian_heuristic<T>& other) = delete;
+    probmedian_heuristic(const probmedian_heuristic<T, R>& other) = delete;
+    probmedian_heuristic(probmedian_heuristic<T, R>&& other) = delete;
+    probmedian_heuristic<T, R>& operator=(probmedian_heuristic<T, R>& other) = delete;
+    probmedian_heuristic<T, R>& operator=(const probmedian_heuristic<T, R>& other) = delete;
 
     /**
      * @brief compares the randomized medians of a and b
@@ -147,8 +182,6 @@ class probmedian_heuristic {
      * and then the parity of the degrees of a and b
      * (odd degrees are smaller)
      *
-     * @param a
-     * @param b
      * @return true a < b (according to medians)
      * @return false a >= b (according to medians)
      */
@@ -173,17 +206,18 @@ class probmedian_heuristic {
         }
     }
 
-    uint32_t get_upper_bound() { return upper_bound; }
-
     /**
      * @brief runs the probabilistic median heuristic solver
      * and stores the result in ordering
      *
      * @return uint32_t number of crossings
      */
-    uint32_t run(const std::size_t nof_iterations = 10) {
+    template <std::size_t NOF_ITERATIONS = PACE_CONST_PROBMEDIAN_ITERATIONS>
+    uint32_t operator()(std::vector<T>& ordering) {
+        ordering.resize(n_free);
+        upper_bound = median_h(ordering);
         // try to find a better solution with probabilistic median heuristic
-        for (std::size_t iteration = 0; iteration < nof_iterations; ++iteration) {
+        for (std::size_t iteration = 0; iteration < NOF_ITERATIONS; ++iteration) {
             uint32_t candidate = generate_another_ordering();
             if (candidate < upper_bound) {
                 upper_bound = candidate;
@@ -193,19 +227,16 @@ class probmedian_heuristic {
         return upper_bound;
     }
 
-   protected:
+   private:
     inline uint32_t generate_another_ordering() {
         fill_randomized_medians();
         sort(another_ordering.begin(), another_ordering.end(),
              [=](const T& a, const T& b) -> bool { return this->compare(a, b); });
-        return number_of_crossings(graph, another_ordering);
+        return shift_h(another_ordering);
     }
 
     /**
      * @brief returns randomized median of `graph.get_neighbors_of_free(i)`
-     *
-     * @param i vertex
-     * @return T randomized median
      */
     inline T randomized_median(const std::size_t& i) {
         const auto& neighbors = graph.get_neighbors_of_free(i);
@@ -233,7 +264,7 @@ class probmedian_heuristic {
      * @brief computes medians of every `graph.get_neighbors_of_free(i)` using
      * `internal::median(...)` and stores them in `medians`
      */
-    void fill_medians() {
+    inline void fill_medians() {
         for (std::size_t i = 0; i < n_free; ++i) {
             medians[i] = median(graph.get_neighbors_of_free(i));
         }

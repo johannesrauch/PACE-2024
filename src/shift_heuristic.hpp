@@ -5,85 +5,99 @@
 #define PACE_CONST_SHIFT_LENGTH 256
 #endif
 
+#ifndef PACE_CONST_SHIFT_ITERATIONS
+#define PACE_CONST_SHIFT_ITERATIONS 4096
+#endif
+
 #include <list>
 #include <vector>
 
-#include "bipartite_graph.hpp"
 #include "crossings.hpp"
 #include "debug_printf.hpp"
-#include "matrix.hpp"
+#include "instance.hpp"
 
 namespace pace {
 
 /**
  * @brief improves a given solution to a local minimum by shifting
- * 
+ *
  * @tparam T vertex type
- * @tparam R crossing matrix data type
+ * @tparam R crossing numbers type
  */
 template <typename T, typename R>
 class shift_heuristic {
-    /// @brief instance
+    /// @brief instance graph
     const bipartite_graph<T> &graph;
-    
+
     /// @brief crossing matrix
     const folded_matrix<R> &cr_matrix;
-
-    /// @brief in-out ordering
-    std::vector<T> &ordering;
 
     /// @brief internal ordering as list for fast shifting
     std::list<T> ordering_;
 
     /// @brief best upper bound (number of crossings)
-    uint32_t upper_bound;
+    uint32_t upper_bound{0};
 
    public:
-   /**
-    * @brief sets references and initializes heuristic solver
-    * 
-    * @param graph instance
-    * @param cr_matrix crossing matrix
-    * @param ordering an ordering of the free layer
-    * @param upper_bound number of crossings of `ordering`
-    */
-    shift_heuristic(const bipartite_graph<T> &graph,    //
-                    const folded_matrix<R> &cr_matrix,  //
-                    std::vector<T> &ordering,           //
-                    const uint32_t upper_bound)
-        : graph(graph),          //
-          cr_matrix(cr_matrix),  //
-          ordering(ordering),    //
-          ordering_(ordering.begin(), ordering.end()),
-          upper_bound(upper_bound) {
-        assert(cr_matrix.get_m() == ordering.size());
-        assert(cr_matrix.get_m() > 1);
-        assert(number_of_crossings(graph, ordering) == upper_bound);
+    /**
+     * @brief initializes shift heuristic for `instance`
+     */
+    shift_heuristic(const instance<T, R> &instance)
+        : graph(instance.graph()),  //
+          cr_matrix(instance.cr_matrix()),
+          ordering_(graph.get_n_free()) {}
+
+    /**
+     * @brief runs the shift heuristic
+     *
+     * @tparam NOF_ITERATIONS as template parameter for loop unrolling
+     * @param ordering in-out parameter
+     */
+    template <std::size_t NOF_ITERATIONS = PACE_CONST_SHIFT_ITERATIONS>
+    uint32_t operator()(std::vector<T> &ordering) {
+        return operator()<NOF_ITERATIONS>(number_of_crossings(graph, ordering), ordering);
     }
 
-    uint32_t run(const std::size_t nof_iterations = 1024) {
+    /**
+     * @brief runs the shift heuristic
+     *
+     * @tparam NOF_ITERATIONS as template parameter for loop unrolling
+     * @param nof_crossings number of crossings of `ordering`
+     * @param ordering in-out parameter
+     */
+    template <std::size_t NOF_ITERATIONS = PACE_CONST_SHIFT_ITERATIONS>
+    uint32_t operator()(const uint32_t nof_crossings, std::vector<T> &ordering) {
         PACE_DEBUG_PRINTF("start shift_heuristic\n");
+
+        upper_bound = nof_crossings;
+        assert(ordering.size() == graph.get_n_free());
+        std::copy(ordering.begin(), ordering.end(), ordering_.begin());
         bool go_on = true;
+
         std::size_t iteration;
-        for (iteration = 0; iteration < nof_iterations && go_on; ++iteration) {
+        for (iteration = 0; iteration < NOF_ITERATIONS && go_on; ++iteration) {
             go_on = false;
-            std::ptrdiff_t dist;
             for (typename std::list<T>::iterator it = ordering_.begin(); it != ordering_.end();) {
                 const auto [go_on_, it_] = improve(it);
                 go_on |= go_on_;
                 it = it_;
-                dist = std::distance(it, ordering_.end());
-                (void)dist;
             }
         }
+
         std::copy(ordering_.begin(), ordering_.end(), ordering.begin());
         assert(ordering.size() == graph.get_n_free());
         assert(number_of_crossings(graph, ordering) == upper_bound);
+
         PACE_DEBUG_PRINTF("end   shift_heuristic, iterations=%llu\n", iteration);
         return upper_bound;
     }
 
    private:
+    /**
+     * @brief tries to improve the current solution by shifts of element at i
+     *
+     * @return std::pair<bool, typename std::list<T>::iterator> first: true iff improvement found, second: iterator the next element to consider
+     */
     inline std::pair<bool, typename std::list<T>::iterator> improve(
         typename std::list<T>::iterator i) {
         // try left shifts
@@ -123,10 +137,8 @@ class shift_heuristic {
 
         if (improvement == 0) return std::make_pair(false, ++i);
 
-        // shift
+        // move element at i in front of element at l
         if (right_shift) ++l;
-        // moves element at i in front of element at l
-        // ordering_.splice(l, ordering_, i);
         ordering_.insert(l, *i);
         typename std::list<T>::iterator it = ordering_.erase(i);
         assert(ordering_.size() == graph.get_n_free());

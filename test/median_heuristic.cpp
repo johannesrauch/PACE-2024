@@ -4,21 +4,24 @@
 #include <filesystem>
 #include <iostream>
 
-#include "bipartite_graph.hpp"
 #include "crossings.hpp"
-#include "input.hpp"
+#include "instance.hpp"
 #include "printf.hpp"
 
 /**
- * @brief tests the heuristic solvers median_heuristic and
- * probmedian_heuristic (against values of median_heuristic; should be better).
+ * @brief tests the heuristic solvers median_heuristic and probmedian_heuristic
+ * (and shift_heuristic in the background)
+ * 
+ * goals:
+ * - no compilation error
+ * - no crash
+ * - probmedian should be better
  */
-template <typename T>
-void test_median_heuristics(const pace::bipartite_graph<T>& graph) {
-    std::vector<T> ordering(graph.get_n_free());
-    pace::median_heuristic<T>(graph, ordering).run();
-    uint32_t nof_crossings = pace::number_of_crossings(graph, ordering);
-    uint32_t nof_crossings_ = pace::probmedian_heuristic(graph, ordering).run();
+template <typename T, typename R>
+void test_median_heuristics(const pace::instance<T, R>& instance) {
+    std::vector<T> ordering;
+    uint32_t nof_crossings = pace::median_heuristic{instance}(ordering);
+    uint32_t nof_crossings_ = pace::probmedian_heuristic{instance}(ordering);
     assert(nof_crossings_ <= nof_crossings);
 }
 
@@ -29,9 +32,9 @@ int main() {
     for (const auto& file : std::filesystem::directory_iterator("tiny_test_set/instances")) {
         if (!file.is_regular_file()) continue;
         fmt::printf("%s\n", file.path());
-        pace::bipartite_graph graph;
-        pace::parse_input(file.path(), graph);
-        test_median_heuristics(graph);
+
+        pace::instance instance(file.path());
+        test_median_heuristics(instance);
     }
 
     std::cout << "TEST::PACE::MEDIAN_HEURISTIC:\t\tOK" << std::endl;
