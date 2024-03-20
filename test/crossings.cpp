@@ -35,6 +35,21 @@ void test_crossing_numbers_of(const pace2024::bipartite_graph<T>& graph,
     }
 }
 
+void test_crossing_numbers_of_with(const fs::path dirpath) {
+    fmt::printf("start test_crossing_numbers_of_with(%s)\n\n", dirpath);
+    for (const auto& file : std::filesystem::directory_iterator(dirpath)) {
+        if (!file.is_regular_file()) continue;
+
+        pace2024::bipartite_graph graph;
+        pace2024::parse_input(file.path(), graph);
+        pace2024::folded_matrix matrix(graph);
+
+        fmt::printf("%s\n", file.path().filename());
+        test_crossing_numbers_of(graph, matrix);
+    }
+    fmt::printf("end   test_crossing_numbers_of_with(%s)\n\n", dirpath);
+}
+
 /**
  * @brief tests the two number_of_crossings functions against each other
  *
@@ -67,17 +82,15 @@ void test_number_of_crossings(const pace2024::bipartite_graph<T>& graph,
     assert(ref == test);
     const double t_s = pace2024::test::time_in_ms(start, end);
 
-    const char fastest = t_f <= t_g ? (t_f <= t_s ? 'f' : 's') : 'g';
+    const char fastest = t_f <= t_g ? (t_f <= t_s ? 'f' : 's') : (t_g <= t_s ? 'g' : 's');
     fmt::printf("%11.3f%11.3f%11.3f%11c\n", t_f, t_s, t_g, fastest);
 }
 
-/**
- * @brief tests crossings.hpp
- */
-int main() {
-    fmt::printf("%11s%11s%11s%11s%11s\n", "instance", "folded", "sparse", "graph", "fastest");
+void test_number_of_crossings_with(const fs::path dirpath) {
+    fmt::printf("start test_number_of_crossings_with(%s)\n\n", dirpath);
+    fmt::printf("%11s%11s%11s%11s%11s\n", "instance", "folded", "sparse", "acctree", "fastest");
     pace2024::test::print_line(56);
-    for (const auto& file : std::filesystem::directory_iterator("medium_test_set/instances")) {
+    for (const auto& file : std::filesystem::directory_iterator(dirpath)) {
         if (!file.is_regular_file()) continue;
 
         pace2024::bipartite_graph graph;
@@ -85,10 +98,23 @@ int main() {
         pace2024::folded_matrix matrix(graph);
 
         fmt::printf("%11s", file.path().filename());
-        test_crossing_numbers_of(graph, matrix);
         test_number_of_crossings(graph, matrix);
+        std::cout << std::flush;
     }
-    pace2024::test::print_line(56);
+    fmt::printf("\nend   test_number_of_crossings_with(%s)\n\n", dirpath);
+}
+
+/**
+ * @brief tests crossings.hpp
+ */
+int main(int argc, char** argv) {
+    if (argc == 1) {
+        test_number_of_crossings_with("medium_test_set/instances");
+        test_crossing_numbers_of_with("medium_test_set/instances");
+    } else {
+        test_number_of_crossings_with("big_test_set/instances");
+        test_crossing_numbers_of_with("big_test_set/instances");
+    }
     std::cout << "TEST::PACE2024::CROSSING_NUMBER:\t\tOK" << std::endl;
     return 0;
 }
