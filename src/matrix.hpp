@@ -298,8 +298,8 @@ class sparse_matrix {
 
     /// @brief just sets the dimension to (n_free x n_free)
     sparse_matrix(const std::size_t n_free) : n_free(n_free) {
-        indices.reserve(n_free);
-        data.reserve(n_free);
+        indices.reserve(n_free << 4);
+        data.reserve(n_free << 4);
     }
 
     /// @brief creates the crossing number matrix of `graph`
