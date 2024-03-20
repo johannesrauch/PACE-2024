@@ -2,9 +2,10 @@
 #define PACE2024_SHIFT_HEURISTIC_HPP
 
 #ifndef PACE2024_CONST_SHIFT_LENGTH
-#define PACE2024_CONST_SHIFT_LENGTH 128
+#define PACE2024_CONST_SHIFT_LENGTH 256
 #endif
 
+#include <list>
 #include <vector>
 
 #include "bipartite_graph.hpp"
@@ -14,21 +15,50 @@
 
 namespace pace2024 {
 
+/**
+ * @brief improves a given solution to a local minimum by shifting
+ * 
+ * @tparam T vertex type
+ * @tparam R crossing matrix data type
+ */
 template <typename T, typename R>
 class shift_heuristic {
-    const folded_matrix<T> &matrix;
+    /// @brief instance
+    const bipartite_graph<T> &graph;
+    
+    /// @brief crossing matrix
+    const folded_matrix<R> &cr_matrix;
+
+    /// @brief in-out ordering
     std::vector<T> &ordering;
+
+    /// @brief internal ordering as list for fast shifting
+    std::list<T> ordering_;
+
+    /// @brief best upper bound (number of crossings)
     uint32_t upper_bound;
 
    public:
-    shift_heuristic(const folded_matrix<R> &matrix,  //
-                    std::vector<T> &ordering,        //
+   /**
+    * @brief sets references and initializes heuristic solver
+    * 
+    * @param graph instance
+    * @param cr_matrix crossing matrix
+    * @param ordering an ordering of the free layer
+    * @param upper_bound number of crossings of `ordering`
+    */
+    shift_heuristic(const bipartite_graph<T> &graph,    //
+                    const folded_matrix<R> &cr_matrix,  //
+                    std::vector<T> &ordering,           //
                     const uint32_t upper_bound)
-        : matrix(matrix),      //
-          ordering(ordering),  //
+        : graph(graph),          //
+          cr_matrix(cr_matrix),  //
+          ordering(ordering),    //
+          ordering_(ordering.begin(), ordering.end()),
           upper_bound(upper_bound) {
-        assert(matrix.get_m() == ordering.size());
-        assert(matrix.get_m() > 0);
+        assert(cr_matrix.get_m() == ordering.size());
+        assert(cr_matrix.get_m() > 1);
+        assert(number_of_crossings(graph, ordering) == upper_bound);
     }
 
     uint32_t run(const std::size_t nof_iterations = 1024) {
@@ -37,74 +67,74 @@ class shift_heuristic {
         std::size_t iteration;
         for (iteration = 0; iteration < nof_iterations && go_on; ++iteration) {
             go_on = false;
-            for (std::size_t i = 0; i < ordering.size(); ++i) {
-                go_on |= improve(i);
+            std::ptrdiff_t dist;
+            for (typename std::list<T>::iterator it = ordering_.begin(); it != ordering_.end();) {
+                const auto [go_on_, it_] = improve(it);
+                go_on |= go_on_;
+                it = it_;
+                dist = std::distance(it, ordering_.end());
+                (void)dist;
             }
         }
+        std::copy(ordering_.begin(), ordering_.end(), ordering.begin());
+        assert(ordering.size() == graph.get_n_free());
+        assert(number_of_crossings(graph, ordering) == upper_bound);
         PACE2024_DEBUG_PRINTF("end   shift_heuristic, iterations=%llu\n", iteration);
         return upper_bound;
     }
 
    private:
-    /**
-     * @brief shifts ordering.
-     * let x[1], ..., x[n] denote the elements of ordering.
-     * if i < j, then after the shift we have ..., x[i+1], ..., x[j], x[i], ...
-     * if i > j, then after the shift we have ..., x[i], x[j], ..., x[i-1], ...
-     */
-    inline void shift(std::size_t i, std::size_t j) {
-        assert(0 <= i && i < ordering.size());
-        assert(0 <= j && j < ordering.size());
-        assert(i != j);
-
-        const std::ptrdiff_t delta = i < j ? 1 : -1;
-        const T tmp = ordering[i];
-        for (std::size_t k = i; k != j; k += delta) {
-            ordering[k] = ordering[k + delta];
-        }
-        ordering[j] = tmp;
-    }
-
-    inline bool improve(const std::size_t &i) {
-        // compute crossing difference by left shifts
-        std::size_t c_old{0}, c_new{0};
+    inline std::pair<bool, typename std::list<T>::iterator> improve(
+        typename std::list<T>::iterator i) {
+        // try left shifts
+        R c_old{0}, c_new{0}, improvement = 0;
+        typename std::list<T>::iterator k = i, l = i;
         for (std::size_t j = 1; j <= PACE2024_CONST_SHIFT_LENGTH; ++j) {
-            if (j > i) break;
+            if (k == ordering_.begin()) break;
+            --k;
 
-            const std::size_t k = i - j;
-            c_old += matrix(ordering[k], ordering[i]);
-            c_new += matrix(ordering[i], ordering[k]);
+            c_old += cr_matrix(*k, *i);
+            c_new += cr_matrix(*i, *k);
 
-            if (c_new < c_old) {
-                shift(i, k);
-                assert(c_old - c_new <= upper_bound);
-                upper_bound -= c_old - c_new;
-                assert(number_of_crossings(matrix, ordering) == upper_bound);
-                return true;
+            if (c_new < c_old && c_old - c_new > improvement) {
+                improvement = c_old - c_new;
+                l = k;
             }
         }
 
+        // try right shifts
         c_old = 0;
         c_new = 0;
-        // compute crossing difference by right shifts
+        k = i;
+        bool right_shift = false;
         for (std::size_t j = 1; j <= PACE2024_CONST_SHIFT_LENGTH; ++j) {
-            if (i + j >= ordering.size()) break;
+            ++k;
+            if (k == ordering_.end()) break;
 
-            const std::size_t k = i + j;
-            c_old += matrix(ordering[i], ordering[k]);
-            c_new += matrix(ordering[k], ordering[i]);
+            c_old += cr_matrix(*i, *k);
+            c_new += cr_matrix(*k, *i);
 
-            if (c_new < c_old) {
-                shift(i, k);
-                assert(c_old - c_new <= upper_bound);
-                upper_bound -= c_old - c_new;
-                uint32_t ref_ub = number_of_crossings(matrix, ordering);
-                assert(ref_ub == upper_bound);
-                return true;
+            if (c_new < c_old && c_old - c_new > improvement) {
+                improvement = c_old - c_new;
+                l = k;
+                right_shift = true;
             }
         }
 
-        return false;
+        if (improvement == 0) return std::make_pair(false, ++i);
+
+        // shift
+        if (right_shift) ++l;
+        // moves element at i in front of element at l
+        // ordering_.splice(l, ordering_, i);
+        ordering_.insert(l, *i);
+        typename std::list<T>::iterator it = ordering_.erase(i);
+        assert(ordering_.size() == graph.get_n_free());
+        assert(upper_bound >= improvement);
+        upper_bound -= improvement;
+        assert(number_of_crossings(graph, std::vector<T>{ordering_.begin(), ordering_.end()}) ==
+               upper_bound);
+        return std::make_pair(true, it);
     }
 };
 
