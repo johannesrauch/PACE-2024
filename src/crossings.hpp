@@ -51,6 +51,7 @@ std::pair<R, R> crossing_numbers_of(const bipartite_graph<T>& graph, T u, T v) {
         }
     }
 
+    assert(deg_u * deg_v >= nof_common_nbors + c_uv);
     return std::make_pair(c_uv, deg_u * deg_v - nof_common_nbors - c_uv);
 }
 
