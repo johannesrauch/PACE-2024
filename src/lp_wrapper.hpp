@@ -154,7 +154,7 @@ class lp_wrapper {
 };
 
 class highs_wrapper : public lp_wrapper {
-    /// @brief lp solver
+    /// @brief interface to lp model and solver
     Highs lp;
 
     /// @brief highs status field
@@ -166,7 +166,7 @@ class highs_wrapper : public lp_wrapper {
     std::vector<int> magic;
 
     // for `delete_positive_slack_rows()`
-    std::vector<int> rows_to_delete;
+    std::vector<HighsInt> rows_to_delete;
 
     // for `add_3cycle_rows()`
     std::vector<double> lower_bounds;
@@ -237,7 +237,7 @@ class highs_wrapper : public lp_wrapper {
             }
         }
 
-        const int nof_rows_to_delete = static_cast<int>(rows_to_delete.size());
+        const HighsInt nof_rows_to_delete = rows_to_delete.size();
         if (nof_rows_to_delete > 0) {
             lp.deleteRows(nof_rows_to_delete, &rows_to_delete[0]);
         }
