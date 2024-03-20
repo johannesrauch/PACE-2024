@@ -19,8 +19,8 @@ const std::vector<std::pair<uint64_t, uint64_t>> ref_edges =
  */
 int main() {
     const fs::path filepath = "tiny_test_set/instances/cycle_8_sorted.gr";
-    pace2024::uint64_bipartite_graph graph;
-    pace2024::parse_input(filepath, graph);
+    pace::uint64_bipartite_graph graph;
+    pace::parse_input(filepath, graph);
 
     assert(ref_n_fixed == graph.get_n_fixed());
     assert(ref_n_free == graph.get_n_free());
@@ -37,6 +37,6 @@ int main() {
         }
     }
 
-    std::cout << "TEST::PACE2024::BIPARTITE_GRAPH:\t\tOK" << std::endl;
+    std::cout << "TEST::PACE::BIPARTITE_GRAPH:\t\tOK" << std::endl;
     return 0;
 }

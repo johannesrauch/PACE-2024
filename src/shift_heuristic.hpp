@@ -1,8 +1,8 @@
-#ifndef PACE2024_SHIFT_HEURISTIC_HPP
-#define PACE2024_SHIFT_HEURISTIC_HPP
+#ifndef PACE_SHIFT_HEURISTIC_HPP
+#define PACE_SHIFT_HEURISTIC_HPP
 
-#ifndef PACE2024_CONST_SHIFT_LENGTH
-#define PACE2024_CONST_SHIFT_LENGTH 256
+#ifndef PACE_CONST_SHIFT_LENGTH
+#define PACE_CONST_SHIFT_LENGTH 256
 #endif
 
 #include <list>
@@ -13,7 +13,7 @@
 #include "debug_printf.hpp"
 #include "matrix.hpp"
 
-namespace pace2024 {
+namespace pace {
 
 /**
  * @brief improves a given solution to a local minimum by shifting
@@ -62,7 +62,7 @@ class shift_heuristic {
     }
 
     uint32_t run(const std::size_t nof_iterations = 1024) {
-        PACE2024_DEBUG_PRINTF("start shift_heuristic\n");
+        PACE_DEBUG_PRINTF("start shift_heuristic\n");
         bool go_on = true;
         std::size_t iteration;
         for (iteration = 0; iteration < nof_iterations && go_on; ++iteration) {
@@ -79,7 +79,7 @@ class shift_heuristic {
         std::copy(ordering_.begin(), ordering_.end(), ordering.begin());
         assert(ordering.size() == graph.get_n_free());
         assert(number_of_crossings(graph, ordering) == upper_bound);
-        PACE2024_DEBUG_PRINTF("end   shift_heuristic, iterations=%llu\n", iteration);
+        PACE_DEBUG_PRINTF("end   shift_heuristic, iterations=%llu\n", iteration);
         return upper_bound;
     }
 
@@ -89,7 +89,7 @@ class shift_heuristic {
         // try left shifts
         R c_old{0}, c_new{0}, improvement = 0;
         typename std::list<T>::iterator k = i, l = i;
-        for (std::size_t j = 1; j <= PACE2024_CONST_SHIFT_LENGTH; ++j) {
+        for (std::size_t j = 1; j <= PACE_CONST_SHIFT_LENGTH; ++j) {
             if (k == ordering_.begin()) break;
             --k;
 
@@ -107,7 +107,7 @@ class shift_heuristic {
         c_new = 0;
         k = i;
         bool right_shift = false;
-        for (std::size_t j = 1; j <= PACE2024_CONST_SHIFT_LENGTH; ++j) {
+        for (std::size_t j = 1; j <= PACE_CONST_SHIFT_LENGTH; ++j) {
             ++k;
             if (k == ordering_.end()) break;
 
@@ -138,6 +138,6 @@ class shift_heuristic {
     }
 };
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

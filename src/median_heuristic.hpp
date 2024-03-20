@@ -1,5 +1,5 @@
-#ifndef PACE2024_MEDIAN_HEURISTIC_HPP
-#define PACE2024_MEDIAN_HEURISTIC_HPP
+#ifndef PACE_MEDIAN_HEURISTIC_HPP
+#define PACE_MEDIAN_HEURISTIC_HPP
 
 #include <vector>
 
@@ -9,7 +9,7 @@
 #include "random.hpp"
 #include "vector_utils.hpp"
 
-namespace pace2024 {
+namespace pace {
 
 /**
  * @brief median heuristic solver
@@ -240,6 +240,6 @@ class probmedian_heuristic {
     }
 };
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

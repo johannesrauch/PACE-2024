@@ -1,15 +1,15 @@
-#ifndef PACE2024_RANDOM_HPP
-#define PACE2024_RANDOM_HPP
+#ifndef PACE_RANDOM_HPP
+#define PACE_RANDOM_HPP
 
-#ifndef PACE2024_CONST_SEED
-#define PACE2024_CONST_SEED 42
+#ifndef PACE_CONST_SEED
+#define PACE_CONST_SEED 42
 #endif
 
 #include <random>
 
-namespace pace2024 {
+namespace pace {
 
-std::mt19937 generator(PACE2024_CONST_SEED);
+std::mt19937 generator(PACE_CONST_SEED);
 
 /**
  * @brief returns true with probability p
@@ -52,6 +52,6 @@ void shuffle(std::vector<T>& vec) {
 
 };
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

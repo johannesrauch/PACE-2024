@@ -1,5 +1,5 @@
-#ifndef PACE2024_TEST_UTILS_HPP
-#define PACE2024_TEST_UTILS_HPP
+#ifndef PACE_TEST_UTILS_HPP
+#define PACE_TEST_UTILS_HPP
 
 #include <ctime>
 #include <filesystem>
@@ -9,7 +9,7 @@
 
 #include "printf.hpp"
 
-namespace pace2024 {
+namespace pace {
 
 namespace test {
 
@@ -67,6 +67,6 @@ void get_ref_ordering(const std::filesystem::path filepath_instance,  //
 
 };  // namespace test
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

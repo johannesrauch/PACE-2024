@@ -19,8 +19,8 @@ std::vector<std::pair<uint16_t, uint16_t>> ref_edges = {{1, 3}, {2, 4}, {1, 5},
  */
 int main() {
     const std::filesystem::path filepath{"tiny_test_set/instances/star_6.gr"};
-    pace2024::bipartite_graph graph;
-    pace2024::parse_input(filepath, graph);
+    pace::bipartite_graph graph;
+    pace::parse_input(filepath, graph);
 
     assert(ref_n_fixed == graph.get_n_fixed());
     assert(ref_n_free == graph.get_n_free());
@@ -31,6 +31,6 @@ int main() {
         assert(ref_edges[i].second == edges[i].second + 1 + ref_n_fixed);
     }
 
-    std::cout << "TEST::PACE2024::INPUT:\t\t\t\tOK" << std::endl;
+    std::cout << "TEST::PACE::INPUT:\t\t\t\tOK" << std::endl;
     return 0;
 }

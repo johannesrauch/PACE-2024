@@ -1,11 +1,11 @@
-#ifndef PACE2024_PATTERNS_HPP
-#define PACE2024_PATTERNS_HPP
+#ifndef PACE_PATTERNS_HPP
+#define PACE_PATTERNS_HPP
 
 #include "bipartite_graph.hpp"
 #include "matrix.hpp"
 #include "vector_utils.hpp"
 
-namespace pace2024 {
+namespace pace {
 
 enum pattern { indeterminate = 0, u_before_v, v_before_u };
 
@@ -75,6 +75,6 @@ class pattern_analyzer {
     }
 };
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

@@ -1,10 +1,10 @@
-#ifndef PACE2024_VECTOR_INTERSECTION_HPP
-#define PACE2024_VECTOR_INTERSECTION_HPP
+#ifndef PACE_VECTOR_INTERSECTION_HPP
+#define PACE_VECTOR_INTERSECTION_HPP
 
 #include <cstddef>
 #include <vector>
 
-namespace pace2024 {
+namespace pace {
 
 /**
  * @brief inverses a permutation of {0, 1, ..., in.size()}
@@ -100,6 +100,6 @@ void sorted_vector_union(const std::vector<T> &vec1, const std::vector<T> &vec2,
     while (j < len2) out.emplace_back(vec2[j++]);
 }
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

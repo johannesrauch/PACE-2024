@@ -1,5 +1,5 @@
-#ifndef PACE2024_TOPOLOGICAL_SORT_HPP
-#define PACE2024_TOPOLOGICAL_SORT_HPP
+#ifndef PACE_TOPOLOGICAL_SORT_HPP
+#define PACE_TOPOLOGICAL_SORT_HPP
 
 #include <algorithm>
 #include <cassert>
@@ -7,7 +7,7 @@
 
 #include "digraph.hpp"
 
-namespace pace2024 {
+namespace pace {
 
 /**
  * @brief a depth-first search through the given graph.
@@ -70,6 +70,6 @@ bool topological_sort(const digraph<T>& graph, std::vector<T>& ordering) {
     return true;
 }
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

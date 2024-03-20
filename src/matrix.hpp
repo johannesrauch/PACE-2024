@@ -1,5 +1,5 @@
-#ifndef PACE2024_MATRIX_HPP
-#define PACE2024_MATRIX_HPP
+#ifndef PACE_MATRIX_HPP
+#define PACE_MATRIX_HPP
 
 #include <cstdint>
 #include <iterator>
@@ -9,7 +9,7 @@
 #include "printf.hpp"
 #include "vector_utils.hpp"
 
-namespace pace2024 {
+namespace pace {
 
 //
 // forward declarations
@@ -548,6 +548,6 @@ bool equals(const MATRIX1 &A, const MATRIX2 &B, bool skip_diagonal = false) {
 
 };  // namespace test
 
-}  // namespace pace2024
+}  // namespace pace
 
 #endif

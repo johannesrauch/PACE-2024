@@ -1,4 +1,4 @@
-# PACE2024
+# PACE
 ## Dependencies
 - Modern version of `gcc`; we use `c++17`.
 - `make`.
@@ -31,20 +31,20 @@ options.
 
 Please use 
 ```
-#ifndef PACE2024_[YOUR FILE NAME IN CAPS WITH UNDERSCORES]_HPP
-#define PACE2024_[YOUR FILE NAME IN CAPS WITH UNDERSCORES]_HPP
+#ifndef PACE_[YOUR FILE NAME IN CAPS WITH UNDERSCORES]_HPP
+#define PACE_[YOUR FILE NAME IN CAPS WITH UNDERSCORES]_HPP
 
 // your code here
 
 #endif
 ```
 to avoid multiple header inclusions.
-Please use the namespace `pace2024` for the project.
+Please use the namespace `pace` for the project.
 
 ## Add files
 ```
 cd existing_repo
-git remote add origin https://gitlab.uni-ulm.de/zhh72/pace2024.git
+git remote add origin https://gitlab.uni-ulm.de/zhh72/pace.git
 git branch -M main
 git push -uf origin main
 ```

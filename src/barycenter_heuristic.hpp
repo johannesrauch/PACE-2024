@@ -1,11 +1,11 @@
-#ifndef PACE2024_BARYCENTER_HEURISTIC_HPP
-#define PACE2024_BARYCENTER_HEURISTIC_HPP
+#ifndef PACE_BARYCENTER_HEURISTIC_HPP
+#define PACE_BARYCENTER_HEURISTIC_HPP
 
 #include <vector>
 
 #include "bipartite_graph.hpp"
 
-namespace pace2024 {
+namespace pace {
 
 /**
  * @brief heuristic solver class that implements the barycenter heuristic with `run()`
@@ -80,6 +80,6 @@ class barycenter_heuristic {
     }
 };
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

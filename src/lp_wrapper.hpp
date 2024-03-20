@@ -1,5 +1,5 @@
-#ifndef PACE2024_LP_WRAPPER_HPP
-#define PACE2024_LP_WRAPPER_HPP
+#ifndef PACE_LP_WRAPPER_HPP
+#define PACE_LP_WRAPPER_HPP
 
 #include <cassert>
 #include <unordered_map>
@@ -9,23 +9,23 @@
 #include "crossings.hpp"
 #include "debug_printf.hpp"
 
-#ifndef PACE2024_CONST_NOF_CYCLE_CONSTRAINTS
-#define PACE2024_CONST_NOF_CYCLE_CONSTRAINTS 1024
+#ifndef PACE_CONST_NOF_CYCLE_CONSTRAINTS
+#define PACE_CONST_NOF_CYCLE_CONSTRAINTS 1024
 #endif
 
-#ifndef PACE2024_CONST_NOF_BUCKETS
-#define PACE2024_CONST_NOF_BUCKETS 8
+#ifndef PACE_CONST_NOF_BUCKETS
+#define PACE_CONST_NOF_BUCKETS 8
 #endif
 
-#ifndef PACE2024_CONST_FEASIBILITY_TOLERANCE
-#define PACE2024_CONST_FEASIBILITY_TOLERANCE 1e-7
+#ifndef PACE_CONST_FEASIBILITY_TOLERANCE
+#define PACE_CONST_FEASIBILITY_TOLERANCE 1e-7
 #endif
 
-#ifndef PACE2024_CONST_INTEGER_TOLERANCE
-#define PACE2024_CONST_INTEGER_TOLERANCE 1e-6
+#ifndef PACE_CONST_INTEGER_TOLERANCE
+#define PACE_CONST_INTEGER_TOLERANCE 1e-6
 #endif
 
-namespace pace2024 {
+namespace pace {
 
 /**
  * @brief abstract wrapper class for an lp solver used by branch_and_cut
@@ -48,7 +48,7 @@ class lp_wrapper {
     };
 
     /// @brief buckets for bucket sorting violated 3-cycle inequalities
-    std::vector<std::vector<bucket_entry>> buckets{PACE2024_CONST_NOF_BUCKETS};
+    std::vector<std::vector<bucket_entry>> buckets{PACE_CONST_NOF_BUCKETS};
 
     /// @brief erases contents of each bucket in buckets
     inline void clear_buckets() {
@@ -67,9 +67,9 @@ class lp_wrapper {
     inline std::vector<bucket_entry> &get_bucket(const double &val) {
         assert(0 <= val);
         assert(val < 1);
-        const int i = static_cast<int>(val * PACE2024_CONST_NOF_BUCKETS);
+        const int i = static_cast<int>(val * PACE_CONST_NOF_BUCKETS);
         assert(0 <= i);
-        assert(i < PACE2024_CONST_NOF_BUCKETS);
+        assert(i < PACE_CONST_NOF_BUCKETS);
         return buckets[i];
     }
 
@@ -85,11 +85,11 @@ class lp_wrapper {
     /**
      * @brief returns if the last bucket is full
      *
-     * @return true if last bucket has >= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS elements
+     * @return true if last bucket has >= PACE_CONST_NOF_CYCLE_CONSTRAINTS elements
      * @return false otherwise
      */
     inline bool is_last_bucket_full() {
-        return (*buckets.rbegin()).size() >= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS;
+        return (*buckets.rbegin()).size() >= PACE_CONST_NOF_CYCLE_CONSTRAINTS;
     }
 
     //
@@ -194,13 +194,13 @@ class highs_wrapper : public lp_wrapper {
 
         add_variables(graph);
 
-        rows_to_delete.reserve(PACE2024_CONST_NOF_CYCLE_CONSTRAINTS);
-        lower_bounds.reserve(PACE2024_CONST_NOF_CYCLE_CONSTRAINTS);
-        upper_bounds.reserve(PACE2024_CONST_NOF_CYCLE_CONSTRAINTS);
-        starts.reserve(PACE2024_CONST_NOF_CYCLE_CONSTRAINTS);
-        constexpr std::size_t PACE2024_CONST_NOF_CYCLE_CONSTRAINTS_x3 = 3 * PACE2024_CONST_NOF_CYCLE_CONSTRAINTS;
-        indices.reserve(PACE2024_CONST_NOF_CYCLE_CONSTRAINTS_x3);
-        values.reserve(PACE2024_CONST_NOF_CYCLE_CONSTRAINTS_x3);
+        rows_to_delete.reserve(PACE_CONST_NOF_CYCLE_CONSTRAINTS);
+        lower_bounds.reserve(PACE_CONST_NOF_CYCLE_CONSTRAINTS);
+        upper_bounds.reserve(PACE_CONST_NOF_CYCLE_CONSTRAINTS);
+        starts.reserve(PACE_CONST_NOF_CYCLE_CONSTRAINTS);
+        constexpr std::size_t PACE_CONST_NOF_CYCLE_CONSTRAINTS_x3 = 3 * PACE_CONST_NOF_CYCLE_CONSTRAINTS;
+        indices.reserve(PACE_CONST_NOF_CYCLE_CONSTRAINTS_x3);
+        values.reserve(PACE_CONST_NOF_CYCLE_CONSTRAINTS_x3);
     }
 
     highs_wrapper(const highs_wrapper &rhs) = delete;
@@ -227,7 +227,7 @@ class highs_wrapper : public lp_wrapper {
      * @brief delete rows with positive slack from the lp
      */
     virtual void delete_positive_slack_rows() {
-        PACE2024_DEBUG_PRINTF("\tstart delete_positive_slack_rows\n");
+        PACE_DEBUG_PRINTF("\tstart delete_positive_slack_rows\n");
 
         // gather rows to delete
         rows_to_delete.clear();
@@ -241,7 +241,7 @@ class highs_wrapper : public lp_wrapper {
         if (nof_rows_to_delete > 0) {
             lp.deleteRows(nof_rows_to_delete, &rows_to_delete[0]);
         }
-        PACE2024_DEBUG_PRINTF("\tend   delete_positive_slack_rows, number of removed rows=%d\n", nof_rows_to_delete);
+        PACE_DEBUG_PRINTF("\tend   delete_positive_slack_rows, number of removed rows=%d\n", nof_rows_to_delete);
     }
 
     /**
@@ -253,7 +253,7 @@ class highs_wrapper : public lp_wrapper {
     virtual void fix_column(const int j, const double fix_to) {
         assert(0 <= j);
         assert(j < lp.getNumCol());
-        PACE2024_DEBUG_PRINTF("fixed variable %5d to %1.0f\n", j, fix_to);
+        PACE_DEBUG_PRINTF("fixed variable %5d to %1.0f\n", j, fix_to);
         lp.changeColBounds(j, fix_to, fix_to);
     }
 
@@ -276,7 +276,7 @@ class highs_wrapper : public lp_wrapper {
 
             if (std::abs(coeff) >= static_cast<double>(diff) && coeff != 0.) {
                 fix_column(j, coeff > 0 ? 0. : 1.);
-                PACE2024_DEBUG_PRINTF("(optimality condition)\n");
+                PACE_DEBUG_PRINTF("(optimality condition)\n");
             }
         }
     }
@@ -337,9 +337,9 @@ class highs_wrapper : public lp_wrapper {
 
     /// @brief solves the lp
     virtual void solve() {
-        PACE2024_DEBUG_PRINTF("start highs_simplex\n");
+        PACE_DEBUG_PRINTF("start highs_simplex\n");
         lp.run();
-        PACE2024_DEBUG_PRINTF("end   highs_simplex, objective value=%f, number of rows=%d\n",
+        PACE_DEBUG_PRINTF("end   highs_simplex, objective value=%f, number of rows=%d\n",
                               get_objective_value(),
                               get_nof_rows());
     }
@@ -448,12 +448,12 @@ class highs_wrapper : public lp_wrapper {
 
     /**
      * @brief expects the violated 3-cycle ieqs in buckets.
-     * adds the most violated <= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS to the lp.
+     * adds the most violated <= PACE_CONST_NOF_CYCLE_CONSTRAINTS to the lp.
      *
      * @return int number of new rows
      */
     inline int add_3cycle_rows() {
-        const HighsInt nof_new_rows = std::min(get_nof_bucket_entries(), PACE2024_CONST_NOF_CYCLE_CONSTRAINTS);
+        const HighsInt nof_new_rows = std::min(get_nof_bucket_entries(), PACE_CONST_NOF_CYCLE_CONSTRAINTS);
         if (nof_new_rows <= 0) return 0;
 
         lower_bounds.clear();
@@ -487,7 +487,7 @@ class highs_wrapper : public lp_wrapper {
                 assert(magic[ij] >= 0 || magic[ik] >= 0 || magic[jk] >= 0);
 
                 ++i;
-                if (i >= PACE2024_CONST_NOF_CYCLE_CONSTRAINTS) {
+                if (i >= PACE_CONST_NOF_CYCLE_CONSTRAINTS) {
                     go_on = false;
                     break;
                 }
@@ -527,7 +527,7 @@ class highs_wrapper : public lp_wrapper {
             return true;
         }
         if (is_3cycle_ub_violated(x)) {
-            constexpr double ub = 1. + PACE2024_CONST_FEASIBILITY_TOLERANCE;
+            constexpr double ub = 1. + PACE_CONST_FEASIBILITY_TOLERANCE;
             const double x_normalized = (x - ub) / interval_width;
             get_bucket(x_normalized).emplace_back(ij, jk, ik, true);
             return true;
@@ -542,7 +542,7 @@ class highs_wrapper : public lp_wrapper {
      * @return false otherwise
      */
     bool check_3cycles() {
-        PACE2024_DEBUG_PRINTF("\tstart check_3cycles\n");
+        PACE_DEBUG_PRINTF("\tstart check_3cycles\n");
 
         clear_buckets();
         bool break_for_loops;
@@ -555,7 +555,7 @@ class highs_wrapper : public lp_wrapper {
                     if (violated) {
                         break_for_loops = is_last_bucket_full();
                         if (break_for_loops) {
-                            PACE2024_DEBUG_PRINTF("\t\tlast bucket full\n");
+                            PACE_DEBUG_PRINTF("\t\tlast bucket full\n");
                             break;
                         }
                     }
@@ -566,7 +566,7 @@ class highs_wrapper : public lp_wrapper {
         }
 
         const int nof_new_rows = add_3cycle_rows();
-        PACE2024_DEBUG_PRINTF("\tend   check_3cycles, number of new rows=%lld\n", nof_new_rows);
+        PACE_DEBUG_PRINTF("\tend   check_3cycles, number of new rows=%lld\n", nof_new_rows);
         return nof_new_rows > 0;
     }
 
@@ -589,14 +589,14 @@ class highs_wrapper : public lp_wrapper {
      * @brief returns value of x < -1e-7
      */
     inline bool is_3cycle_lb_violated(const double &x) {
-        return x < -PACE2024_CONST_FEASIBILITY_TOLERANCE;
+        return x < -PACE_CONST_FEASIBILITY_TOLERANCE;
     }
 
     /**
      * @brief returns value of x > 1 + 1e-7
      */
     inline bool is_3cycle_ub_violated(const double &x) {
-        constexpr double ub = 1. + PACE2024_CONST_FEASIBILITY_TOLERANCE;
+        constexpr double ub = 1. + PACE_CONST_FEASIBILITY_TOLERANCE;
         return x > ub;
     }
 
@@ -613,7 +613,7 @@ class highs_wrapper : public lp_wrapper {
     inline bool has_row_slack(const int &i) {
         const double x = get_row_value(i);
         const auto [lb, ub] = get_row_bounds(i);
-        return x > lb + PACE2024_CONST_FEASIBILITY_TOLERANCE && x < ub - PACE2024_CONST_FEASIBILITY_TOLERANCE;
+        return x > lb + PACE_CONST_FEASIBILITY_TOLERANCE && x < ub - PACE_CONST_FEASIBILITY_TOLERANCE;
     }
 
     //
@@ -631,8 +631,8 @@ class highs_wrapper : public lp_wrapper {
         assert(0 <= j);
         assert(j < lp.getNumCol());
         const double x = lp.getSolution().col_value[j];
-        constexpr double ub = 1. - PACE2024_CONST_INTEGER_TOLERANCE;
-        if (x > PACE2024_CONST_INTEGER_TOLERANCE && x < ub) {
+        constexpr double ub = 1. - PACE_CONST_INTEGER_TOLERANCE;
+        if (x > PACE_CONST_INTEGER_TOLERANCE && x < ub) {
             return false;
         }
         return true;
@@ -686,6 +686,6 @@ class highs_wrapper : public lp_wrapper {
     }
 };
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

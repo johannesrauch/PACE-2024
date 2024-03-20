@@ -11,4 +11,4 @@ if __name__ == "__main__":
         solution_filepath = test_set + "/solutions/" + filename[:-3] + ".sol"
         output_filepath = test_set + "/nof_crossings/" + filename[:-3] + ".txt"
         with open(output_filepath, "w") as f:
-            subprocess.run(["pace2024verifier", "-c", instance_filepath, solution_filepath], stdout=f)
+            subprocess.run(["paceverifier", "-c", instance_filepath, solution_filepath], stdout=f)

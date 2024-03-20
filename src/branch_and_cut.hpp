@@ -1,5 +1,5 @@
-#ifndef PACE2024_BRANCH_AND_CUT_HPP
-#define PACE2024_BRANCH_AND_CUT_HPP
+#ifndef PACE_BRANCH_AND_CUT_HPP
+#define PACE_BRANCH_AND_CUT_HPP
 
 #include <glpk.h>
 #include <math.h>
@@ -23,7 +23,7 @@
 #include "output.hpp"
 #include "topological_sort.hpp"
 
-namespace pace2024 {
+namespace pace {
 
 template <typename T>
 class branch_and_cut {
@@ -121,7 +121,7 @@ class branch_and_cut {
      * @brief runs heuristics to get an initial value for `upper_bound` and `ordering`
      */
     void run_heuristics() {
-        PACE2024_DEBUG_PRINTF("start heuristic\n");
+        PACE_DEBUG_PRINTF("start heuristic\n");
 
         median_heuristic(graph, ordering).run();
         upper_bound = number_of_crossings(graph, ordering);
@@ -135,7 +135,7 @@ class branch_and_cut {
             ordering = ordering_;
         }
 
-        PACE2024_DEBUG_PRINTF("end   heuristic\n");
+        PACE_DEBUG_PRINTF("end   heuristic\n");
     }
 
     //
@@ -158,12 +158,12 @@ class branch_and_cut {
 
             if (fix_opposite) {
                 lp_solver.fix_column(j, lp_solver.get_variable_value(j) > 0.5 ? 0. : 1.);
-                PACE2024_DEBUG_PRINTF("(backtrack)\n");
+                PACE_DEBUG_PRINTF("(backtrack)\n");
                 stack.emplace(j, false);
                 break;
             } else {
                 lp_solver.unfix_column(j);
-                PACE2024_DEBUG_PRINTF("unfixed variable %5d\n(backtrack)\n", j);
+                PACE_DEBUG_PRINTF("unfixed variable %5d\n(backtrack)\n", j);
             }
         }
         return !fix_opposite;
@@ -173,7 +173,7 @@ class branch_and_cut {
     void branch(const int &j) {
         // todo: more sophisticated fixing
         lp_solver.fix_column(j, 0.);
-        PACE2024_DEBUG_PRINTF("(branch)\n");
+        PACE_DEBUG_PRINTF("(branch)\n");
         stack.emplace(j, true);
     }
 
@@ -238,7 +238,7 @@ class branch_and_cut {
 
         // driver loop
         for (std::size_t iteration = 2; !is_optimum; ++iteration) {
-            PACE2024_DEBUG_PRINTF("iteration=%5llu, depth=%5llu, upper_bound=%5lu, nof_rows=%5d\n",
+            PACE_DEBUG_PRINTF("iteration=%5llu, depth=%5llu, upper_bound=%5lu, nof_rows=%5d\n",
                                   iteration,
                                   stack.size(),
                                   upper_bound,
@@ -252,7 +252,7 @@ class branch_and_cut {
         }
 
         // output
-        PACE2024_DEBUG_PRINTF("OPTIMAL VALUE: %lu\n", upper_bound);
+        PACE_DEBUG_PRINTF("OPTIMAL VALUE: %lu\n", upper_bound);
         if (do_print) {
             print_output(graph.get_n_fixed(), ordering);
         }
@@ -279,6 +279,6 @@ class branch_and_cut {
     }
 };
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

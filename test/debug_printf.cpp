@@ -3,7 +3,7 @@
 #include <iostream>
 
 int main() {
-    PACE2024_DEBUG_PRINTF("");
-    std::cout << "TEST::PACE2024::DEBUG_PRINTF:\t\tOK" << std::endl;
+    PACE_DEBUG_PRINTF("");
+    std::cout << "TEST::PACE::DEBUG_PRINTF:\t\tOK" << std::endl;
     return 0;
 }

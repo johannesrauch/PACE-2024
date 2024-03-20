@@ -1,5 +1,5 @@
-#ifndef PACE2024_INPUT_HPP
-#define PACE2024_INPUT_HPP
+#ifndef PACE_INPUT_HPP
+#define PACE_INPUT_HPP
 
 #include <cassert>
 #include <cstdint>
@@ -11,7 +11,7 @@
 
 #include "bipartite_graph.hpp"
 
-namespace pace2024 {
+namespace pace {
 
 namespace fs = std::filesystem;
 
@@ -60,7 +60,7 @@ void parse_input(std::ifstream &input, bipartite_graph<T> &graph) {
 
             default:
                 std::cerr
-                    << "pace2024::parse_input(): unknown line type"
+                    << "pace::parse_input(): unknown line type"
                     << std::endl;
                 return;
         }
@@ -84,6 +84,6 @@ void parse_input(std::ifstream &input, bipartite_graph<T> &graph) {
     graph.sort_adjacency_lists();
 }
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

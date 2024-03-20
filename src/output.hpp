@@ -1,10 +1,10 @@
-#ifndef PACE2024_OUTPUT_HPP
-#define PACE2024_OUTPUT_HPP
+#ifndef PACE_OUTPUT_HPP
+#define PACE_OUTPUT_HPP
 
 #include <vector>
 #include <iostream>
 
-namespace pace2024 {
+namespace pace {
 
 template <typename T>
 void print_output(const std::size_t n0, const std::vector<T>& ordering) {
@@ -13,6 +13,6 @@ void print_output(const std::size_t n0, const std::vector<T>& ordering) {
     }
 }
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

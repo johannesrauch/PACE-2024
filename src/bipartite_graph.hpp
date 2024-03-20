@@ -1,5 +1,5 @@
-#ifndef PACE2024_BIPARTITE_GRAPH_HPP
-#define PACE2024_BIPARTITE_GRAPH_HPP
+#ifndef PACE_BIPARTITE_GRAPH_HPP
+#define PACE_BIPARTITE_GRAPH_HPP
 
 #include <algorithm>
 #include <cassert>
@@ -12,7 +12,7 @@
 
 #include "debug_printf.hpp"
 
-namespace pace2024 {
+namespace pace {
 
 /**
  * @brief a bipartite graph implementation
@@ -161,6 +161,6 @@ using uint64_bipartite_graph = bipartite_graph<uint64_t>;
 using uint32_bipartite_graph = bipartite_graph<uint32_t>;
 using uint16_bipartite_graph = bipartite_graph<uint16_t>;
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

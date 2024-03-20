@@ -14,20 +14,20 @@ void test_solver_w_instance(std::filesystem::path filepath_instance) {
     fmt::printf("%s\n", static_cast<std::string>(filepath_instance));
     std::cout << std::flush;
 
-    pace2024::uint16_bipartite_graph graph;
-    pace2024::parse_input(filepath_instance, graph);
-    pace2024::branch_and_cut solver(graph);
+    pace::uint16_bipartite_graph graph;
+    pace::parse_input(filepath_instance, graph);
+    pace::branch_and_cut solver(graph);
     solver.solve(false);
 
     uint32_t ref_nof_crossings =
-        pace2024::test::get_ref_nof_crossings<uint32_t>(filepath_instance);
+        pace::test::get_ref_nof_crossings<uint32_t>(filepath_instance);
     (void)ref_nof_crossings;
 
     uint32_t test_nof_crossings =
-        pace2024::number_of_crossings<uint16_t, uint32_t>(graph, solver.get_ordering());
+        pace::number_of_crossings<uint16_t, uint32_t>(graph, solver.get_ordering());
     (void)test_nof_crossings;
 
-    PACE2024_DEBUG_PRINTF("%d=%d?\n", ref_nof_crossings, test_nof_crossings);
+    PACE_DEBUG_PRINTF("%d=%d?\n", ref_nof_crossings, test_nof_crossings);
     assert(ref_nof_crossings == test_nof_crossings);
     assert(ref_nof_crossings == solver.get_nof_crossings());
 }
@@ -63,6 +63,6 @@ int main(int argc, char** argv) {
     }
 
     // test_solver_w_instance("medium_test_set/17.gr");
-    std::cout << "TEST::PACE2024::BRANCH_AND_CUT_MEDIUM:\t\tOK" << std::endl;
+    std::cout << "TEST::PACE::BRANCH_AND_CUT_MEDIUM:\t\tOK" << std::endl;
     return 0;
 }

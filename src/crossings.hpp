@@ -1,5 +1,5 @@
-#ifndef PACE2024_CROSSINGS_HPP
-#define PACE2024_CROSSINGS_HPP
+#ifndef PACE_CROSSINGS_HPP
+#define PACE_CROSSINGS_HPP
 
 #include <algorithm>
 #include <utility>
@@ -9,7 +9,7 @@
 #include "matrix.hpp"
 #include "vector_utils.hpp"
 
-namespace pace2024 {
+namespace pace {
 
 /**
  * @brief returns the crossing numbers of the vertices u and v
@@ -149,6 +149,6 @@ uint32_t number_of_crossings(const sparse_matrix<R>& cr_matrix, const std::vecto
     return nof_crossings;
 }
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

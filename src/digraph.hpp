@@ -1,5 +1,5 @@
-#ifndef PACE2024_DIGRAPH_HPP
-#define PACE2024_DIGRAPH_HPP
+#ifndef PACE_DIGRAPH_HPP
+#define PACE_DIGRAPH_HPP
 
 #include <cstdint>
 #include <queue>
@@ -7,7 +7,7 @@
 
 #include "debug_printf.hpp"
 
-namespace pace2024 {
+namespace pace {
 
 /**
  * @brief class for a generic directed graph with
@@ -79,6 +79,6 @@ class digraph {
     }
 };
 
-};  // namespace pace2024
+};  // namespace pace
 
 #endif

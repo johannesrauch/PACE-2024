@@ -23,20 +23,20 @@ void compare_heuristics_on_instance(fs::path filepath) {
     // input
     std::ifstream input(filepath);
     assert(input.good());
-    pace2024::bipartite_graph graph;
-    pace2024::parse_input(filepath, graph);
+    pace::bipartite_graph graph;
+    pace::parse_input(filepath, graph);
     std::vector<T> ordering;
 
     // barycenter
     std::clock_t start = std::clock();
-    pace2024::barycenter_heuristic(graph, ordering).run();
+    pace::barycenter_heuristic(graph, ordering).run();
     std::clock_t end = std::clock();
-    const R c_b = pace2024::number_of_crossings(graph, ordering);
+    const R c_b = pace::number_of_crossings(graph, ordering);
     const double t_b = time_in_ms(start, end);
 
     // median
     start = std::clock();
-    pace2024::probmedian_heuristic heuristic(graph, ordering);
+    pace::probmedian_heuristic heuristic(graph, ordering);
     end = std::clock();
     const R c_m = heuristic.get_upper_bound();
     const double t_m = time_in_ms(start, end);
@@ -50,7 +50,7 @@ void compare_heuristics_on_instance(fs::path filepath) {
 
     const std::string best = c_b < c_p ? "b" : (c_b == c_p ? "=" : (c_m == c_p ? "m" : "p"));
     const std::string fastest = t_b < t_m ? "b" : "m";
-    const R optimal = pace2024::test::get_ref_nof_crossings<R>(filepath);
+    const R optimal = pace::test::get_ref_nof_crossings<R>(filepath);
     fmt::printf("%11u%11s|%11u%11.3f%11.1f|%11u%11.3f%11.1f|%11u%11.3f%11.1f%11u|%11s%11.1f%11s\n",
                 filepath.filename(), optimal,
                 c_b, t_b, (static_cast<double>(c_b) / optimal - 1) * 100,
@@ -67,7 +67,7 @@ void compare_heuristics_on_medium_test_set() {
                 "median", "t in ms", "off by %%",
                 "probmedian", "t in ms", "off by %%", "delta",
                 "best", "off by %%", "fastest");
-    pace2024::test::print_line(172);
+    pace::test::print_line(172);
     for (const auto& file : fs::directory_iterator("medium_test_set/instances")) {
         if (!file.is_regular_file()) continue;
         compare_heuristics_on_instance(file.path());
