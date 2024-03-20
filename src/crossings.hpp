@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "bipartite_graph.hpp"
-#include "inverse.hpp"
 #include "matrix.hpp"
 #include "vector_utils.hpp"
 
