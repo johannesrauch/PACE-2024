@@ -402,7 +402,7 @@ class highs_wrapper : public lp_wrapper {
                             const T &j,
                             const int &k) {
         assert(k < n1_choose_2);
-        const auto [c_ij, c_ji] = crossing_numbers_of<T, int>(graph, i, j);
+        const auto [c_ij, c_ji] = crossing_numbers_of(graph, i, j);
 
         // lower_bound = sum min(c_ij, c_ji)
         if (c_ij < c_ji) {
