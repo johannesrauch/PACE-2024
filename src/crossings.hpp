@@ -91,7 +91,7 @@ uint32_t number_of_crossings(const bipartite_graph<T>& graph, const std::vector<
     std::vector<R> tree(treesize);
 
     /* count the crossings */
-    uint32_t crosscount = 0;                                 /* number of crossings */
+    uint32_t crosscount = 0;                          /* number of crossings */
     for (std::size_t k = 0; k < graph.get_m(); ++k) { /* insert edge k */
         std::size_t index = positions[edges[k].second] + firstindex;
         ++tree[index];
@@ -148,7 +148,7 @@ uint32_t number_of_crossings(const sparse_matrix<R>& cr_matrix, const std::vecto
 
     uint32_t nof_crossings = 0;
     for (std::size_t i = 0; i < cr_matrix.get_nof_nonzero_elements(); ++i) {
-        const std::pair<T, T> &p = cr_matrix.get_indices(i);
+        const std::pair<T, T>& p = cr_matrix.get_indices(i);
         if (p.first < p.second && positions[p.first] < positions[p.second]) {
             nof_crossings += cr_matrix.get_datum(i);
         } else if (p.first > p.second && positions[p.first] < positions[p.second]) {
@@ -156,6 +156,23 @@ uint32_t number_of_crossings(const sparse_matrix<R>& cr_matrix, const std::vecto
         }
     }
     return nof_crossings;
+}
+
+/**
+ * @brief returns sum min(c_uv, c_vu), which is a lower bound for the instance
+ *
+ * @tparam R crossing number type
+ * @param cr_matrix crossing number matrix
+ * @return uint32_t lower bound for the instance
+ */
+template <typename R>
+uint32_t lower_bound(const folded_matrix<R>& cr_matrix) {
+    const std::size_t n2 = cr_matrix.get_n2();
+    uint32_t lb = 0;
+    for (std::size_t i = 0; i < n2; i += 2) {
+        lb += std::min(cr_matrix.get_element(i), cr_matrix.get_element(i + 1));
+    }
+    return lb;
 }
 
 };  // namespace pace
