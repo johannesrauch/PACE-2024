@@ -112,8 +112,9 @@ int main(int argc, char** argv) {
         test_number_of_crossings_with("medium_test_set/instances");
         test_crossing_numbers_of_with("medium_test_set/instances");
     } else {
-        test_number_of_crossings_with("big_test_set/instances");
-        test_crossing_numbers_of_with("big_test_set/instances");
+        std::string testset{argv[1]};
+        test_number_of_crossings_with(testset + "/instances");
+        test_crossing_numbers_of_with(testset + "/instances");
     }
     std::cout << "TEST::PACE::CROSSING_NUMBER:\t\tOK" << std::endl;
     return 0;
