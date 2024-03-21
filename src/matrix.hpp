@@ -189,6 +189,8 @@ class folded_matrix {
      */
     void clear() { memset(data, 0, sizeof(R) * n2); }
 
+    const R *get_data() const { return data; }
+
     /**
      * @brief returns number of rows (matrix is square)
      */
