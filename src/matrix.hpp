@@ -200,7 +200,7 @@ class folded_matrix {
 
     std::size_t get_n2() const { return n2; }
 
-    const R& get_element(const std::size_t i) {
+    const R& get_element(const std::size_t i) const {
         assert(i < n2);
         return data[i];
     }
