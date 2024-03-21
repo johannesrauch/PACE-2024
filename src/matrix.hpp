@@ -47,7 +47,7 @@ class matrix {
     /**
      * @brief number of columns
      */
-    const std::size_t n;  // number of rows and columns, respectively
+    const std::size_t n;
 
     /**
      * @brief constant pointer to (mutable) data
@@ -66,10 +66,8 @@ class matrix {
 
     /**
      * @brief constructs the crossing number matrix from a bipartite graph
-     * that resembles a one-sided crossing minimization instance.
      *
      * @tparam T vertex type
-     * @param graph
      */
     template <typename T>
     matrix(const bipartite_graph<T> &graph)
@@ -83,9 +81,6 @@ class matrix {
 
     /**
      * @brief initializes a (m x n) matrix with 0s
-     *
-     * @param m
-     * @param n
      */
     matrix(const std::size_t m, const std::size_t n) : m(m), n(n), data(new R[m * n]()) {
         // the additional () initializes memory to 0
@@ -105,33 +100,21 @@ class matrix {
 
     /**
      * @brief returns the number of rows
-     *
-     * @return std::size_t
      */
     std::size_t get_m() const { return m; }
 
     /**
      * @brief returns the number of columns
-     *
-     * @return std::size_t
      */
     std::size_t get_n() const { return n; }
 
     /**
      * @brief returns reference to element at row i and column j
-     *
-     * @param i
-     * @param j
-     * @return R&
      */
     R &operator()(std::size_t i, std::size_t j) { return data[i * n + j]; }
 
     /**
      * @brief returns constant reference to element at row i and column j
-     *
-     * @param i
-     * @param j
-     * @return const R&
      */
     const R &operator()(std::size_t i, std::size_t j) const { return data[i * n + j]; }
 };
