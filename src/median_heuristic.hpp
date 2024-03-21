@@ -215,7 +215,6 @@ class probmedian_heuristic {
      */
     template <std::size_t NOF_ITERATIONS = PACE_CONST_PROBMEDIAN_ITERATIONS>
     uint32_t operator()(std::vector<T>& ordering) {
-        ordering.resize(n_free);
         upper_bound = median_h(ordering);
         // try to find a better solution with probabilistic median heuristic
         for (std::size_t iteration = 0; iteration < NOF_ITERATIONS; ++iteration) {
