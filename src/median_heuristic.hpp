@@ -28,9 +28,10 @@ class median_heuristic {
     const bipartite_graph<T>& graph;
     const std::size_t n_free;
     std::vector<T> medians;
-    shift_heuristic<T, R> shift_h;
 
    public:
+    shift_heuristic<T, R> shift_h;
+
     /**
      * @brief initializes median heuristic for `instance`
      */
