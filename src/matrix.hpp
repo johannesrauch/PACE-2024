@@ -167,7 +167,6 @@ class folded_matrix {
      */
     template <typename T>
     folded_matrix(const bipartite_graph<T> &graph) : folded_matrix(graph.get_n_free()) {
-        assert(n1 > 1);
         fill_crossing_matrix(graph, *this);
     }
 
