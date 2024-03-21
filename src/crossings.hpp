@@ -108,8 +108,9 @@ uint32_t number_of_crossings(const bipartite_graph<T>& graph, const std::vector<
  * @brief returns the number of crossings in the given ordering
  *
  * @tparam T vertex type
- * @tparam R data type
+ * @tparam R crossing number type
  * @param cr_matrix crossing number matrix
+ * @param ordering ordering of free layer
  */
 template <typename T, typename R>
 uint32_t number_of_crossings(const folded_matrix<R>& cr_matrix, const std::vector<T>& ordering) {
@@ -130,6 +131,14 @@ uint32_t number_of_crossings(const folded_matrix<R>& cr_matrix, const std::vecto
     return nof_crossings;
 }
 
+/**
+ * @brief returns the number of crossings in the given ordering
+ *
+ * @tparam T vertex type
+ * @tparam R crossing number type
+ * @param cr_matrix crossing number matrix
+ * @param ordering ordering of free layer
+ */
 template <typename T, typename R>
 uint32_t number_of_crossings(const sparse_matrix<R>& cr_matrix, const std::vector<T>& ordering) {
     const std::size_t n_free = cr_matrix.get_m();
