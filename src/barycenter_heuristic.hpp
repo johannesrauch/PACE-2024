@@ -18,7 +18,7 @@ class barycenter_heuristic {
     const bipartite_graph<T> &graph;
 
     /// @brief number of vertices in the free layer
-    const std::size_t n1;
+    const std::size_t n_free;
 
     /// @brief in-out vector for storing the ordering
     std::vector<T> &ordering;
@@ -36,7 +36,7 @@ class barycenter_heuristic {
     barycenter_heuristic(const bipartite_graph<T> &graph,
                          std::vector<T> &ordering)
         : graph(graph),
-          n1(graph.get_n_free()),
+          n_free(graph.get_n_free()),
           ordering(ordering) {
     }
 
@@ -64,10 +64,10 @@ class barycenter_heuristic {
    private:
     /// @brief initializes `ordering` and computes barycenters and stores them in `barycenters`
     inline void initialize() {
-        ordering.resize(n1);
-        for (T i = 0; i < n1; ++i) ordering[i] = i;
-        barycenters.resize(n1);
-        for (T i = 0; i < n1; ++i) barycenters[i] = barycenter(i);
+        ordering.resize(n_free);
+        for (T i = 0; i < n_free; ++i) ordering[i] = i;
+        barycenters.resize(n_free);
+        for (T i = 0; i < n_free; ++i) barycenters[i] = barycenter(i);
     }
 
     /// @brief returns (sum of every neighbor j of i) / degree(i)
