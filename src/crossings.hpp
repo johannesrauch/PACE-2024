@@ -166,7 +166,7 @@ uint32_t number_of_crossings(const sparse_matrix<R>& cr_matrix, const std::vecto
  * @return uint32_t lower bound for the instance
  */
 template <typename R>
-uint32_t lower_bound(const folded_matrix<R>& cr_matrix) {
+uint32_t get_lower_bound(const folded_matrix<R>& cr_matrix) {
     const std::size_t n2 = cr_matrix.get_n2();
     uint32_t lb = 0;
     for (std::size_t i = 0; i < n2; i += 2) {
