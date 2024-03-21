@@ -140,7 +140,6 @@ class median_heuristic {
  */
 template <typename T, typename R>
 class probmedian_heuristic {
-   protected:
     const bipartite_graph<T>& graph;
     const std::size_t n_free;
     std::vector<T> another_ordering;
