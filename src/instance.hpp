@@ -19,17 +19,23 @@ namespace fs = std::filesystem;
  */
 template <typename T = uint16_t, typename R = uint32_t>
 class instance {
+    /// @brief the bipartite graph to the one-sided crossing minimization instance
     bipartite_graph<T> *graph_;
-    folded_matrix<R> *cr_matrix_;
+
+    /// @brief the crossing number matrix
+    folded_matrix<R> *cr_matrix_{nullptr};
 
    public:
+    const fs::path filepath;
+
     /**
      * @brief constructs graph and crossing matrix based on input from `filepath`
      *
      * @param filepath filepath to instance
      */
-    instance(const fs::path filepath) {
-        graph_ = new bipartite_graph<T>();
+    instance(const fs::path filepath)
+        : graph_(new bipartite_graph<T>()),
+          filepath(filepath) {
         parse_input(filepath, *graph_);
         cr_matrix_ = new folded_matrix<R>(graph_->get_n_free());
         fill_crossing_matrix(*graph_, *cr_matrix_);
