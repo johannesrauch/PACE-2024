@@ -188,8 +188,6 @@ class folded_matrix {
      */
     void clear() { memset(data, 0, sizeof(R) * n2); }
 
-    const R *get_data() const { return data; }
-
     /**
      * @brief returns number of rows (matrix is square)
      */
@@ -199,6 +197,13 @@ class folded_matrix {
      * @brief returns number of columns (matrix is square)
      */
     std::size_t get_n() const { return n1; }
+
+    std::size_t get_n2() const { return n2; }
+
+    const R& get_element(const std::size_t i) {
+        assert(i < n2);
+        return data[i];
+    }
 
     /**
      * @brief converts indices i (row) and j (column) to the
