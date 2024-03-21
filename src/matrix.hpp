@@ -162,10 +162,8 @@ class folded_matrix {
 
     /**
      * @brief constructs the crossing number matrix from a bipartite graph
-     * that resembles a one-sided crossing minimization instance.
      *
      * @tparam T vertex type
-     * @param graph
      */
     template <typename T>
     folded_matrix(const bipartite_graph<T> &graph) : folded_matrix(graph.get_n_free()) {
