@@ -13,7 +13,7 @@ namespace fs = std::filesystem;
 
 /**
  * @brief class that comprises all relevant data for solving the instance
- * 
+ *
  * @tparam T vertex type
  * @tparam R crossing numbers type
  */
@@ -23,6 +23,11 @@ class instance {
     folded_matrix<R> *cr_matrix_;
 
    public:
+    /**
+     * @brief constructs graph and crossing matrix based on input from `filepath`
+     *
+     * @param filepath filepath to instance
+     */
     instance(const fs::path filepath) {
         graph_ = new bipartite_graph<T>();
         parse_input(filepath, *graph_);
