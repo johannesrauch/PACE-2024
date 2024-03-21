@@ -55,7 +55,7 @@ class shift_heuristic {
      */
     template <std::size_t NOF_ITERATIONS = PACE_CONST_SHIFT_ITERATIONS>
     uint32_t operator()(std::vector<T> &ordering) {
-        return operator()<NOF_ITERATIONS>(number_of_crossings(graph, ordering), ordering);
+        return operator()<NOF_ITERATIONS>(ordering, number_of_crossings(graph, ordering));
     }
 
     /**
@@ -66,7 +66,7 @@ class shift_heuristic {
      * @param ordering in-out parameter
      */
     template <std::size_t NOF_ITERATIONS = PACE_CONST_SHIFT_ITERATIONS>
-    uint32_t operator()(const uint32_t nof_crossings, std::vector<T> &ordering) {
+    uint32_t operator()(std::vector<T> &ordering, const uint32_t nof_crossings) {
         PACE_DEBUG_PRINTF("start shift_heuristic\n");
 
         upper_bound = nof_crossings;
