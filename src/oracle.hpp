@@ -1,8 +1,10 @@
 #ifndef PACE_ORACLE_HPP
 #define PACE_ORACLE_HPP
 
-#include "instance.hpp"
 #include "crossings.hpp"
+#include "digraph.hpp"
+#include "index.hpp"
+#include "instance.hpp"
 #include "vector_utils.hpp"
 
 namespace pace {
@@ -26,7 +28,7 @@ class position_oracle {
     const folded_matrix<R> &cr_matrix;
 
     /// @brief lower and upper bound on the optimal value
-    uint32_t lower_bound, upper_bound{0};
+    const uint32_t lower_bound, upper_bound{0};
 
    public:
     /// @brief initializes the oracle
@@ -38,6 +40,43 @@ class position_oracle {
           lower_bound(lower_bound),
           upper_bound(upper_bound) {
         assert(lower_bound <= upper_bound);
+    }
+
+    void build(digraph<T> &digraph, std::vector<int> &magic) {
+        const std::size_t n_free = graph.get_n_free();
+        const std::size_t n_choose_2 = n_free * (n_free - 1) / 2;
+        assert(digraph.get_n() == n_free);
+        assert(magic.size() == n_choose_2);
+
+        digraph.clear_arcs();
+        for (T u = 0; u < n_free; ++u) {
+            for (T v = u + 1; v < n_free; ++v) {
+                switch (foresee(u, v)) {
+                    case u_before_v:
+                        digraph.add_arc(u, v);
+                        magic[flat_index(n_free, u, v)] = -2;
+                        break;
+
+                    case v_before_u:
+                        digraph.add_arc(v, u);
+                        magic[flat_index(n_free, u, v)] = -1;
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+        }
+
+        // transitive hull
+
+        std::size_t j = 0;
+        for (std::size_t i = 0; i < n_choose_2; ++i) {
+            if (magic[i] >= 0) {
+                magic[i] = j;
+                ++j;
+            }
+        }
     }
 
     /// @brief tells you if we are able to fix u < v or v < u
