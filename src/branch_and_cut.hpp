@@ -31,8 +31,8 @@ class branch_and_cut {
     /// @brief a bipartite graph that resembles an instance of one-sided crossing minimization
     const bipartite_graph<T> &graph;
 
-    /// @brief  n1 = graph.get_n1()
-    const std::size_t n1;
+    /// @brief  n_free = graph.get_n_free()
+    const std::size_t n_free;
 
     /// @brief pointer to lp solver
     highs_wrapper lp_solver;
@@ -61,11 +61,11 @@ class branch_and_cut {
      */
     branch_and_cut(bipartite_graph<T> &graph)
         : graph(graph),
-          n1(graph.get_n_free()),
+          n_free(graph.get_n_free()),
           lp_solver(graph),
-          ordering(n1),
-          restriction_graph(n1) {
-        assert(n1 > 0);
+          ordering(n_free),
+          restriction_graph(n_free) {
+        assert(n_free > 0);
     }
 
     // delete copy constructor, move constructor, copy assignment and move assignment
@@ -92,8 +92,8 @@ class branch_and_cut {
 
         // build the constraint graph
         int k = 0;
-        for (T i = 0; i < n1; ++i) {
-            for (T j = i + 1; j < n1; ++j) {
+        for (T i = 0; i < n_free; ++i) {
+            for (T j = i + 1; j < n_free; ++j) {
                 const double x = lp_solver.get_variable_value(k);
                 if (x < 0.5) {
                     restriction_graph.add_arc(j, i);
