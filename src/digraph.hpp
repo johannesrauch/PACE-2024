@@ -20,6 +20,9 @@ class digraph {
     /// @brief stores all neighbors of each vertex
     std::vector<std::vector<T>> adjacency_lists;
 
+    /// @brief to rollback the digraph, see method with same name
+    std::vector<std::size_t> rollback_lists;
+
    public:
     using vertex_type = T;
 
@@ -34,7 +37,7 @@ class digraph {
      *
      * @param n number of vertices
      */
-    digraph(const std::size_t n) : adjacency_lists(n) {}
+    digraph(const std::size_t n) : adjacency_lists(n), rollback_lists(n, 0) {}
 
     /**
      * @brief add arc (u, v)
@@ -74,6 +77,25 @@ class digraph {
     void clear_arcs() {
         for (std::size_t i = 0; i < get_n(); ++i) {
             adjacency_lists[i].clear();
+        }
+    }
+
+    /**
+     * @brief rolls the graph back to how the arcs where when set_rollback_point() was called.
+     * if it was never called, it clears all arcs.
+     */
+    void rollback() {
+        for (std::size_t i = 0; i < get_n(); ++i) {
+            adjacency_lists[i].resize(rollback_lists[i]);
+        }
+    }
+
+    /**
+     * @brief sets the rollback point for rollback()
+     */
+    void set_rollback_point() {
+        for (std::size_t i = 0; i < get_n(); ++i) {
+            rollback_lists[i] = adjacency_lists[i].size();
         }
     }
 };
