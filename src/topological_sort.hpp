@@ -9,6 +9,8 @@
 
 namespace pace {
 
+namespace internal {
+
 /**
  * @brief a depth-first search through the given graph.
  * used by topological_sort below.
@@ -41,6 +43,8 @@ bool topological_sort_dfs(const digraph<T>& graph,
     return true;
 }
 
+};
+
 /**
  * @brief computes a topological sort (if possible) of the given graph
  * and stores it in the vector ordering.
@@ -53,13 +57,14 @@ bool topological_sort_dfs(const digraph<T>& graph,
  */
 template <typename T>
 bool topological_sort(const digraph<T>& graph, std::vector<T>& ordering) {
-    const T n = graph.get_n();
+    const std::size_t n = graph.get_n();
     ordering.clear();
+    ordering.reserve(n);
     std::vector<uint8_t> visited(n, 0);
 
     for (T v = 0; v < n; ++v) {
         if (visited[v] == 0 &&
-            !topological_sort_dfs(graph, ordering, visited, v)) {
+            !internal::topological_sort_dfs(graph, ordering, visited, v)) {
             // cycle found
             return false;
         }
