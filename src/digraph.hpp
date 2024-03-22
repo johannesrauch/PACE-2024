@@ -67,7 +67,7 @@ class digraph {
      * @param v vertex, 0 <= v < get_n()
      * @return const std::vector<T>& neighbors of v
      */
-    const std::vector<T> &get_neighbors(const T v) const {
+    const std::vector<T> &get_neighbors(const std::size_t v) const {
         return adjacency_lists[v];
     }
 
