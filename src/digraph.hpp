@@ -14,7 +14,7 @@ namespace pace {
  *
  * @tparam T vertex type
  */
-template <typename T = uint32_t>
+template <typename T = uint16_t>
 class digraph {
    private:
     /// @brief stores all neighbors of each vertex
