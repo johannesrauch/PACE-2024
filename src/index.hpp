@@ -5,6 +5,14 @@
 
 namespace pace {
 
+/**
+ * @brief maps the index pair (i, j), i < j, to a one-dimensional index
+ * 
+ * @param n the minimum upper bound on a possible j
+ * @param i 
+ * @param j i < j
+ * @return std::size_t one-dimensional index
+ */
 std::size_t flat_index(const std::size_t n, const std::size_t i, const std::size_t j) {
     assert(i < j);
     assert(i < n);
