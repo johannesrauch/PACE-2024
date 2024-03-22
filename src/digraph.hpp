@@ -2,7 +2,6 @@
 #define PACE_DIGRAPH_HPP
 
 #include <cstdint>
-#include <queue>
 #include <vector>
 
 #include "debug_printf.hpp"
