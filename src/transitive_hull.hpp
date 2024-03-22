@@ -2,6 +2,7 @@
 #define PACE_TRANSITIVE_HULL_HPP
 
 #include "digraph.hpp"
+#include "index.hpp"
 
 namespace pace {
 
@@ -34,10 +35,9 @@ void transitive_hull_dfs(const digraph<T> &graph, std::vector<uint8_t> &visited,
  * @param graph input digraph
  */
 template <typename T>
-void transitive_hull(digraph<T> &graph) {
+void transitive_hull(digraph<T> &graph, std::vector<std::pair<T, T>> &new_arcs) {
     const std::size_t n = graph.get_n();
     std::vector<uint8_t> visited(n);
-    std::vector<std::pair<T, T>> new_arcs;
 
     for (T s = 0; s < n; ++s) {
         // initialize visited, visited[v] = 1 if v is a nbor of s or s and 0 otherwise
@@ -53,10 +53,6 @@ void transitive_hull(digraph<T> &graph) {
                 new_arcs.emplace_back(s, v);
             }
         }
-    }
-
-    for (const auto &[u, v] : new_arcs) {
-        graph.add_arc(u, v);
     }
 }
 
