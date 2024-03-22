@@ -35,7 +35,7 @@ void test_pattern_analyzer(const pace::instance<T, R>& instance, const bool do_t
     assert(lb <= ub);
     pace::position_oracle oracle(instance, lb, ub);
 
-    std::vector<std::pair<T, T>> new_fixings;
+    std::vector<std::pair<T, T>> settled_pairs;
     uint32_t c = 0, b = 0, p = 0;
     const std::size_t n = graph.get_n_free();
     for (T u = 0; u < n; ++u) {
@@ -48,21 +48,21 @@ void test_pattern_analyzer(const pace::instance<T, R>& instance, const bool do_t
             pace::pattern pattern = oracle.based_on_crossing_numbers(c_uv, c_vu);
             if (pattern != pace::indeterminate) {
                 ++c;
-                insert_based_on_pattern(new_fixings, u, v, pattern);
+                insert_based_on_pattern(settled_pairs, u, v, pattern);
                 continue;
             }
 
             pattern = oracle.based_on_bounds(c_uv, c_vu);
             if (pattern != pace::indeterminate) {
                 ++b;
-                insert_based_on_pattern(new_fixings, u, v, pattern);
+                insert_based_on_pattern(settled_pairs, u, v, pattern);
                 continue;
             }
 
             pattern = oracle.based_on_pattern(u, v, c_uv, c_vu);
             if (pattern != pace::indeterminate) {
                 ++p;
-                insert_based_on_pattern(new_fixings, u, v, pattern);
+                insert_based_on_pattern(settled_pairs, u, v, pattern);
                 continue;
             }
         }
@@ -72,7 +72,7 @@ void test_pattern_analyzer(const pace::instance<T, R>& instance, const bool do_t
         pace::test::get_ref_ordering(  //
             instance.filepath, graph.get_n_fixed(), graph.get_n_free(), ordering);
         pace::inverse(ordering, positions);
-        for (const auto& [u, v] : new_fixings) {
+        for (const auto& [u, v] : settled_pairs) {
             assert(positions[u] < positions[v]);
         }
     }
@@ -80,7 +80,7 @@ void test_pattern_analyzer(const pace::instance<T, R>& instance, const bool do_t
     std::size_t n_choose_2 = n * (n - 1) / 2;
     fmt::printf("%11s|%11u%11u%11.1f|%11u%11u%11u|%11u%11u\n",
                 instance.filepath.filename(),
-                n_choose_2, new_fixings.size(), static_cast<double>(new_fixings.size()) / n_choose_2 * 100,
+                n_choose_2, settled_pairs.size(), static_cast<double>(settled_pairs.size()) / n_choose_2 * 100,
                 c, b, p, lb, ub);
     std::cout << std::flush;
 }
@@ -89,7 +89,7 @@ void test_pattern_analyzer_with(const fs::path dirpath, const bool do_test) {
     fmt::printf("start test_pattern_analyzer_with(%s)\n\n", dirpath);
     fmt::printf("%11s|%11s%11s%11s|%11s%11s%11s|%11s%11s\n",
                 "instance",
-                "vars", "fixed", "%%",
+                "vars", "settled", "%%",
                 "crossing n", "bounds", "pattern",
                 "lb", "ub");
     pace::test::print_line(103);
