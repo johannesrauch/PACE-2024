@@ -10,7 +10,7 @@ namespace internal {
 
 /**
  * @brief internal dfs method for transitive_hull
- * 
+ *
  * @tparam T vertex type
  * @param graph input digraph
  * @param visited visited[u] = 0 (not visited), = 1 (neighbor of s), >= 2 (visited)
@@ -19,7 +19,7 @@ namespace internal {
 template <typename T>
 void transitive_hull_dfs(const digraph<T> &graph, std::vector<uint8_t> &visited, const T u) {
     visited[v] += 2;
-    for (const T& v : graph.get_neighbors(u)) {
+    for (const T &v : graph.get_neighbors(u)) {
         if (visited[v] <= 1) {
             transitive_hull_dfs(graph, visited, v);
         }
@@ -30,7 +30,7 @@ void transitive_hull_dfs(const digraph<T> &graph, std::vector<uint8_t> &visited,
 
 /**
  * @brief computes the transitive hull of graph
- * 
+ *
  * @tparam T vertex type
  * @param graph input digraph
  */
@@ -54,6 +54,11 @@ void transitive_hull(digraph<T> &graph, std::vector<std::pair<T, T>> &new_arcs) 
             }
         }
     }
+}
+
+template <typename T>
+void transitive_hull_of_acyclic(digraph<T> &graph) {
+    
 }
 
 };  // namespace pace
