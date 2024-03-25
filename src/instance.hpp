@@ -25,6 +25,9 @@ class instance {
     /// @brief the crossing number matrix
     folded_matrix<R> *cr_matrix_{nullptr};
 
+    /// @brief lower bound to the optimal value of this instance
+    uint32_t lower_bound{0};
+
    public:
     const fs::path filepath;
 
@@ -33,12 +36,10 @@ class instance {
      *
      * @param filepath filepath to instance
      */
-    instance(const fs::path filepath)
-        : graph_(new bipartite_graph<T>()),
-          filepath(filepath) {
+    instance(const fs::path filepath) : graph_(new bipartite_graph<T>()), filepath(filepath) {
         parse_input(filepath, *graph_);
         cr_matrix_ = new folded_matrix<R>(graph_->get_n_free());
-        fill_crossing_matrix(*graph_, *cr_matrix_);
+        lower_bound = fill_crossing_matrix(*graph_, *cr_matrix_);
     }
 
     // delete copy and move constructor as well as copy and move assignment
@@ -54,8 +55,11 @@ class instance {
 
     const bipartite_graph<T> &graph() const { return *graph_; }
     bipartite_graph<T> &graph() { return *graph_; }
+
     const folded_matrix<R> &cr_matrix() const { return *cr_matrix_; }
     folded_matrix<R> &cr_matrix() { return *cr_matrix_; }
+
+    const uint32_t &get_lower_bound() const { return lower_bound; }
 };
 
 };  // namespace pace
