@@ -25,7 +25,7 @@ void insert_based_on_pattern(
 }
 
 template <typename T, typename R>
-void test_pattern_analyzer(const pace::instance<T, R>& instance, const bool do_test) {
+void test_position_oracle(const pace::instance<T, R>& instance, const bool do_test) {
     const pace::bipartite_graph<T>& graph(instance.graph());
     const pace::folded_matrix<R>& cr_matrix(instance.cr_matrix());
     std::vector<T> ordering;
@@ -95,7 +95,7 @@ void test_pattern_analyzer_with(const fs::path dirpath, const bool do_test) {
     pace::test::print_line(103);
     for (const auto& file : fs::directory_iterator(dirpath)) {
         pace::instance instance(file.path());
-        test_pattern_analyzer(instance, do_test);
+        test_position_oracle(instance, do_test);
     }
     fmt::printf("\nend test_pattern_analyzer_with(%s)\n\n", dirpath);
 }
