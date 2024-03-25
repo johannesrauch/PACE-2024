@@ -1,8 +1,11 @@
 #ifndef PACE_TRANSITIVE_HULL_HPP
 #define PACE_TRANSITIVE_HULL_HPP
 
+#include <unordered_set>
+
 #include "digraph.hpp"
 #include "index.hpp"
+#include "topological_sort.hpp"
 
 namespace pace {
 
@@ -18,7 +21,7 @@ namespace internal {
  */
 template <typename T>
 void transitive_hull_dfs(const digraph<T> &graph, std::vector<uint8_t> &visited, const T u) {
-    visited[v] += 2;
+    visited[u] += 2;
     for (const T &v : graph.get_neighbors(u)) {
         if (visited[v] <= 1) {
             transitive_hull_dfs(graph, visited, v);
@@ -35,7 +38,7 @@ void transitive_hull_dfs(const digraph<T> &graph, std::vector<uint8_t> &visited,
  * @param graph input digraph
  */
 template <typename T>
-void transitive_hull(digraph<T> &graph, std::vector<std::pair<T, T>> &new_arcs) {
+void transitive_hull(const digraph<T> &graph, std::vector<std::pair<T, T>> &new_arcs) {
     const std::size_t n = graph.get_n();
     std::vector<uint8_t> visited(n);
 
@@ -57,8 +60,36 @@ void transitive_hull(digraph<T> &graph, std::vector<std::pair<T, T>> &new_arcs) 
 }
 
 template <typename T>
-void transitive_hull_of_acyclic(digraph<T> &graph) {
-    
+void transitive_hull_of_acyclic(const digraph<T> &graph, std::vector<std::pair<T, T>> &new_arcs) {
+    const std::size_t n = graph.get_n();
+    assert(n > 0);
+    std::vector<T> ordering;
+    bool is_acyclic = topological_sort(graph, ordering);
+    (void)is_acyclic;  // to suppress warning
+    assert(is_acyclic);
+
+    std::vector<std::unordered_set<T>> adjacency_lists(n);
+    for (std::size_t u = 0; u < n; ++u) {
+        const std::vector<T> &nbors = graph.get_neighbors(u);
+        adjacency_lists[u].insert(nbors.begin(), nbors.end());
+    }
+
+    new_arcs.clear();
+    for (std::size_t i = n - 1;; --i) {
+        const T &u = ordering[i];
+        std::unordered_set<T> new_neighbors;
+        for (const T &v : adjacency_lists[u]) {
+            new_neighbors.insert(adjacency_lists[v].begin(), adjacency_lists[v].end());
+        }
+        for (const T &v : new_neighbors) {
+            if (adjacency_lists[u].count(v) == 0) {
+                new_arcs.emplace_back(u, v);
+            }
+        }
+        adjacency_lists[u].insert(new_neighbors.begin(), new_neighbors.end());
+
+        if (i == 0) break;
+    }
 }
 
 };  // namespace pace
