@@ -5,6 +5,7 @@
 #include "digraph.hpp"
 #include "index.hpp"
 #include "instance.hpp"
+#include "transitive_hull.hpp"
 #include "vector_utils.hpp"
 
 namespace pace {
@@ -69,6 +70,16 @@ class position_oracle {
         }
 
         // transitive hull
+        std::vector<std::pair<T, T>> new_arcs;
+        pace::transitive_hull(digraph, new_arcs);
+        for (const auto &[u, v] : new_arcs) {
+            graph.add_arc(u, v);
+            if (u < v) {
+                magic[flat_index(u, v)] = -2;
+            } else {
+                magic[flat_index(v, u)] = -1;
+            }
+        }
 
         std::size_t j = 0;
         for (std::size_t i = 0; i < n_choose_2; ++i) {
