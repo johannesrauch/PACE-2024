@@ -13,7 +13,7 @@ namespace pace {
  * @param j i < j
  * @return std::size_t one-dimensional index
  */
-std::size_t flat_index(const std::size_t n, const std::size_t i, const std::size_t j) {
+inline std::size_t flat_index(const std::size_t &n, const std::size_t &i, const std::size_t &j) {
     assert(i < j);
     assert(i < n);
     assert(j < n);
