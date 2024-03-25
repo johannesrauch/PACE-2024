@@ -146,7 +146,7 @@ class probmedian_heuristic {
     std::vector<T> medians;
     std::vector<T> randomized_medians;
     std::uniform_real_distribution<> distribution{0.0957, 0.9043};  // from Nagamochi's paper
-    uint32_t upper_bound{0};
+    uint32_t lower_bound, upper_bound{0};
     median_heuristic<T, R> median_h;
     shift_heuristic<T, R> shift_h;
 
@@ -164,6 +164,7 @@ class probmedian_heuristic {
           another_ordering(n_free),
           medians(n_free),
           randomized_medians(n_free),
+          lower_bound(instance.get_lower_bound()),
           median_h(instance),
           shift_h(instance) {
         for (T i = 0; i < n_free; ++i) another_ordering[i] = i;
@@ -216,7 +217,7 @@ class probmedian_heuristic {
     uint32_t operator()(std::vector<T>& ordering) {
         upper_bound = median_h(ordering);
         // try to find a better solution with probabilistic median heuristic
-        for (std::size_t iteration = 0; iteration < NOF_ITERATIONS; ++iteration) {
+        for (std::size_t i = 0; lower_bound < upper_bound && i < NOF_ITERATIONS; ++i) {
             uint32_t candidate = generate_another_ordering();
             if (candidate < upper_bound) {
                 upper_bound = candidate;
