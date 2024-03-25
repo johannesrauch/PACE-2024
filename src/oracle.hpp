@@ -47,9 +47,10 @@ class position_oracle {
         const std::size_t n_free = graph.get_n_free();
         const std::size_t n_choose_2 = n_free * (n_free - 1) / 2;
         assert(digraph.get_n() == n_free);
-        assert(magic.size() == n_choose_2);
 
         digraph.clear_arcs();
+        magic.clear();
+        magic.resize(n_choose_2);
         for (T u = 0; u < n_free; ++u) {
             for (T v = u + 1; v < n_free; ++v) {
                 switch (foresee(u, v)) {
