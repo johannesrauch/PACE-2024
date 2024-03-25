@@ -25,7 +25,7 @@ template <typename T, class MATRIX>
 void fill_crossing_matrix_binary_search(const bipartite_graph<T> &graph, MATRIX &cr_matrix);
 
 template <typename T, class MATRIX>
-void fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix);
+uint32_t fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix);
 
 //
 // matrix types
@@ -404,7 +404,7 @@ void fill_crossing_matrix_binary_search(const bipartite_graph<T> &graph, MATRIX 
  * @param cr_matrix
  */
 template <typename T, class MATRIX>
-void fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
+uint32_t fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
     assert(graph.get_n_free() == cr_matrix.get_n());
     using R = typename MATRIX::datatype;
 
@@ -432,6 +432,7 @@ void fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
         }
     }
 
+    uint32_t lb = 0;
     for (T v = 0; v < n1; ++v) {
         const auto &neighbors_v = graph.get_neighbors_of_free(v);
         const std::size_t deg_v = neighbors_v.size();
@@ -458,8 +459,12 @@ void fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
             const R c_wv = deg_v * deg_w - nof_common_nbors - c_vw;
             cr_matrix.insert(w, v, c_wv);
             // cr_matrix(w, v) = c_wv;
+
+            lb += std::min(c_vw, c_wv);
         }
     }
+
+    return lb;
 }
 
 namespace test {
