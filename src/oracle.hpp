@@ -92,7 +92,7 @@ class oracle {
 
         std::size_t i = 0, j = 0;
         for (T u = 0; u < n; ++u) {
-            for (T v = 0; v < n; ++v) {
+            for (T v = u + 1; v < n; ++v) {
                 assert(i < n_choose_2);
                 if (magic[i] >= 0) {
                     magic[i] = j;

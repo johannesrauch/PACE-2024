@@ -8,6 +8,7 @@
 #include <cfloat>
 #include <cmath>
 #include <functional>
+#include <limits>
 #include <stack>
 #include <type_traits>
 #include <unordered_map>
@@ -28,20 +29,17 @@ namespace pace {
 template <typename T, typename R>
 class branch_and_cut {
    private:
-    /// @brief a bipartite graph that resembles an instance of one-sided crossing minimization
-    const bipartite_graph<T> &graph;
+    /// @brief the instance
+    const pace::instance<T, R> &instance;
 
     /// @brief  n_free = graph.get_n_free()
     const std::size_t n_free;
-
-    /// @brief lp wrapper
-    highs_wrapper<T> lp_solver;
 
     /// @brief lower bound on the optimal value of the instance
     const uint32_t &lower_bound;
 
     /// @brief current best upper bound on the optimal value of the instance
-    uint32_t upper_bound{0};
+    uint32_t upper_bound{std::numeric_limits<uint32_t>::max()};
 
     /// @brief ordering corresponding to upper_bound
     std::vector<T> ordering;
@@ -59,36 +57,27 @@ class branch_and_cut {
      */
     std::vector<int> magic;
 
+    /// @brief contains pairs not settled by the oracle
     std::vector<std::pair<T, T>> unsettled;
 
     /// @brief for branching
     std::stack<std::pair<int, bool>> stack;
 
+    /// @brief lp wrapper
+    highs_wrapper<T> lp_solver;
+
    public:
     /**
-     * @brief constructs and initializes the branch and cut solver     *
-     *
-     * @param graph input graph
+     * @brief constructs and initializes the branch and cut solver
      */
-    branch_and_cut(const instance<T, R> &instance)
-        : graph(instance.graph()),
-          n_free(graph.get_n_free()),
-          lp_solver(instance, magic),
+    branch_and_cut(const pace::instance<T, R> &instance)
+        : instance(instance),
+          n_free(instance.graph().get_n_free()),
           lower_bound(instance.get_lower_bound()),
           ordering(n_free),
-          restriction_graph(n_free) {
+          restriction_graph(n_free),
+          lp_solver(instance, magic) {
         assert(n_free > 0);
-
-        PACE_DEBUG_PRINTF("start heuristic\n");
-        upper_bound = heuristics(instance, ordering);
-        PACE_DEBUG_PRINTF("end   heuristic\n");
-
-        if (lower_bound >= upper_bound) {
-            PACE_DEBUG_PRINTF("start oracle\n");
-            oracle<T, R> oracle(instance, upper_bound);
-            oracle.build(restriction_graph, magic, unsettled);
-            PACE_DEBUG_PRINTF("end   oracle\n");
-        }
     }
 
     // delete copy constructor, move constructor, copy assignment and move assignment
@@ -221,31 +210,37 @@ class branch_and_cut {
      * @param do_print to print or not to print (the solution)
      */
     void run(bool do_print = true) {
-        if (upper_bound == 0) return;
+        PACE_DEBUG_PRINTF("start heuristic\n");
+        upper_bound = heuristics(instance, ordering);
+        PACE_DEBUG_PRINTF("end   heuristic\n");
+        if (lower_bound >= upper_bound) return;
 
-        // solve lp
-        lp_solver.run();
-        assert(lp_solver.is_optimal());
+        PACE_DEBUG_PRINTF("start oracle\n");
+        oracle<T, R> oracle(instance, upper_bound);
+        oracle.build(restriction_graph, magic, unsettled);
+        PACE_DEBUG_PRINTF("end   oracle\n");
 
-        // get value of current optimal solution and call branch_and_bound_and_cut with it
-        bool is_optimum = branch_and_bound_and_cut();
-
-        // driver loop
-        for (std::size_t iteration = 2; !is_optimum; ++iteration) {
-            PACE_DEBUG_PRINTF("iteration=%5llu, depth=%5llu, upper_bound=%5lu, nof_rows=%5d\n",
-                              iteration, stack.size(), upper_bound, lp_solver.get_nof_rows());
-
-            // solve lp
+        // driver loop for branch and cut
+        std::size_t iteration = 0;
+        do {
+            (void) iteration;
+            PACE_DEBUG_PRINTF(
+                "iteration=%5u, "
+                "depth=%5u, "
+                "objective_val=%5.0f, "
+                "upper_bound=%5u, "
+                "nof_rows=%5u\n",
+                iteration++,                      //
+                stack.size(),                     //
+                lp_solver.get_objective_value(),  //
+                upper_bound,                      //
+                lp_solver.get_nof_rows());
             lp_solver.run();
+        } while (!branch_and_bound_and_cut());
 
-            // branch or cut
-            is_optimum = branch_and_bound_and_cut();
-        }
-
-        // output
-        PACE_DEBUG_PRINTF("OPTIMAL VALUE: %lu\n", upper_bound);
+        PACE_DEBUG_PRINTF("OPTIMAL VALUE: %u\n", upper_bound);
         if (do_print) {
-            print_output(graph.get_n_fixed(), ordering);
+            print_output(instance.graph().get_n_fixed(), ordering);
         }
     }
 

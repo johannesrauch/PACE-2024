@@ -171,8 +171,6 @@ class highs_wrapper : public lp_wrapper {
         status = lp.setOptionValue("log_to_console", false);
         assert(status == HighsStatus::kOk);
 
-        add_columns(instance);
-
         rows_to_delete.reserve(PACE_CONST_NOF_CYCLE_CONSTRAINTS);
         lower_bounds.reserve(PACE_CONST_NOF_CYCLE_CONSTRAINTS);
         upper_bounds.reserve(PACE_CONST_NOF_CYCLE_CONSTRAINTS);
@@ -373,6 +371,8 @@ class highs_wrapper : public lp_wrapper {
                         change_column_cost(l, c_uv - c_vu);
                     }
                 }
+
+                ++k;
             }
         }
 
