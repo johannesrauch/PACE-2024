@@ -10,9 +10,7 @@
 
 namespace pace {
 
-enum pattern { indeterminate = 0,
-               u_before_v,
-               v_before_u };
+enum pattern { indeterminate = 0, u_before_v, v_before_u };
 
 /**
  * @brief oracle that tells you if we are able to fix u < v or v < u
@@ -33,7 +31,7 @@ class position_oracle {
 
    public:
     /// @brief initializes the oracle
-    position_oracle(const instance<T, R> &instance,
+    position_oracle(const instance<T, R> &instance,  //
                     const uint32_t lower_bound,
                     const uint32_t upper_bound)
         : graph(instance.graph()),  //
@@ -43,6 +41,14 @@ class position_oracle {
         assert(lower_bound <= upper_bound);
     }
 
+    // todo: vertices with equal neighborhoods
+
+    /**
+     * @brief builds the restriction (di)graph and the magic vector
+     *
+     * @param digraph out parameter
+     * @param magic out parameter
+     */
     void build(digraph<T> &digraph, std::vector<int> &magic) {
         const std::size_t n_free = graph.get_n_free();
         const std::size_t n_choose_2 = n_free * (n_free - 1) / 2;
