@@ -32,11 +32,9 @@ void test_position_oracle(const pace::instance<T, R>& instance, const bool do_te
     const pace::bipartite_graph<T>& graph(instance.graph());
     const pace::folded_matrix<R>& cr_matrix(instance.cr_matrix());
     std::vector<T> ordering;
-    const uint32_t lb = instance.get_lower_bound();
     const uint32_t ub = pace::heuristics(instance, ordering);
-    assert(lb <= ub);
     pace::digraph digraph(graph.get_n_free());
-    pace::position_oracle oracle(instance, lb, ub);
+    pace::oracle oracle(instance, ub);
 
     std::vector<std::pair<T, T>> settled_pairs;
     uint32_t c = 0, b = 0, p = 0;
@@ -94,7 +92,7 @@ void test_position_oracle(const pace::instance<T, R>& instance, const bool do_te
                 n_choose_2, settled_pairs.size(),
                 static_cast<double>(settled_pairs.size()) / n_choose_2 * 100,  //
                 c, b, p, h,                                                    //
-                lb, optimal, ub);
+                instance.get_lower_bound(), optimal, ub);
     std::cout << std::flush;
 }
 

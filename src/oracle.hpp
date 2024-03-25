@@ -19,7 +19,7 @@ enum pattern { indeterminate = 0, u_before_v, v_before_u };
  * @tparam R crossing number type
  */
 template <typename T, typename R>
-class position_oracle {
+class oracle {
     /// @brief instance graph
     const bipartite_graph<T> &graph;
 
@@ -31,12 +31,10 @@ class position_oracle {
 
    public:
     /// @brief initializes the oracle
-    position_oracle(const instance<T, R> &instance,  //
-                    const uint32_t lower_bound,
-                    const uint32_t upper_bound)
+    oracle(const instance<T, R> &instance, const uint32_t upper_bound)
         : graph(instance.graph()),  //
           cr_matrix(instance.cr_matrix()),
-          lower_bound(lower_bound),
+          lower_bound(instance.get_lower_bound()),
           upper_bound(upper_bound) {
         assert(lower_bound <= upper_bound);
     }
@@ -46,28 +44,31 @@ class position_oracle {
     /**
      * @brief builds the restriction (di)graph and the magic vector
      *
-     * @param digraph out parameter
+     * @param graph out parameter
      * @param magic out parameter
      */
-    void build(digraph<T> &digraph, std::vector<int> &magic) {
-        const std::size_t n_free = graph.get_n_free();
-        const std::size_t n_choose_2 = n_free * (n_free - 1) / 2;
-        assert(digraph.get_n() == n_free);
+    void build(digraph<T> &restriction_graph,  //
+               std::vector<int> &magic,        //
+               std::vector<std::pair<T, T>> &unsettled) {
+        const std::size_t n = graph.get_n_free();
+        assert(n > 0);
+        const std::size_t n_choose_2 = n * (n - 1) / 2;
+        assert(restriction_graph.get_n() == n);
 
-        digraph.clear_arcs();
+        restriction_graph.clear_arcs();
         magic.clear();
         magic.resize(n_choose_2);
-        for (T u = 0; u < n_free; ++u) {
-            for (T v = u + 1; v < n_free; ++v) {
+        for (T u = 0; u < n; ++u) {
+            for (T v = u + 1; v < n; ++v) {
                 switch (foresee(u, v)) {
                     case u_before_v:
-                        digraph.add_arc(u, v);
-                        magic[flat_index(n_free, u, v)] = -2;
+                        restriction_graph.add_arc(u, v);
+                        magic[flat_index(n, u, v)] = -2;
                         break;
 
                     case v_before_u:
-                        digraph.add_arc(v, u);
-                        magic[flat_index(n_free, u, v)] = -1;
+                        restriction_graph.add_arc(v, u);
+                        magic[flat_index(n, u, v)] = -1;
                         break;
 
                     default:
@@ -78,21 +79,27 @@ class position_oracle {
 
         // transitive hull
         std::vector<std::pair<T, T>> new_arcs;
-        pace::transitive_hull(digraph, new_arcs);
+        pace::transitive_hull(restriction_graph, new_arcs);
         for (const auto &[u, v] : new_arcs) {
-            graph.add_arc(u, v);
+            restriction_graph.add_arc(u, v);
             if (u < v) {
-                magic[flat_index(u, v)] = -2;
+                magic[flat_index(n, u, v)] = -2;
             } else {
-                magic[flat_index(v, u)] = -1;
+                magic[flat_index(n, v, u)] = -1;
             }
         }
+        restriction_graph.set_rollback_point();
 
-        std::size_t j = 0;
-        for (std::size_t i = 0; i < n_choose_2; ++i) {
-            if (magic[i] >= 0) {
-                magic[i] = j;
-                ++j;
+        std::size_t i = 0, j = 0;
+        for (T u = 0; u < n; ++u) {
+            for (T v = 0; v < n; ++v) {
+                assert(i < n_choose_2);
+                if (magic[i] >= 0) {
+                    magic[i] = j;
+                    unsettled.emplace_back(u, v);
+                    ++j;
+                }
+                ++i;
             }
         }
     }
@@ -192,7 +199,6 @@ class position_oracle {
             return v_before_u;
     }
 };
-
 };  // namespace pace
 
 #endif
