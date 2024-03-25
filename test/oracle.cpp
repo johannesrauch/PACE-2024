@@ -32,7 +32,7 @@ void test_position_oracle(const pace::instance<T, R>& instance, const bool do_te
     const pace::bipartite_graph<T>& graph(instance.graph());
     const pace::folded_matrix<R>& cr_matrix(instance.cr_matrix());
     std::vector<T> ordering;
-    const uint32_t lb = pace::get_lower_bound(cr_matrix);
+    const uint32_t lb = instance.get_lower_bound();
     const uint32_t ub = pace::heuristics(instance, ordering);
     assert(lb <= ub);
     pace::digraph digraph(graph.get_n_free());
