@@ -23,6 +23,8 @@ inline void inverse(const std::vector<T> &in, std::vector<T> &out) {
     }
 }
 
+// todo: use stdlib functions
+
 /**
  * @brief returns the median of the vector vec
  *
