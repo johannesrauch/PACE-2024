@@ -17,7 +17,7 @@ namespace fs = std::filesystem;
 template <typename T, typename R>
 void test_branch_and_cut_with(const pace::instance<T, R>& instance) {
     pace::branch_and_cut solver(instance);
-    solver.run();
+    solver.run(false);
 
     uint32_t test = solver.get_nof_crossings();
     uint32_t ref = pace::test::get_ref_nof_crossings(instance.filepath);
@@ -25,7 +25,8 @@ void test_branch_and_cut_with(const pace::instance<T, R>& instance) {
     assert(test == pace::number_of_crossings(instance.graph(), solver.get_ordering()));
     (void) ref;
 
-    fmt::printf("%s", instance.filepath);
+    fmt::printf("%s\n", instance.filepath);
+    std::cout<<std::flush;
 }
 
 void test_branch_and_cut(const fs::path dirpath) {
