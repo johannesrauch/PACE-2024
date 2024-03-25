@@ -32,10 +32,11 @@ void transitive_hull_dfs(const digraph<T> &graph, std::vector<uint8_t> &visited,
 };  // namespace internal
 
 /**
- * @brief computes the transitive hull of graph
+ * @brief computes the transitive hull of digraph
  *
  * @tparam T vertex type
  * @param graph input digraph
+ * @param new_arcs out parameter; new arcs are stored here
  */
 template <typename T>
 void transitive_hull(const digraph<T> &graph, std::vector<std::pair<T, T>> &new_arcs) {
@@ -59,6 +60,13 @@ void transitive_hull(const digraph<T> &graph, std::vector<std::pair<T, T>> &new_
     }
 }
 
+/**
+ * @brief computes the transitive hull of an cyclic digraph (Purdom's algorithm)
+ *
+ * @tparam T vertex type
+ * @param graph input digraph
+ * @param new_arcs out parameter; new arcs are stored here
+ */
 template <typename T>
 void transitive_hull_of_acyclic(const digraph<T> &graph, std::vector<std::pair<T, T>> &new_arcs) {
     const std::size_t n = graph.get_n();
