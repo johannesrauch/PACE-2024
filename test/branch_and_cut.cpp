@@ -20,7 +20,7 @@ void test_branch_and_cut_with(const pace::instance<T, R>& instance) {
     std::cout << std::flush;
 
     pace::branch_and_cut solver(instance);
-    solver.run(false);
+    solver.template operator()<false>();
 
     uint32_t test = solver.get_nof_crossings();
     uint32_t ref = pace::test::get_ref_nof_crossings(instance.filepath);

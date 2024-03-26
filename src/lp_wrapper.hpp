@@ -159,7 +159,7 @@ class highs_wrapper : public lp_wrapper {
 
    public:
     template <typename R>
-    highs_wrapper(const instance<T, R> &instance, const std::vector<int> &magic)
+    highs_wrapper(const instance<T, R> &instance, const std::vector<int> &magic, const uint32_t objective_offset)
         : lp_wrapper(instance.graph().get_n_free(), instance.get_lower_bound()), magic(magic) {
         // configure highs lp solver
         status = lp.setOptionValue("presolve", "off");
@@ -177,6 +177,8 @@ class highs_wrapper : public lp_wrapper {
         starts.reserve(PACE_CONST_NOF_CYCLE_CONSTRAINTS);
         indices.reserve(3 * PACE_CONST_NOF_CYCLE_CONSTRAINTS);
         values.reserve(3 * PACE_CONST_NOF_CYCLE_CONSTRAINTS);
+
+        add_columns(instance, objective_offset);
     }
 
     highs_wrapper(const highs_wrapper &rhs) = delete;
@@ -349,8 +351,7 @@ class highs_wrapper : public lp_wrapper {
      * @param instance the instance
      */
     template <typename R>
-    inline void add_columns(const instance<T, R> &instance) {
-        double objetive_offset = 0.;
+    inline void add_columns(const instance<T, R> &instance, uint32_t objective_offset) {
         const folded_matrix<R> &cr_matrix = instance.cr_matrix();
 
         // add variables which are not yet settled
@@ -364,11 +365,11 @@ class highs_wrapper : public lp_wrapper {
                     assert(l == magic[k]);
                     add_column();
 
-                    const double &c_uv = cr_matrix(u, v);
-                    const double &c_vu = cr_matrix(v, u);
-                    objetive_offset += c_vu;
+                    const R &c_uv = cr_matrix(u, v);
+                    const R &c_vu = cr_matrix(v, u);
+                    objective_offset += c_vu;
                     if (c_uv != c_vu) {
-                        change_column_cost(l, c_uv - c_vu);
+                        change_column_cost(l, static_cast<double>(c_uv) - static_cast<double>(c_vu));
                     }
                 }
 
@@ -377,7 +378,7 @@ class highs_wrapper : public lp_wrapper {
         }
 
         // set constant term (shift/offset) in the objective function
-        lp.changeObjectiveOffset(objetive_offset);
+        lp.changeObjectiveOffset(objective_offset);
 
         assert(get_nof_cols() <= n1_choose_2);
     }
@@ -492,7 +493,7 @@ class highs_wrapper : public lp_wrapper {
         PACE_DEBUG_PRINTF("\tstart check_3cycles\n");
 
         clear_buckets();
-        bool break_for_loops;
+        bool break_for_loops = false;
         for (T u = 0; u < n1 - 2; ++u) {
             for (T v = u + 1; v < n1 - 1; ++v) {
                 for (T w = v + 1; w < n1; ++w) {

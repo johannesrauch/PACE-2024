@@ -64,7 +64,7 @@ class branch_and_cut {
     std::stack<std::pair<int, bool>> stack;
 
     /// @brief lp wrapper
-    highs_wrapper<T> lp_solver;
+    highs_wrapper<T> *lp_solver{nullptr};
 
    public:
     /**
@@ -75,9 +75,14 @@ class branch_and_cut {
           n_free(instance.graph().get_n_free()),
           lower_bound(instance.get_lower_bound()),
           ordering(n_free),
-          restriction_graph(n_free),
-          lp_solver(instance, magic) {
+          restriction_graph(n_free) {
         assert(n_free > 0);
+    }
+
+    ~branch_and_cut() {
+        if (lp_solver != nullptr) {
+            delete lp_solver;
+        }
     }
 
     // delete copy constructor, move constructor, copy assignment and move assignment
@@ -99,12 +104,12 @@ class branch_and_cut {
      * @pre lp solution integral
      */
     void compute_ordering() {
-        assert(lp_solver.is_integral() == -1);
+        assert(lp_solver->is_integral() == -1);
         restriction_graph.rollback();
 
         // build the constraint graph
         for (std::size_t i = 0; i < unsettled.size(); ++i) {
-            const double x = lp_solver.get_column_value(i);
+            const double x = lp_solver->get_column_value(i);
             const auto &[u, v] = unsettled[i];
             if (x < 0.5) {
                 restriction_graph.add_arc(v, u);
@@ -117,8 +122,9 @@ class branch_and_cut {
         bool acyclic = topological_sort(restriction_graph, ordering);
         (void)acyclic;  // suppress unused warning
         assert(acyclic);
-        const uint32_t new_upper_bound = lp_solver.get_rounded_objective_value();
+        const uint32_t new_upper_bound = lp_solver->get_rounded_objective_value();
         assert(new_upper_bound < upper_bound);
+        assert(new_upper_bound == number_of_crossings(instance.graph(), ordering));
         upper_bound = new_upper_bound;
     }
 
@@ -141,12 +147,12 @@ class branch_and_cut {
             stack.pop();
 
             if (fix_opposite) {
-                lp_solver.fix_column(j, lp_solver.get_variable_value(j) > 0.5 ? 0. : 1.);
+                lp_solver->fix_column(j, lp_solver->get_variable_value(j) > 0.5 ? 0. : 1.);
                 PACE_DEBUG_PRINTF("(backtrack)\n");
                 stack.emplace(j, false);
                 break;
             } else {
-                lp_solver.unfix_column(j);
+                lp_solver->unfix_column(j);
                 PACE_DEBUG_PRINTF("unfixed variable %5d\n(backtrack)\n", j);
             }
         }
@@ -156,7 +162,7 @@ class branch_and_cut {
     /// @brief branches by fixing a column
     void branch(const int &j) {
         // todo: more sophisticated fixing
-        lp_solver.fix_column(j, 0.);
+        lp_solver->fix_column(j, 0.);
         PACE_DEBUG_PRINTF("(branch)\n");
         stack.emplace(j, true);
     }
@@ -172,28 +178,29 @@ class branch_and_cut {
      */
     inline bool branch_and_bound_and_cut() {
         // test if the lp is optimal
-        if (!lp_solver.is_optimal()) {
+        if (!lp_solver->is_optimal()) {
             return backtrack();
         }
 
         // test if we are worse than our current solution
-        const double value = lp_solver.get_objective_value();
+        const double value = lp_solver->get_objective_value();
         if (static_cast<double>(upper_bound) <= value) {
             return backtrack();
         }
 
         // try to generate cutting planes
-        bool successful = lp_solver.cut();
+        bool successful = lp_solver->cut();
         if (successful) {
-            if (stack.empty()) lp_solver.delete_positive_slack_rows();
+            if (stack.empty()) lp_solver->delete_positive_slack_rows();
             return false;
         }
 
-        const int j = lp_solver.is_integral();
+        const int j = lp_solver->is_integral();
         // test if solution is integral, then we found a better solution
         if (j == -1) {
             compute_ordering();
-            lp_solver.fix_columns(upper_bound);
+            PACE_DEBUG_PRINTF("\tfound a better solution with %u crossings\n", upper_bound);
+            lp_solver->fix_columns(upper_bound);
             return backtrack();
         }
 
@@ -209,39 +216,45 @@ class branch_and_cut {
      *
      * @param do_print to print or not to print (the solution)
      */
-    void run(bool do_print = true) {
+    template <bool DO_OUTPUT_PRINT = true>
+    uint32_t operator()() {
         PACE_DEBUG_PRINTF("start heuristic\n");
         upper_bound = heuristics(instance, ordering);
         PACE_DEBUG_PRINTF("end   heuristic\n");
-        if (lower_bound >= upper_bound) return;
+        if (lower_bound >= upper_bound) return upper_bound;
 
-        PACE_DEBUG_PRINTF("start oracle\n");
-        oracle<T, R> oracle(instance, upper_bound);
-        oracle.build(restriction_graph, magic, unsettled);
-        PACE_DEBUG_PRINTF("end   oracle\n");
+        if (lp_solver == nullptr) {
+            PACE_DEBUG_PRINTF("start oracle\n");
+            oracle<T, R> oracle(instance, upper_bound);
+            const uint32_t objective_offset = oracle.build(restriction_graph, magic, unsettled);
+            PACE_DEBUG_PRINTF("end   oracle\n");
+
+            lp_solver = new highs_wrapper<T>(instance, magic, objective_offset);
+        }
 
         // driver loop for branch and cut
         std::size_t iteration = 0;
         do {
-            (void) iteration;
+            (void)iteration;
             PACE_DEBUG_PRINTF(
                 "iteration=%5u, "
                 "depth=%5u, "
                 "objective_val=%5.0f, "
                 "upper_bound=%5u, "
                 "nof_rows=%5u\n",
-                iteration++,                      //
-                stack.size(),                     //
-                lp_solver.get_objective_value(),  //
-                upper_bound,                      //
-                lp_solver.get_nof_rows());
-            lp_solver.run();
+                iteration++,                       //
+                stack.size(),                      //
+                lp_solver->get_objective_value(),  //
+                upper_bound,                       //
+                lp_solver->get_nof_rows());
+            lp_solver->run();
         } while (!branch_and_bound_and_cut());
 
-        PACE_DEBUG_PRINTF("OPTIMAL VALUE: %u\n", upper_bound);
-        if (do_print) {
+        PACE_DEBUG_PRINTF("OPTIMAL VALUE:   %u\n", upper_bound);
+        if constexpr (DO_OUTPUT_PRINT) {
             print_output(instance.graph().get_n_fixed(), ordering);
         }
+        return upper_bound;
     }
 
     //

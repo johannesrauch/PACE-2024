@@ -5,12 +5,15 @@
 #include "digraph.hpp"
 #include "index.hpp"
 #include "instance.hpp"
+#include "topological_sort.hpp"
 #include "transitive_hull.hpp"
 #include "vector_utils.hpp"
 
 namespace pace {
 
-enum pattern { indeterminate = 0, u_before_v, v_before_u };
+enum pattern { indeterminate = 0,
+               u_before_v,
+               v_before_u };
 
 /**
  * @brief oracle that tells you if we are able to fix u < v or v < u
@@ -47,9 +50,9 @@ class oracle {
      * @param graph out parameter
      * @param magic out parameter
      */
-    void build(digraph<T> &restriction_graph,  //
-               std::vector<int> &magic,        //
-               std::vector<std::pair<T, T>> &unsettled) {
+    uint32_t build(digraph<T> &restriction_graph,  //
+                   std::vector<int> &magic,        //
+                   std::vector<std::pair<T, T>> &unsettled) {
         const std::size_t n = graph.get_n_free();
         assert(n > 0);
         const std::size_t n_choose_2 = n * (n - 1) / 2;
@@ -58,17 +61,20 @@ class oracle {
         restriction_graph.clear_arcs();
         magic.clear();
         magic.resize(n_choose_2);
+        uint32_t offset = 0;
         for (T u = 0; u < n; ++u) {
             for (T v = u + 1; v < n; ++v) {
                 switch (foresee(u, v)) {
                     case u_before_v:
                         restriction_graph.add_arc(u, v);
                         magic[flat_index(n, u, v)] = -2;
+                        offset += cr_matrix(u, v);
                         break;
 
                     case v_before_u:
                         restriction_graph.add_arc(v, u);
                         magic[flat_index(n, u, v)] = -1;
+                        offset += cr_matrix(v, u);
                         break;
 
                     default:
@@ -76,6 +82,10 @@ class oracle {
                 }
             }
         }
+#ifndef NDEBUG
+        std::vector<T> ordering;
+        assert(topological_sort(restriction_graph, ordering));
+#endif
 
         // transitive hull
         std::vector<std::pair<T, T>> new_arcs;
@@ -83,12 +93,19 @@ class oracle {
         for (const auto &[u, v] : new_arcs) {
             restriction_graph.add_arc(u, v);
             if (u < v) {
-                magic[flat_index(n, u, v)] = -2;
+                const std::size_t i = flat_index(n, n_choose_2, u, v);
+                assert(magic[i] >= 0);
+                magic[i] = -2;
+                offset += cr_matrix(u, v);
             } else {
-                magic[flat_index(n, v, u)] = -1;
+                const std::size_t i = flat_index(n, n_choose_2, v, u);
+                assert(magic[i] >= 0);
+                magic[i] = -1;
+                offset += cr_matrix(v, u);
             }
         }
         restriction_graph.set_rollback_point();
+        assert(topological_sort(restriction_graph, ordering));
 
         std::size_t i = 0, j = 0;
         for (T u = 0; u < n; ++u) {
@@ -102,6 +119,8 @@ class oracle {
                 ++i;
             }
         }
+        assert(i == n_choose_2);
+        return offset;
     }
 
     /// @brief tells you if we are able to fix u < v or v < u
