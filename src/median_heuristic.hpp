@@ -207,6 +207,8 @@ class probmedian_heuristic {
         }
     }
 
+    // todo: lookahead
+
     /**
      * @brief runs the probabilistic median heuristic solver
      * and stores the result in ordering
