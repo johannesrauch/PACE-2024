@@ -78,9 +78,7 @@ class lp_wrapper {
      * @return true if last bucket has >= PACE_CONST_NOF_CYCLE_CONSTRAINTS elements
      * @return false otherwise
      */
-    inline bool is_last_bucket_full() {
-        return (*buckets.rbegin()).size() >= PACE_CONST_NOF_CYCLE_CONSTRAINTS;
-    }
+    inline bool is_last_bucket_full() { return (*buckets.rbegin()).size() >= PACE_CONST_NOF_CYCLE_CONSTRAINTS; }
 
     //
     // lp related attributes
@@ -157,6 +155,8 @@ class highs_wrapper : public lp_wrapper {
     std::vector<HighsInt> indices;
     std::vector<double> values;
 
+    T u_old{0}, v_old{1}, w_old{2};
+
    public:
     template <typename R>
     highs_wrapper(const instance<T, R> &instance, const std::vector<int> &magic, const uint32_t objective_offset)
@@ -223,8 +223,7 @@ class highs_wrapper : public lp_wrapper {
         if (nof_rows_to_delete > 0) {
             lp.deleteRows(nof_rows_to_delete, &rows_to_delete[0]);
         }
-        PACE_DEBUG_PRINTF("\tend   delete_positive_slack_rows, number of removed rows=%d\n",
-                          nof_rows_to_delete);
+        PACE_DEBUG_PRINTF("\tend   delete_positive_slack_rows, number of removed rows=%d\n", nof_rows_to_delete);
     }
 
     /**
@@ -404,8 +403,8 @@ class highs_wrapper : public lp_wrapper {
      * @return std::size_t number of new rows
      */
     inline std::size_t add_3cycle_rows() {
-        const std::size_t nof_new_rows = std::min(
-            get_nof_bucket_entries(), static_cast<std::size_t>(PACE_CONST_NOF_CYCLE_CONSTRAINTS));
+        const std::size_t nof_new_rows =
+            std::min(get_nof_bucket_entries(), static_cast<std::size_t>(PACE_CONST_NOF_CYCLE_CONSTRAINTS));
         if (nof_new_rows <= 0) return 0;
 
         lower_bounds.clear();
@@ -526,9 +525,7 @@ class highs_wrapper : public lp_wrapper {
     /**
      * @brief returns value of x < -1e-7
      */
-    inline bool is_3cycle_lb_violated(const double &x) {
-        return x < -PACE_CONST_FEASIBILITY_TOLERANCE;
-    }
+    inline bool is_3cycle_lb_violated(const double &x) { return x < -PACE_CONST_FEASIBILITY_TOLERANCE; }
 
     /**
      * @brief returns value of x > 1 + 1e-7
@@ -551,8 +548,7 @@ class highs_wrapper : public lp_wrapper {
     inline bool has_row_slack(const std::size_t &i) {
         const double x = get_row_value(i);
         const auto [lb, ub] = get_row_bounds(i);
-        return x > lb + PACE_CONST_FEASIBILITY_TOLERANCE &&
-               x < ub - PACE_CONST_FEASIBILITY_TOLERANCE;
+        return x > lb + PACE_CONST_FEASIBILITY_TOLERANCE && x < ub - PACE_CONST_FEASIBILITY_TOLERANCE;
     }
 
     //
