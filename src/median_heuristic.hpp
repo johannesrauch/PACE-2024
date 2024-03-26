@@ -221,7 +221,7 @@ class probmedian_heuristic {
             uint32_t candidate = generate_another_ordering();
             if (candidate < upper_bound) {
                 upper_bound = candidate;
-                ordering = std::move(another_ordering);
+                ordering = another_ordering;
             }
         }
         return upper_bound;
