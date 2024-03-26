@@ -492,21 +492,42 @@ class highs_wrapper : public lp_wrapper {
         PACE_DEBUG_PRINTF("\tstart check_3cycles\n");
 
         clear_buckets();
-        bool go_on = true;
-        for (T u = 0; u < n1 - 2 && go_on; ++u) {
-            for (T v = u + 1; v < n1 - 1 && go_on; ++v) {
-                for (T w = v + 1; w < n1 && go_on; ++w) {
+        bool stop = false;
+        // yes, I use the dark forces here, because it speeds things up and is imo cleaner
+        T u = u_old, v = v_old, w = w_old;
+        goto check_3cycles_in_for;
+        for (; u < n1 - 2; ++u) {
+            for (v = u + 1; v < n1 - 1; ++v) {
+                for (w = v + 1; w < n1; ++w) {
+                check_3cycles_in_for:  // to pick off where we left
                     assert(u < v);
                     assert(v < w);
                     check_3cycle(u, v, w);
-                    go_on = !is_last_bucket_full();
+                    stop = is_last_bucket_full();
+                    if (stop) goto check_3cycles_after_for;
                 }
             }
         }
-        if (!go_on) {
-            PACE_DEBUG_PRINTF("\t\tlast bucket full\n");
+        for (u = 0; u < n1 - 2; ++u) {
+            bool u_eq_old = u == u_old;
+            for (v = u + 1; v < n1 - 1; ++v) {
+                bool v_eq_old = v == v_old;
+                for (w = v + 1; w < n1; ++w) {
+                    if (u_eq_old && v_eq_old && w == w_old) goto check_3cycles_after_for;
+                    assert(u < v);
+                    assert(v < w);
+                    check_3cycle(u, v, w);
+                    stop = is_last_bucket_full();
+                    if (stop) goto check_3cycles_after_for;
+                }
+            }
         }
 
+    check_3cycles_after_for:
+        u_old = u, v_old = v, w_old = w;
+        if (stop) {
+            PACE_DEBUG_PRINTF("\t\tlast bucket full\n");
+        }
         const int nof_new_rows = add_3cycle_rows();
         PACE_DEBUG_PRINTF("\tend   check_3cycles, number of new rows=%lld\n", nof_new_rows);
         return nof_new_rows > 0;
