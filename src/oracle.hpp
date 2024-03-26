@@ -115,9 +115,7 @@ class oracle {
         if (p != indeterminate) return p;
 
         p = based_on_pattern(u, v, c_uv, c_vu);
-        if (p != indeterminate) return p;
-
-        return indeterminate;
+        return p;
     }
 
     /**
