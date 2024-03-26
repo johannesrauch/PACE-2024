@@ -12,6 +12,10 @@ ifdef VERBOSE
 	CXXFLAGS += -DNDEBUG_PRINT
 endif
 
+ifdef FAST
+	CXXFLAGS += -DPACE_CONST_PROBMEDIAN_ITERATIONS=4
+endif
+
 .PHONY: all
 
 all:
