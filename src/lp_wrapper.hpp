@@ -493,24 +493,19 @@ class highs_wrapper : public lp_wrapper {
         PACE_DEBUG_PRINTF("\tstart check_3cycles\n");
 
         clear_buckets();
-        bool break_for_loops = false;
-        for (T u = 0; u < n1 - 2; ++u) {
-            for (T v = u + 1; v < n1 - 1; ++v) {
-                for (T w = v + 1; w < n1; ++w) {
+        bool go_on = true;
+        for (T u = 0; u < n1 - 2 && go_on; ++u) {
+            for (T v = u + 1; v < n1 - 1 && go_on; ++v) {
+                for (T w = v + 1; w < n1 && go_on; ++w) {
                     assert(u < v);
                     assert(v < w);
-                    bool violated = check_3cycle(u, v, w);
-                    if (violated) {
-                        break_for_loops = is_last_bucket_full();
-                        if (break_for_loops) {
-                            PACE_DEBUG_PRINTF("\t\tlast bucket full\n");
-                            break;
-                        }
-                    }
+                    check_3cycle(u, v, w);
+                    go_on = !is_last_bucket_full();
                 }
-                if (break_for_loops) break;
             }
-            if (break_for_loops) break;
+        }
+        if (!go_on) {
+            PACE_DEBUG_PRINTF("\t\tlast bucket full\n");
         }
 
         const int nof_new_rows = add_3cycle_rows();

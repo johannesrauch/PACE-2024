@@ -1,6 +1,8 @@
 #ifndef PACE_ORACLE_HPP
 #define PACE_ORACLE_HPP
 
+#include <limits>
+
 #include "crossings.hpp"
 #include "digraph.hpp"
 #include "index.hpp"
@@ -30,7 +32,10 @@ class oracle {
     const folded_matrix<R> &cr_matrix;
 
     /// @brief lower and upper bound on the optimal value
-    const uint32_t lower_bound, upper_bound{0};
+    const uint32_t lower_bound, upper_bound;
+
+    /// @brief n = graph.get_n_free()
+    const std::size_t n, n_choose_2;
 
    public:
     /// @brief initializes the oracle
@@ -38,7 +43,10 @@ class oracle {
         : graph(instance.graph()),  //
           cr_matrix(instance.cr_matrix()),
           lower_bound(instance.get_lower_bound()),
-          upper_bound(upper_bound) {
+          upper_bound(upper_bound),
+          n(graph.get_n_free()),
+          n_choose_2(n * (n - 1) / 2) {
+        assert(n > 0);
         assert(lower_bound <= upper_bound);
     }
 
@@ -53,36 +61,21 @@ class oracle {
     uint32_t build(digraph<T> &restriction_graph,  //
                    std::vector<int> &magic,        //
                    std::vector<std::pair<T, T>> &unsettled) {
-        const std::size_t n = graph.get_n_free();
-        assert(n > 0);
-        const std::size_t n_choose_2 = n * (n - 1) / 2;
         assert(restriction_graph.get_n() == n);
 
+        // see if there are settlable pairs
         restriction_graph.clear_arcs();
         magic.clear();
         magic.resize(n_choose_2);
         uint32_t offset = 0;
         for (T u = 0; u < n; ++u) {
             for (T v = u + 1; v < n; ++v) {
-                switch (foresee(u, v)) {
-                    case u_before_v:
-                        restriction_graph.add_arc(u, v);
-                        magic[flat_index(n, u, v)] = -2;
-                        offset += cr_matrix(u, v);
-                        break;
-
-                    case v_before_u:
-                        restriction_graph.add_arc(v, u);
-                        magic[flat_index(n, u, v)] = -1;
-                        offset += cr_matrix(v, u);
-                        break;
-
-                    default:
-                        break;
-                }
+                offset += fix_if_possible(restriction_graph, magic, u, v);
             }
         }
+
 #ifndef NDEBUG
+        // test
         std::vector<T> ordering;
         assert(topological_sort(restriction_graph, ordering));
 #endif
@@ -93,38 +86,23 @@ class oracle {
         for (const auto &[u, v] : new_arcs) {
             restriction_graph.add_arc(u, v);
             if (u < v) {
-                const std::size_t i = flat_index(n, n_choose_2, u, v);
-                assert(magic[i] >= 0);
-                magic[i] = -2;
-                offset += cr_matrix(u, v);
+                magic[flat_index(n, n_choose_2, u, v)] = -2;
             } else {
-                const std::size_t i = flat_index(n, n_choose_2, v, u);
-                assert(magic[i] >= 0);
-                magic[i] = -1;
-                offset += cr_matrix(v, u);
+                magic[flat_index(n, n_choose_2, v, u)] = -1;
             }
+            offset += cr_matrix(u, v);
         }
+
+        // restriction graph is done, magic needs some last work
         restriction_graph.set_rollback_point();
         assert(topological_sort(restriction_graph, ordering));
-
-        std::size_t i = 0, j = 0;
-        for (T u = 0; u < n; ++u) {
-            for (T v = u + 1; v < n; ++v) {
-                assert(i < n_choose_2);
-                if (magic[i] >= 0) {
-                    magic[i] = j;
-                    unsettled.emplace_back(u, v);
-                    ++j;
-                }
-                ++i;
-            }
-        }
-        assert(i == n_choose_2);
+        identify_unsettled(magic, unsettled);
         return offset;
     }
 
     /// @brief tells you if we are able to fix u < v or v < u
     pattern foresee(const T u, const T v) {
+        assert(u < v);
         const R &c_uv = cr_matrix(u, v);
         const R &c_vu = cr_matrix(v, u);
         if (c_uv == c_vu) return indeterminate;
@@ -212,12 +190,50 @@ class oracle {
         assert(a == nbors_v.size());
         assert(b == nbors_u.size());
 
-        if (c_uv < c_vu)
+        if (c_uv < c_vu) {
             return u_before_v;
-        else
+        } else {
             return v_before_u;
+        }
+    }
+
+   private:
+    inline uint32_t fix_if_possible(digraph<T> &restriction_graph, std::vector<int> &magic, const T &u, const T &v) {
+        switch (foresee(u, v)) {
+            case u_before_v: {
+                restriction_graph.add_arc(u, v);
+                magic[flat_index(n, n_choose_2, u, v)] = -2;
+                return cr_matrix(u, v);
+            }
+
+            case v_before_u: {
+                restriction_graph.add_arc(v, u);
+                magic[flat_index(n, n_choose_2, u, v)] = -1;
+                return cr_matrix(v, u);
+            }
+
+            default:
+                return 0;
+        }
+    }
+
+    inline void identify_unsettled(std::vector<int> &magic, std::vector<std::pair<T, T>> &unsettled) {
+        std::size_t i = 0, j = 0;
+        for (T u = 0; u < n; ++u) {
+            for (T v = u + 1; v < n; ++v) {
+                assert(i < n_choose_2);
+                if (magic[i] >= 0) {
+                    magic[i] = j;
+                    unsettled.emplace_back(u, v);
+                    ++j;
+                }
+                ++i;
+            }
+        }
+        assert(i == n_choose_2);
     }
 };
+
 };  // namespace pace
 
 #endif
