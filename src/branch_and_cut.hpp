@@ -272,6 +272,14 @@ class branch_and_cut {
      * @return const std::vector<T>&
      */
     const std::vector<T> &get_ordering() const { return ordering; }
+
+    std::size_t get_nof_rows() {
+        if (lp_solver != nullptr) {
+            return lp_solver->get_nof_rows();
+        } else {
+            return 0;
+        }
+    }
 };
 
 };  // namespace pace
