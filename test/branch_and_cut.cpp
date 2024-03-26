@@ -16,17 +16,18 @@ namespace fs = std::filesystem;
 
 template <typename T, typename R>
 void test_branch_and_cut_with(const pace::instance<T, R>& instance) {
+    fmt::printf("%s\n", instance.filepath);
+    std::cout << std::flush;
+
     pace::branch_and_cut solver(instance);
     solver.run(false);
 
     uint32_t test = solver.get_nof_crossings();
     uint32_t ref = pace::test::get_ref_nof_crossings(instance.filepath);
+    PACE_DEBUG_PRINTF("REFERENCE VALUE: %u\n", ref);
     assert(test == ref);
     assert(test == pace::number_of_crossings(instance.graph(), solver.get_ordering()));
-    (void) ref;
-
-    fmt::printf("%s\n", instance.filepath);
-    std::cout<<std::flush;
+    (void)ref;
 }
 
 void test_branch_and_cut(const fs::path dirpath) {
@@ -46,7 +47,13 @@ int main(int argc, char** argv) {
         test_branch_and_cut("tiny_test_set/instances");
         test_branch_and_cut("my_tests/instances");
     } else {
-        test_branch_and_cut(std::string{argv[1]} + "/instances");
+        const fs::path path = argv[1];
+        if (path.extension() == ".gr") {
+            pace::instance instance(path);
+            test_branch_and_cut_with(instance);
+        } else {
+            test_branch_and_cut(std::string{argv[1]} + "/instances");
+        }
     }
 
     std::cout << "TEST::PACE::BRANCH_AND_CUT:\t\t\tOK" << std::endl;
