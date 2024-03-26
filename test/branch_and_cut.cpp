@@ -37,6 +37,7 @@ void test_branch_and_cut(const fs::path dirpath) {
         pace::instance instance(file.path());
         test_branch_and_cut_with(instance);
     }
+    fmt::printf("\n");
 }
 
 /**
