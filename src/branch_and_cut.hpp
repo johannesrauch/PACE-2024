@@ -142,6 +142,9 @@ class branch_and_cut {
         const uint32_t new_upper_bound = lp_solver->get_rounded_objective_value();
         assert(new_upper_bound < upper_bound);
         assert(new_upper_bound == number_of_crossings(instance.graph(), ordering));
+
+        // try to improve new solution
+        new_upper_bound = shift_heuristic{instance}(ordering, new_upper_bound);
         upper_bound = new_upper_bound;
     }
 
