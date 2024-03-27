@@ -60,7 +60,7 @@ class branch_and_cut {
     /// @brief contains pairs not settled by the oracle
     std::vector<std::pair<T, T>> unsettled;
 
-    /// @brief for branching
+    /// @brief for a dfs search tree
     std::stack<std::pair<int, bool>> stack;
 
     /// @brief lp wrapper
@@ -229,7 +229,7 @@ class branch_and_cut {
             const uint32_t objective_offset = oracle.build(restriction_graph, magic, unsettled);
             PACE_DEBUG_PRINTF("end   oracle\n");
 
-            lp_solver = new highs_wrapper<T>(instance, magic, objective_offset);
+            lp_solver = new highs_wrapper<T>(instance, magic, unsettled, objective_offset, upper_bound);
         }
 
         // driver loop for branch and cut
