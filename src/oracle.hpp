@@ -13,9 +13,7 @@
 
 namespace pace {
 
-enum pattern { indeterminate = 0,
-               u_before_v,
-               v_before_u };
+enum pattern { indeterminate = 0, u_before_v, v_before_u };
 
 /**
  * @brief oracle that tells you if we are able to fix u < v or v < u
@@ -103,12 +101,16 @@ class oracle {
     /// @brief tells you if we are able to fix u < v or v < u
     pattern foresee(const T u, const T v) {
         assert(u < v);
+
+        pattern p = based_on_degree(u, v);
+        if (p != indeterminate) return p;
+
         const R &c_uv = cr_matrix(u, v);
         const R &c_vu = cr_matrix(v, u);
         if (c_uv == c_vu) return indeterminate;
 
         // c_uv != c_vu from her
-        pattern p = based_on_crossing_numbers(c_uv, c_vu);
+        p = based_on_crossing_numbers(c_uv, c_vu);
         if (p != indeterminate) return p;
 
         p = based_on_bounds(c_uv, c_vu);
@@ -116,6 +118,17 @@ class oracle {
 
         p = based_on_pattern(u, v, c_uv, c_vu);
         return p;
+    }
+
+    /// @brief if one of the degrees is zero, we may impose an arbitrary (but fixed) order
+    inline pattern based_on_degree(const T &u, const T &v) {
+        if (graph.degree_of_free(u) == 0) {
+            return u_before_v;
+        } else if (graph.degree_of_free(v) == 0) {
+            return v_before_u;
+        } else {
+            return indeterminate;
+        }
     }
 
     /**
