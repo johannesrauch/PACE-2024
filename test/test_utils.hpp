@@ -31,9 +31,8 @@ R get_ref_nof_crossings(std::filesystem::path filepath_instance) {
         "nof_crossings" /                                //
         filepath_instance.filename();
     filepath_nof_crossings.replace_extension(".txt");
-    // fmt::printf("%s\n", static_cast<std::string>(filepath_nof_crossings));
     std::ifstream file_nof_crossings(filepath_nof_crossings);
-    assert(file_nof_crossings.good());
+    if (!file_nof_crossings.good()) throw std::runtime_error("no ref");
     R ref_nof_crossings;
     file_nof_crossings >> ref_nof_crossings;
     file_nof_crossings.close();
