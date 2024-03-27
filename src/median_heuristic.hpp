@@ -1,8 +1,8 @@
 #ifndef PACE_MEDIAN_HEURISTIC_HPP
 #define PACE_MEDIAN_HEURISTIC_HPP
 
-#ifndef PACE_CONST_PROBMEDIAN_ITERATIONS
-#define PACE_CONST_PROBMEDIAN_ITERATIONS 128
+#ifndef PACE_CONST_PROBMEDIAN_LOOKAHEAD
+#define PACE_CONST_PROBMEDIAN_LOOKAHEAD 64
 #endif
 
 #include <vector>
@@ -215,13 +215,14 @@ class probmedian_heuristic {
      *
      * @return uint32_t number of crossings
      */
-    template <std::size_t NOF_ITERATIONS = PACE_CONST_PROBMEDIAN_ITERATIONS>
+    template <std::size_t LOOKAHEAD = PACE_CONST_PROBMEDIAN_LOOKAHEAD>
     uint32_t operator()(std::vector<T>& ordering) {
         upper_bound = median_h(ordering);
         // try to find a better solution with probabilistic median heuristic
-        for (std::size_t i = 0; lower_bound < upper_bound && i < NOF_ITERATIONS; ++i) {
+        for (std::size_t i = 1; lower_bound < upper_bound && i <= LOOKAHEAD; ++i) {
             uint32_t candidate = generate_another_ordering();
             if (candidate < upper_bound) {
+                i = 0;
                 upper_bound = candidate;
                 ordering = another_ordering;
             }
