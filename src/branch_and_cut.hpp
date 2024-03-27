@@ -38,6 +38,8 @@ struct branch_and_cut_info {
     std::size_t nof_iterations{0};
     std::size_t nof_branch_nodes{0};
     std::size_t nof_rows{0};
+    std::size_t nof_crossings_h{0};
+    std::size_t nof_crossings{0};
 };
 
 template <typename T, typename R>
@@ -139,7 +141,7 @@ class branch_and_cut {
         bool acyclic = topological_sort(restriction_graph, ordering);
         (void)acyclic;  // suppress unused warning
         assert(acyclic);
-        const uint32_t new_upper_bound = lp_solver->get_rounded_objective_value();
+        uint32_t new_upper_bound = lp_solver->get_rounded_objective_value();
         assert(new_upper_bound < upper_bound);
         assert(new_upper_bound == number_of_crossings(instance.graph(), ordering));
 
@@ -257,6 +259,7 @@ class branch_and_cut {
     uint32_t operator()() {
         PACE_DEBUG_PRINTF("start heuristic\n");
         upper_bound = heuristics(instance, ordering);
+        info.nof_crossings_h = upper_bound;
         PACE_DEBUG_PRINTF("end   heuristic\n");
         if (lower_bound >= upper_bound) return upper_bound;
 
@@ -315,6 +318,7 @@ class branch_and_cut {
         if (lp_solver != nullptr) {
             info.nof_rows = lp_solver->get_nof_rows();
         }
+        info.nof_crossings = upper_bound;
         return info;
     }
 };
