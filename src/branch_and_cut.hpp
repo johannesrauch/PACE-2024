@@ -34,6 +34,12 @@ struct branch_node {
     bool fix_opposite;
 };
 
+struct branch_and_cut_info {
+    std::size_t nof_iterations{0};
+    std::size_t nof_branch_nodes{0};
+    std::size_t nof_rows{0};
+};
+
 template <typename T, typename R>
 class branch_and_cut {
    private:
@@ -78,6 +84,8 @@ class branch_and_cut {
 
     reliability_branching<T> *reli_branch{nullptr};
 
+    branch_and_cut_info info;
+
    public:
     /**
      * @brief constructs and initializes the branch and cut solver
@@ -105,10 +113,6 @@ class branch_and_cut {
     branch_and_cut<T, R> &operator=(branch_and_cut<T, R> &&rhs) = delete;
 
    private:
-    //
-    // solution related methods
-    //
-
     /**
      * @brief constructs the restrictions graph into restriction_graph.
      * the topological sort of `restriction_graph` gives an ordering of the vertices of the free
@@ -141,6 +145,7 @@ class branch_and_cut {
         upper_bound = new_upper_bound;
     }
 
+    /// @brief updates pseudo-costs
     void update_costs() {
         if (stack.empty()) return;
         const auto &[j, obj_val_old, x_j_old, _] = stack.top();
@@ -188,6 +193,7 @@ class branch_and_cut {
         const double x_j_old = reli_branch->get_column_value(j);
 
         // branch
+        ++info.nof_branch_nodes;
         lp_solver->fix_column(j, reli_branch->get_up_cost(j) > reli_branch->get_down_cost(j));
         PACE_DEBUG_PRINTF("(branch)\n");
         stack.emplace(branch_node{j, obj_val_old, x_j_old, true});
@@ -262,21 +268,21 @@ class branch_and_cut {
         }
 
         // driver loop for branch and cut
-        std::size_t iteration = 0;
+        info = branch_and_cut_info();
         do {
-            (void)iteration;
+            ++info.nof_iterations;
+            lp_solver->run();
             PACE_DEBUG_PRINTF(
                 "iteration=%5u, "
                 "depth=%5u, "
-                "objective_val=%5.0f, "
+                "objective_val=%6.0f, "
                 "upper_bound=%5u, "
                 "nof_rows=%5u\n",
-                iteration++,                       //
+                info.nof_iterations,               //
                 stack.size(),                      //
                 lp_solver->get_objective_value(),  //
                 upper_bound,                       //
                 lp_solver->get_nof_rows());
-            lp_solver->run();
         } while (!branch_and_bound_and_cut());
 
         PACE_DEBUG_PRINTF("OPTIMAL VALUE:   %u\n", upper_bound);
@@ -302,12 +308,11 @@ class branch_and_cut {
      */
     const std::vector<T> &get_ordering() const { return ordering; }
 
-    std::size_t get_nof_rows() {
+    const branch_and_cut_info &get_info() {
         if (lp_solver != nullptr) {
-            return lp_solver->get_nof_rows();
-        } else {
-            return 0;
+            info.nof_rows = lp_solver->get_nof_rows();
         }
+        return info;
     }
 };
 
