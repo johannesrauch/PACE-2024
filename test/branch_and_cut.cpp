@@ -1,9 +1,10 @@
+#include "branch_and_cut.hpp"
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
 
-#include "branch_and_cut.hpp"
 #include "crossings.hpp"
 #include "debug_printf.hpp"
 #include "input.hpp"
@@ -16,7 +17,12 @@ namespace fs = std::filesystem;
 
 template <typename T, typename R>
 void test_branch_and_cut_with(const pace::instance<T, R>& instance) {
-    fmt::printf("%11s%11u", instance.filepath.filename(), instance.graph().get_n_free());
+    const pace::bipartite_graph<T>& graph = instance.graph();
+    fmt::printf("%11s%11u%11u%11u",            //
+                instance.filepath.filename(),  //
+                graph.get_n_fixed(),           //
+                graph.get_n_free(),            //
+                graph.get_m());
     std::cout << std::flush;
 
     pace::branch_and_cut solver(instance);
@@ -32,13 +38,16 @@ void test_branch_and_cut_with(const pace::instance<T, R>& instance) {
     assert(test == pace::number_of_crossings(instance.graph(), solver.get_ordering()));
     (void)ref;
 
-    fmt::printf("|%11.1f%11u\n", t, solver.get_nof_rows());
+    const pace::branch_and_cut_info& info = solver.get_info();
+    fmt::printf("|%11.1f%11u%11u%11u\n", t, info.nof_rows, info.nof_iterations, info.nof_branch_nodes);
 }
 
 void test_branch_and_cut(const fs::path dirpath) {
     fmt::printf("%s\n\n", dirpath);
-    fmt::printf("%11s%11s|%11s%11s\n", "instance", "n_free", "time in ms", "nof rows");
-    pace::test::print_line(46);
+    fmt::printf("%11s%11s%11s%11s|%11s%11s%11s%11s\n",  //
+                "instance", "n fixed", "n free", "m",   //
+                "time in ms", "nof rows", "nof iter", "nof nodes");
+    pace::test::print_line(90);
     for (const auto& file : fs::directory_iterator(dirpath)) {
         if (!file.is_regular_file()) continue;
 
