@@ -9,7 +9,7 @@ else
 endif
 
 ifdef VERBOSE
-	CXXFLAGS += -DNDEBUG_PRINT
+	CXXFLAGS += -DDEBUG_PRINT
 endif
 
 ifdef FAST

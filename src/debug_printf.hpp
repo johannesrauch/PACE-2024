@@ -5,7 +5,7 @@
 
 #include "printf.hpp"
 
-#ifdef NDEBUG_PRINT
+#ifdef DEBUG_PRINT
 #define PACE_DEBUG_PRINTF(...) \
     do {                           \
         fmt::printf(__VA_ARGS__);  \
