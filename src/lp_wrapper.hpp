@@ -210,13 +210,14 @@ class highs_wrapper {
         assert(status == HighsStatus::kOk);
     }
 
-    inline void change_column_bounds(const HighsInt &j, const double &&lb, const double &&ub) {
+    inline void change_column_bounds(const std::size_t j, const double lb, const double ub) {
+        assert(j < get_nof_cols());
         status = lp.changeColBounds(j, lb, ub);
         assert(status == HighsStatus::kOk);
     }
 
-    inline void change_column_cost(const HighsInt &l, const double cost) {
-        status = lp.changeColCost(l, cost);
+    inline void change_column_cost(const std::size_t j, const double cost) {
+        status = lp.changeColCost(j, cost);
         assert(status == HighsStatus::kOk);
     }
 
@@ -226,9 +227,9 @@ class highs_wrapper {
      * @param j column index
      * @param fix_to value to assign to column j
      */
-    void fix_column(const HighsInt &j, const double fix_to) {
+    void fix_column(const std::size_t j, const double fix_to) {
         assert(0 <= j);
-        assert(j < lp.getNumCol());
+        assert(j < get_nof_cols());
         assert(0. <= fix_to);
         assert(fix_to <= 1.);
         PACE_DEBUG_PRINTF("fixed variable %5d to %1.0f\n", j, fix_to);
@@ -248,7 +249,7 @@ class highs_wrapper {
         assert(new_upper_bound < upper_bound);
         assert(lower_bound <= new_upper_bound);
         upper_bound = new_upper_bound;
-        for (HighsInt j = 0; j < lp.getNumCol(); ++j) {
+        for (std::size_t j = 0; j < get_nof_cols(); ++j) {
             const uint32_t diff = upper_bound - lower_bound;
             const double coeff = get_objective_coefficient(j);
 
@@ -260,25 +261,20 @@ class highs_wrapper {
     }
 
     /// @brief resets bounds of column j to 0 <= . <= 1
-    void unfix_column(const HighsInt j) {
-        assert(0 <= j);
-        assert(static_cast<std::size_t>(j) < n_choose_2);
-        change_column_bounds(j, 0., 1.);
-    }
+    void unfix_column(const std::size_t j) { change_column_bounds(j, 0., 1.); }
 
     //
     // getter
     //
 
     /// @brief returns value of column j
-    double get_column_value(const HighsInt j) {
-        assert(0 <= j);
-        assert(j < lp.getNumCol());
+    double get_column_value(const std::size_t j) {
+        assert(j < get_nof_cols());
         return lp.getSolution().col_value[j];
     }
 
     /// @brief returns value of variable x_uv
-    double get_variable_value(const std::size_t &uv) {
+    double get_variable_value(const std::size_t uv) {
         assert(uv < n_choose_2);
         if (magic[uv] < 0) {
             return static_cast<double>(~magic[uv]);
@@ -288,10 +284,10 @@ class highs_wrapper {
     }
 
     /// @brief returns the number of rows
-    std::size_t get_nof_cols() { return lp.getNumCol(); }
+    std::size_t get_nof_cols() const { return lp.getNumCol(); }
 
     /// @brief returns the number of rows
-    std::size_t get_nof_rows() { return lp.getNumRow(); }
+    std::size_t get_nof_rows() const { return lp.getNumRow(); }
 
     /// @brief returns the objective value of the lp
     double get_objective_value() { return lp.getInfo().objective_function_value; }
@@ -304,9 +300,8 @@ class highs_wrapper {
     }
 
     /// @brief returns the objective coefficient of column j
-    inline double get_objective_coefficient(const HighsInt &j) {
-        assert(0 <= j);
-        assert(j < lp.getNumCol());
+    inline double get_objective_coefficient(const std::size_t j) {
+        assert(j < get_nof_cols());
         return lp.getLp().col_cost_[j];
     }
 
@@ -314,7 +309,10 @@ class highs_wrapper {
      * @brief returns the lower and upper bound offset for 3-cycle inequalities ijk
      * due to permanently fixed variables that are not incorporated in the lp
      */
-    inline int get_3cycle_bound_offset(const int &ij, const int &jk, const int &ik) {
+    inline int get_3cycle_bound_offset(const std::size_t ij, const std::size_t jk, const std::size_t ik) {
+        assert(ij < n_choose_2);
+        assert(jk < n_choose_2);
+        assert(ik < n_choose_2);
         double offset = 0.;
         if (magic[ij] < 0) {
             offset -= ~magic[ij];
@@ -332,9 +330,8 @@ class highs_wrapper {
      * @brief returns the lower and upper bound offset for 3-cycle inequality with index i
      * due to permanently fixed variables that are not incorporated in the lp
      */
-    inline std::pair<double, double> get_row_bounds(const int &i) {
-        assert(0 <= i);
-        assert(i < lp.getNumRow());
+    inline std::pair<double, double> get_row_bounds(const std::size_t i) {
+        assert(i < get_nof_rows());
         const HighsLp &lp_ = lp.getLp();
         const double lb = lp_.row_lower_[i];
         const double ub = lp_.row_upper_[i];
@@ -342,7 +339,7 @@ class highs_wrapper {
     }
 
     /// @brief returns the value of row i
-    inline double get_row_value(const int &i) { return lp.getSolution().row_value[i]; }
+    inline double get_row_value(const std::size_t i) { return lp.getSolution().row_value[i]; }
 
     //
     // information methods
@@ -354,7 +351,7 @@ class highs_wrapper {
      * @param i row index
      * @return has_row_lb(i) && x > 0.
      */
-    inline bool has_row_slack(const std::size_t &i) {
+    inline bool has_row_slack(const std::size_t i) {
         const double x = get_row_value(i);
         const auto [lb, ub] = get_row_bounds(i);
         return x > lb + PACE_CONST_FEASIBILITY_TOLERANCE && x < ub - PACE_CONST_FEASIBILITY_TOLERANCE;
@@ -368,9 +365,8 @@ class highs_wrapper {
      * integer)
      * @return false otherwise
      */
-    inline bool is_column_integral(const HighsInt &j) {
-        assert(0 <= j);
-        assert(j < lp.getNumCol());
+    inline bool is_column_integral(const std::size_t j) {
+        assert(j < get_nof_cols());
         const double x = lp.getSolution().col_value[j];
         constexpr double ub = 1. - PACE_CONST_INTEGER_TOLERANCE;
         if (x > PACE_CONST_INTEGER_TOLERANCE && x < ub) {
@@ -382,16 +378,16 @@ class highs_wrapper {
     /**
      * @brief returns a value based on the integrality of the current solution
      *
-     * @return int -1, if solution is integral
-     * @return int j, 0 <= j < lp.getNumCol(), of nonintegral column otherwise
+     * @return true if integral
+     * @return false otherwise
      */
-    HighsInt is_integral() {
-        for (HighsInt j = 0; j < lp.getNumCol(); ++j) {
+    bool is_integral() {
+        for (std::size_t j = 0; j < get_nof_cols(); ++j) {
             if (!is_column_integral(j)) {
-                return j;
+                return false;
             }
         }
-        return -1;
+        return true;
     }
 
     /// @brief returns if an optimal feasible solution has been found
@@ -549,7 +545,7 @@ class highs_wrapper {
     /**
      *  @brief returns x_uv + x_vw - x_uw of the lp
      */
-    inline double get_3cycle_value(const int &uv, const int &vw, const int &uw) {
+    inline double get_3cycle_value(const std::size_t &uv, const std::size_t &vw, const std::size_t &uw) {
         const double x_uv = get_variable_value(uv);
         const double x_vw = get_variable_value(vw);
         const double x_uw = get_variable_value(uw);
@@ -574,7 +570,7 @@ class highs_wrapper {
      * @param val in (0,1]
      * @return std::vector<bucket_entry>& the corresponding bucket
      */
-    inline std::vector<bucket_entry> &get_bucket(const double &val) {
+    inline std::vector<bucket_entry> &get_bucket(const double val) {
         assert(0 <= val);
         assert(val < 1);
         const std::size_t i = static_cast<std::size_t>(val * PACE_CONST_NOF_BUCKETS);
