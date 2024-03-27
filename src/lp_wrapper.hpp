@@ -228,12 +228,10 @@ class highs_wrapper {
      * @param fix_to value to assign to column j
      */
     void fix_column(const std::size_t j, const double fix_to) {
-        assert(0 <= j);
-        assert(j < get_nof_cols());
         assert(0. <= fix_to);
         assert(fix_to <= 1.);
-        PACE_DEBUG_PRINTF("fixed variable %5d to %1.0f\n", j, fix_to);
-        lp.changeColBounds(j, fix_to, fix_to);
+        PACE_DEBUG_PRINTF("\tfixed variable %5d to %1.0f\n", j, fix_to);
+        change_column_bounds(j, fix_to, fix_to);
     }
 
     /**
@@ -266,6 +264,10 @@ class highs_wrapper {
     //
     // getter
     //
+
+    void get_columns(std::vector<double> &col_value) const {
+        col_value = lp.getSolution().col_value;
+    }
 
     /// @brief returns value of column j
     double get_column_value(const std::size_t j) {

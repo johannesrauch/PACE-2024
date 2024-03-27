@@ -22,9 +22,17 @@
 #include "lp_wrapper.hpp"
 #include "oracle.hpp"
 #include "output.hpp"
+#include "reliability_branching.hpp"
 #include "topological_sort.hpp"
 
 namespace pace {
+
+struct branch_node {
+    const std::size_t j;
+    const double obj_val_old;
+    const double x_j_old;
+    bool fix_opposite;
+};
 
 template <typename T, typename R>
 class branch_and_cut {
@@ -40,6 +48,8 @@ class branch_and_cut {
 
     /// @brief current best upper bound on the optimal value of the instance
     uint32_t upper_bound{std::numeric_limits<uint32_t>::max()};
+
+    double obj_val_old{0};
 
     /// @brief ordering corresponding to upper_bound
     std::vector<T> ordering;
@@ -61,10 +71,12 @@ class branch_and_cut {
     std::vector<std::pair<T, T>> unsettled;
 
     /// @brief for a dfs search tree
-    std::stack<std::pair<int, bool>> stack;
+    std::stack<branch_node> stack;
 
     /// @brief lp wrapper
     highs_wrapper<T> *lp_solver{nullptr};
+
+    reliability_branching<T> *reli_branch{nullptr};
 
    public:
     /**
@@ -81,6 +93,7 @@ class branch_and_cut {
 
     ~branch_and_cut() {
         if (lp_solver != nullptr) {
+            delete reli_branch;
             delete lp_solver;
         }
     }
@@ -104,7 +117,7 @@ class branch_and_cut {
      * @pre lp solution integral
      */
     void compute_ordering() {
-        assert(lp_solver->is_integral() == -1);
+        assert(lp_solver->is_integral());
         restriction_graph.rollback();
 
         // build the constraint graph
@@ -128,6 +141,17 @@ class branch_and_cut {
         upper_bound = new_upper_bound;
     }
 
+    void update_costs() {
+        if (stack.empty()) return;
+        const auto &[j, obj_val_old, x_j_old, _] = stack.top();
+        const double obj_val_new = lp_solver->get_objective_value();
+        if (lp_solver->get_column_value(j) > 0.5) {
+            reli_branch->update_up_cost(j, obj_val_new, obj_val_old, x_j_old);
+        } else {
+            reli_branch->update_down_cost(j, obj_val_new, obj_val_old, x_j_old);
+        }
+    }
+
     //
     // branch and bound and cut methods
     //
@@ -140,31 +164,33 @@ class branch_and_cut {
      * @return false otherwise
      */
     bool backtrack() {
-        int j{0};
-        bool fix_opposite = false;
-        for (; !stack.empty();) {
-            std::tie(j, fix_opposite) = stack.top();
-            stack.pop();
-
-            if (fix_opposite) {
-                lp_solver->fix_column(j, lp_solver->get_variable_value(j) > 0.5 ? 0. : 1.);
+        while (!stack.empty()) {
+            branch_node &node = stack.top();
+            if (node.fix_opposite) {
+                lp_solver->fix_column(node.j, lp_solver->get_column_value(node.j) > 0.5 ? 0. : 1.);
                 PACE_DEBUG_PRINTF("(backtrack)\n");
-                stack.emplace(j, false);
-                break;
+                node.fix_opposite = false;
+                return false;
             } else {
-                lp_solver->unfix_column(j);
-                PACE_DEBUG_PRINTF("unfixed variable %5d\n(backtrack)\n", j);
+                lp_solver->unfix_column(node.j);
+                PACE_DEBUG_PRINTF("unfixed variable %5d\n(backtrack)\n", node.j);
+                stack.pop();
             }
         }
-        return !fix_opposite;
+        return true;
     }
 
     /// @brief branches by fixing a column
-    void branch(const int &j) {
-        // todo: more sophisticated fixing
-        lp_solver->fix_column(j, 0.);
+    void branch() {
+        // gather branch node info
+        const double obj_val_old = lp_solver->get_objective_value();
+        const std::size_t j = reli_branch->get_branching_column();
+        const double x_j_old = reli_branch->get_column_value(j);
+
+        // branch
+        lp_solver->fix_column(j, reli_branch->get_up_cost(j) > reli_branch->get_down_cost(j));
         PACE_DEBUG_PRINTF("(branch)\n");
-        stack.emplace(j, true);
+        stack.emplace(branch_node{j, obj_val_old, x_j_old, true});
     }
 
     /**
@@ -195,9 +221,11 @@ class branch_and_cut {
             return false;
         }
 
-        const int j = lp_solver->is_integral();
+        // at this point, we have an optimal solution to the ilp relaxation
+        update_costs();
+
         // test if solution is integral, then we found a better solution
-        if (j == -1) {
+        if (lp_solver->is_integral()) {
             compute_ordering();
             PACE_DEBUG_PRINTF("\tfound a better solution with %u crossings\n", upper_bound);
             lp_solver->fix_columns(upper_bound);
@@ -206,7 +234,7 @@ class branch_and_cut {
 
         // todo: improve solution with heuristic
         // branch by fixing a column
-        branch(j);
+        branch();
         return false;
     }
 
@@ -230,6 +258,7 @@ class branch_and_cut {
             PACE_DEBUG_PRINTF("end   oracle\n");
 
             lp_solver = new highs_wrapper<T>(instance, magic, unsettled, objective_offset, upper_bound);
+            reli_branch = new reliability_branching<T>(*lp_solver);
         }
 
         // driver loop for branch and cut
