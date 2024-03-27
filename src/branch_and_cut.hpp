@@ -257,6 +257,8 @@ class branch_and_cut {
      */
     template <bool DO_OUTPUT_PRINT = true>
     uint32_t operator()() {
+        info = branch_and_cut_info();
+
         PACE_DEBUG_PRINTF("start heuristic\n");
         upper_bound = heuristics(instance, ordering);
         info.nof_crossings_h = upper_bound;
@@ -274,7 +276,6 @@ class branch_and_cut {
         }
 
         // driver loop for branch and cut
-        info = branch_and_cut_info();
         do {
             ++info.nof_iterations;
             lp_solver->run();
