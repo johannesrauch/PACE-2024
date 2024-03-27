@@ -16,11 +16,14 @@ namespace fs = std::filesystem;
 
 template <typename T, typename R>
 void test_branch_and_cut_with(const pace::instance<T, R>& instance) {
-    fmt::printf("%s\n", instance.filepath);
+    fmt::printf("%11s%11u", instance.filepath.filename(), instance.graph().get_n_free());
     std::cout << std::flush;
 
     pace::branch_and_cut solver(instance);
+    std::clock_t start = std::clock();
     solver.template operator()<false>();
+    std::clock_t end = std::clock();
+    const double t = pace::test::time_in_ms(start, end);
 
     uint32_t test = solver.get_nof_crossings();
     uint32_t ref = pace::test::get_ref_nof_crossings(instance.filepath);
@@ -28,9 +31,14 @@ void test_branch_and_cut_with(const pace::instance<T, R>& instance) {
     assert(test == ref);
     assert(test == pace::number_of_crossings(instance.graph(), solver.get_ordering()));
     (void)ref;
+
+    fmt::printf("|%11.1f%11u\n", t, solver.get_nof_rows());
 }
 
 void test_branch_and_cut(const fs::path dirpath) {
+    fmt::printf("%s\n\n", dirpath);
+    fmt::printf("%11s%11s|%11s%11s\n", "instance", "n_free", "time in ms", "nof rows");
+    pace::test::print_line(46);
     for (const auto& file : fs::directory_iterator(dirpath)) {
         if (!file.is_regular_file()) continue;
 
