@@ -207,7 +207,26 @@ class probmedian_heuristic {
         }
     }
 
-    // todo: lookahead
+    /**
+     * @brief runs the probabilistic median heuristic solver
+     * and stores the result in ordering; expects an initial solution in ordering
+     *
+     * @return uint32_t number of crossings
+     */
+    template <std::size_t LOOKAHEAD = PACE_CONST_PROBMEDIAN_LOOKAHEAD>
+    uint32_t operator()(std::vector<T>& ordering, const uint32_t nof_crossings) {
+        upper_bound = nof_crossings;
+        // try to find a better solution with probabilistic median heuristic
+        for (std::size_t i = 1; lower_bound < upper_bound && i <= LOOKAHEAD; ++i) {
+            uint32_t candidate = generate_another_ordering();
+            if (candidate < upper_bound) {
+                i = 0;
+                upper_bound = candidate;
+                std::swap(ordering, another_ordering);
+            }
+        }
+        return upper_bound;
+    }
 
     /**
      * @brief runs the probabilistic median heuristic solver
@@ -219,15 +238,7 @@ class probmedian_heuristic {
     uint32_t operator()(std::vector<T>& ordering) {
         upper_bound = median_h(ordering);
         // try to find a better solution with probabilistic median heuristic
-        for (std::size_t i = 1; lower_bound < upper_bound && i <= LOOKAHEAD; ++i) {
-            uint32_t candidate = generate_another_ordering();
-            if (candidate < upper_bound) {
-                i = 0;
-                upper_bound = candidate;
-                ordering = another_ordering;
-            }
-        }
-        return upper_bound;
+        return this->template operator()<LOOKAHEAD>(ordering, upper_bound);
     }
 
    private:
