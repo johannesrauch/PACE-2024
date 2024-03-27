@@ -17,7 +17,7 @@ uint32_t heuristics(const instance<T, R> &instance, std::vector<T> &ordering) {
     if (lb == ub) return ub;
 
     std::vector<T> ordering_(ordering.size());
-    uint32_t ub_ = probmedian_heuristic{instance}(ordering_);
+    uint32_t ub_ = median_heuristic{instance}(ordering_);
     if (ub_ < ub) {
         ub = ub_;
         ordering = std::move(ordering_);
