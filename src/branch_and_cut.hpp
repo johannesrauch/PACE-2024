@@ -243,8 +243,6 @@ class branch_and_cut {
             return backtrack();
         }
 
-        // todo: improve solution with probmedian heuristic
-
         // branch by fixing a column
         branch();
         return false;
