@@ -67,8 +67,6 @@ class shift_heuristic {
      */
     template <std::size_t NOF_ITERATIONS = PACE_CONST_SHIFT_ITERATIONS>
     uint32_t operator()(std::vector<T> &ordering, const uint32_t nof_crossings) {
-        PACE_DEBUG_PRINTF("start shift_heuristic\n");
-
         upper_bound = nof_crossings;
         assert(ordering.size() == graph.get_n_free());
         std::copy(ordering.begin(), ordering.end(), ordering_.begin());
@@ -87,8 +85,6 @@ class shift_heuristic {
         std::copy(ordering_.begin(), ordering_.end(), ordering.begin());
         assert(ordering.size() == graph.get_n_free());
         assert(number_of_crossings(graph, ordering) == upper_bound);
-
-        PACE_DEBUG_PRINTF("end   shift_heuristic, iterations=%llu\n", iteration);
         return upper_bound;
     }
 
@@ -96,10 +92,10 @@ class shift_heuristic {
     /**
      * @brief tries to improve the current solution by shifts of element at i
      *
-     * @return std::pair<bool, typename std::list<T>::iterator> first: true iff improvement found, second: iterator the next element to consider
+     * @return std::pair<bool, typename std::list<T>::iterator> first: true iff improvement found, second: iterator the
+     * next element to consider
      */
-    inline std::pair<bool, typename std::list<T>::iterator> improve(
-        typename std::list<T>::iterator i) {
+    inline std::pair<bool, typename std::list<T>::iterator> improve(typename std::list<T>::iterator i) {
         // try left shifts
         R c_old{0}, c_new{0}, improvement = 0;
         typename std::list<T>::iterator k = i, l = i;
@@ -144,8 +140,7 @@ class shift_heuristic {
         assert(ordering_.size() == graph.get_n_free());
         assert(upper_bound >= improvement);
         upper_bound -= improvement;
-        assert(number_of_crossings(graph, std::vector<T>{ordering_.begin(), ordering_.end()}) ==
-               upper_bound);
+        assert(number_of_crossings(graph, std::vector<T>{ordering_.begin(), ordering_.end()}) == upper_bound);
         return std::make_pair(true, it);
     }
 };
