@@ -113,7 +113,7 @@ void test_pattern_analyzer_with(const fs::path dirpath, const bool do_test) {
                 "vars", "settled", "%%",                    //
                 "degree", "crossing n", "bounds", "pattern", "hull",  //
                 "lb", "optimal", "ub");
-    pace::test::print_line(125);
+    pace::test::print_line(136);
     for (const auto& file : fs::directory_iterator(dirpath)) {
         pace::instance instance(file.path());
         test_position_oracle(instance, do_test);
