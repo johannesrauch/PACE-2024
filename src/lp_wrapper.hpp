@@ -175,8 +175,8 @@ class highs_wrapper {
      * @brief delete rows with positive slack from the lp
      */
     void delete_positive_slack_rows() {
-        info.nof_deleted_rows = 0;
-        if (info.nof_iterations_3cycles >= 4) return;
+        // info.nof_deleted_rows = 0;
+        // if (info.nof_iterations_3cycles >= 4) return;
 
         // gather rows to delete
         rows_to_delete.clear();
