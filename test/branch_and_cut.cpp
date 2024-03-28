@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <string>
 
 #include "crossings.hpp"
@@ -43,7 +44,7 @@ void test_branch_and_cut_with(const pace::instance<T, R>& instance) {
     } catch (std::exception& e) {
         warning = e.what();
     }
-    
+
     const pace::branch_and_cut_info& info = solver.get_info();
     fmt::printf("|%11.1f%11u%11u%11u|%11u%11u%11u|%11s\n",                             //
                 t, info.nof_rows, info.nof_iterations, info.nof_branch_nodes,          //
@@ -59,10 +60,14 @@ void test_branch_and_cut(const fs::path dirpath) {
                 "lower bound", "heuristic", "optimal",                    //
                 "warning");
     pace::test::print_line(136);
+    std::set<fs::path> testcases;
     for (const auto& file : fs::directory_iterator(dirpath)) {
-        if (!file.is_regular_file()) continue;
-
-        pace::instance instance(file.path());
+        if (file.is_regular_file()) {
+            testcases.insert(file.path());
+        }
+    }
+    for (const auto& filepath : testcases) {
+        pace::instance instance(filepath);
         test_branch_and_cut_with(instance);
     }
     fmt::printf("\n");
