@@ -51,7 +51,7 @@ void test_heuristics(const pace::instance<T, R>& instance) {
 
 void test_heuristics_with(const fs::path dirpath) {
     fmt::printf("%11s%11s%11s|%11s%11s%11s|%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%11s\n",
-                "instance", "lower bound", "optimal",
+                "instance", "lb", "optimal",
                 "barycenter", "t in ms", "off by %%",
                 "median", "t in ms", "off by %%",
                 "probmedian", "t in ms", "off by %%", "delta",
