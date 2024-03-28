@@ -45,4 +45,3 @@ dep
 HiGHS
 *.log
 build/
-test/big_test_set
