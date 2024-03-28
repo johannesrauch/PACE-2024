@@ -52,14 +52,17 @@ class digraph {
         adjacency_lists[u].emplace_back(v);
     }
 
+    std::size_t degree(const T v) {
+        assert(v < get_n());
+        return adjacency_lists[v].size();
+    }
+
     /**
      * @brief return number of vertices
      *
      * @return std::size_t number of vertices
      */
-    std::size_t get_n() const {
-        return adjacency_lists.size();
-    }
+    std::size_t get_n() const { return adjacency_lists.size(); }
 
     /**
      * @brief get neighbors of vertex v
@@ -67,9 +70,7 @@ class digraph {
      * @param v vertex, 0 <= v < get_n()
      * @return const std::vector<T>& neighbors of v
      */
-    const std::vector<T> &get_neighbors(const std::size_t v) const {
-        return adjacency_lists[v];
-    }
+    const std::vector<T> &get_neighbors(const T v) const { return adjacency_lists[v]; }
 
     /**
      * @brief deletes all arcs
@@ -80,13 +81,18 @@ class digraph {
         }
     }
 
+    void resize_neighbors(const T v, const std::size_t s) {
+        assert(v < get_n());
+        adjacency_lists[v].resize(s);
+    }
+
     /**
      * @brief rolls the graph back to how the arcs where when set_rollback_point() was called.
      * if it was never called, it clears all arcs.
      */
     void rollback() {
         for (std::size_t i = 0; i < get_n(); ++i) {
-            adjacency_lists[i].resize(rollback_lists[i]);
+            resize_neighbors(i, rollback_lists[i]);
         }
     }
 
