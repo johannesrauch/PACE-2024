@@ -29,10 +29,13 @@ class barycenter_heuristic {
     /// @brief barycenters[u] = (sum over all neighbors v of u) / degree(u)
     std::vector<double> barycenters;
 
-   public:
     /// @brief shift heuristic improver
     shift_heuristic<T, R> shift_h;
 
+    /// @brief lower bound
+    const uint32_t lower_bound;
+
+   public:
     /**
      * @brief sets internal references to graph and ordering
      *
@@ -44,7 +47,8 @@ class barycenter_heuristic {
           cr_matrix(instance.cr_matrix()),
           n_free(graph.get_n_free()),
           barycenters(n_free),
-          shift_h(instance) {
+          shift_h(instance),
+          lower_bound(instance.get_lower_bound()) {
         fill_barycenters();
     }
 
@@ -59,21 +63,21 @@ class barycenter_heuristic {
     uint32_t operator()(std::vector<T> &ordering) {
         ordering.resize(n_free);
         for (std::size_t i = 0; i < n_free; ++i) ordering[i] = i;
-        std::sort(
-            ordering.begin(),
-            ordering.end(),
-            [&](const T &a, const T &b) -> bool {
-                if (barycenters[a] < barycenters[b])
-                    return true;
-                else if (barycenters[a] > barycenters[b])
-                    return false;
-                else
-                    return a < b;
-            });
+        std::sort(ordering.begin(), ordering.end(), [&](const T &a, const T &b) -> bool {
+            if (barycenters[a] < barycenters[b])
+                return true;
+            else if (barycenters[a] > barycenters[b])
+                return false;
+            else
+                return a < b;
+        });
+        const uint32_t nof_crossings = number_of_crossings(graph, ordering);
+        assert(lower_bound <= nof_crossings);
+        if (lower_bound >= nof_crossings) return nof_crossings;
         if constexpr (SHIFT) {
-            return shift_h(ordering);
+            return shift_h(ordering, nof_crossings);
         } else {
-            return number_of_crossings(graph, ordering);
+            return nof_crossings;
         }
     }
 
