@@ -40,8 +40,8 @@ void test_heuristics(const pace::instance<T, R>& instance) {
     const std::string best = c_b < c_p ? "b" : (c_b == c_p ? "=" : (c_m == c_p ? "m" : "p"));
     const std::string fastest = t_b < t_m ? "b" : "m";
     const uint32_t optimal = pace::test::get_ref_nof_crossings(instance.filepath);
-    fmt::printf("%11u%11s|%11u%11.3f%11.4f|%11u%11.3f%11.4f|%11u%11.3f%11.4f%11u|%11s%11.4f%11s\n",
-                instance.filepath.filename(), optimal,
+    fmt::printf("%11s%11u%11u|%11u%11.3f%11.4f|%11u%11.3f%11.4f|%11u%11.3f%11.4f%11u|%11s%11.4f%11s\n",
+                instance.filepath.filename(), instance.get_lower_bound(), optimal,
                 c_b, t_b, (static_cast<double>(c_b) / optimal - 1) * 100,
                 c_m, t_m, (static_cast<double>(c_m) / optimal - 1) * 100,
                 c_p, t_p, (static_cast<double>(c_p) / optimal - 1) * 100, c_m - c_p,
@@ -50,13 +50,13 @@ void test_heuristics(const pace::instance<T, R>& instance) {
 }
 
 void test_heuristics_with(const fs::path dirpath) {
-    fmt::printf("%11s%11s|%11s%11s%11s|%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%11s\n",
-                "instance", "optimal",
+    fmt::printf("%11s%11s%11s|%11s%11s%11s|%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%11s\n",
+                "instance", "lower bound", "optimal",
                 "barycenter", "t in ms", "off by %%",
                 "median", "t in ms", "off by %%",
                 "probmedian", "t in ms", "off by %%", "delta",
                 "best", "off by %%", "fastest");
-    pace::test::print_line(172);
+    pace::test::print_line(183);
     for (const auto& file : fs::directory_iterator(dirpath)) {
         if (!file.is_regular_file()) continue;
 
