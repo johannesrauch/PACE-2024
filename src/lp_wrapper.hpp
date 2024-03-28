@@ -10,7 +10,7 @@
 #include "instance.hpp"
 
 #ifndef PACE_CONST_NOF_CYCLE_CONSTRAINTS
-#define PACE_CONST_NOF_CYCLE_CONSTRAINTS 512u
+#define PACE_CONST_NOF_CYCLE_CONSTRAINTS 256u
 #endif
 
 #ifndef PACE_CONST_NOF_BUCKETS
@@ -26,6 +26,20 @@
 #endif
 
 namespace pace {
+
+template <typename T>
+struct highs_wrapper_info {
+    const T &u_old;
+    const T &v_old;
+    const T &w_old;
+
+    std::size_t nof_rows{0};
+    std::size_t nof_deleted_rows{0};
+    std::size_t nof_added_rows{0};
+    std::size_t nof_iterations_simplex{0};
+
+    double t_simplex{0.};
+};
 
 /**
  * @brief
@@ -79,6 +93,12 @@ class highs_wrapper {
     /// @brief buckets for bucket sorting violated 3-cycle inequalities
     std::vector<std::vector<bucket_entry>> buckets{PACE_CONST_NOF_BUCKETS};
 
+    //
+    // info
+    //
+
+    highs_wrapper_info<T> info;
+
    public:
     template <typename R>
     highs_wrapper(const instance<T, R> &instance,                 //
@@ -90,7 +110,8 @@ class highs_wrapper {
           n_choose_2(n * (n - 1) / 2),
           lower_bound(instance.get_lower_bound()),
           upper_bound(upper_bound),
-          magic(magic) {
+          magic(magic),
+          info{u_old, v_old, w_old} {
         // configure highs lp solver
         status = lp.setOptionValue("presolve", "off");
         assert(status == HighsStatus::kOk);
@@ -137,9 +158,10 @@ class highs_wrapper {
 
     /// @brief solves the lp
     void run() {
-        PACE_DEBUG_PRINTF("start highs_simplex\n");
         lp.run();
-        PACE_DEBUG_PRINTF("end   highs_simplex\n");
+        info.nof_rows = get_nof_rows();
+        info.nof_iterations_simplex = lp.getSimplexIterationCount();
+        info.t_simplex = lp.getRunTime();
     }
 
     //
@@ -150,8 +172,6 @@ class highs_wrapper {
      * @brief delete rows with positive slack from the lp
      */
     void delete_positive_slack_rows() {
-        PACE_DEBUG_PRINTF("\tstart delete_positive_slack_rows\n");
-
         // gather rows to delete
         rows_to_delete.clear();
         for (std::size_t i = 0; i < nof_old_rows; ++i) {
@@ -161,10 +181,10 @@ class highs_wrapper {
         }
 
         const HighsInt nof_rows_to_delete = rows_to_delete.size();
+        info.nof_deleted_rows = rows_to_delete.size();
         if (nof_rows_to_delete > 0) {
             lp.deleteRows(nof_rows_to_delete, &rows_to_delete[0]);
         }
-        PACE_DEBUG_PRINTF("\tend   delete_positive_slack_rows, number of removed rows=%d\n", nof_rows_to_delete);
     }
 
     //
@@ -265,9 +285,9 @@ class highs_wrapper {
     // getter
     //
 
-    void get_columns(std::vector<double> &col_value) const {
-        col_value = lp.getSolution().col_value;
-    }
+    const highs_wrapper_info<T> &get_info() { return info; }
+
+    void get_columns(std::vector<double> &col_value) const { col_value = lp.getSolution().col_value; }
 
     /// @brief returns value of column j
     double get_column_value(const std::size_t j) {
@@ -459,6 +479,7 @@ class highs_wrapper {
         }
         assert(i == nof_new_rows);
 
+        info.nof_added_rows = nof_new_rows;
         lp.addRows(nof_new_rows, &lower_bounds[0], &upper_bounds[0],  //
                    indices.size(), &starts[0], &indices[0], &values[0]);
         return nof_new_rows;
@@ -500,8 +521,6 @@ class highs_wrapper {
      * @return false otherwise
      */
     bool check_3cycles() {
-        PACE_DEBUG_PRINTF("\tstart check_3cycles\n");
-
         clear_buckets();
         bool stop = false;
         // yes, I use the dark forces here, because it speeds things up and is imo cleaner
@@ -536,12 +555,7 @@ class highs_wrapper {
 
     check_3cycles_after_for:
         u_old = u, v_old = v, w_old = w;
-        if (stop) {
-            PACE_DEBUG_PRINTF("\t\tlast bucket full\n");
-        }
-        const int nof_new_rows = add_3cycle_rows();
-        PACE_DEBUG_PRINTF("\tend   check_3cycles, number of new rows=%lld\n", nof_new_rows);
-        return nof_new_rows > 0;
+        return add_3cycle_rows() > 0;
     }
 
     /**

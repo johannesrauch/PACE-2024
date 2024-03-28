@@ -35,11 +35,15 @@ struct branch_node {
 };
 
 struct branch_and_cut_info {
+    const uint32_t &lower_bound;
+    const uint32_t &upper_bound;
+
     std::size_t nof_iterations{0};
     std::size_t nof_branch_nodes{0};
     std::size_t nof_rows{0};
-    std::size_t nof_crossings_h{0};
-    std::size_t nof_crossings{0};
+
+    uint32_t nof_crossings_h{0};
+    uint32_t nof_crossings{0};
 };
 
 template <typename T, typename R>
@@ -97,7 +101,8 @@ class branch_and_cut {
           n_free(instance.graph().get_n_free()),
           lower_bound(instance.get_lower_bound()),
           ordering(n_free),
-          restriction_graph(n_free) {
+          restriction_graph(n_free),
+          info{lower_bound, upper_bound} {
         assert(n_free > 0);
     }
 
@@ -238,7 +243,6 @@ class branch_and_cut {
         // test if solution is integral, then we found a better solution
         if (lp_solver->is_integral()) {
             compute_ordering();
-            PACE_DEBUG_PRINTF("\tfound a better solution with %u crossings\n", upper_bound);
             lp_solver->fix_columns(upper_bound);
             return backtrack();
         }
@@ -256,9 +260,7 @@ class branch_and_cut {
      */
     template <bool DO_OUTPUT_PRINT = true>
     uint32_t operator()() {
-        info = branch_and_cut_info();
-
-        PACE_DEBUG_PRINTF("start heuristic\n");
+        PACE_DEBUG_PRINTF("\n\nstart heuristic\n");
         upper_bound = heuristics(instance, ordering);
         info.nof_crossings_h = upper_bound;
         PACE_DEBUG_PRINTF("end   heuristic\n");
@@ -275,23 +277,17 @@ class branch_and_cut {
         }
 
         // driver loop for branch and cut
+        const highs_wrapper_info<T> &info_lp = lp_solver->get_info();
+        (void) info_lp;
+        PACE_DEBUG_PRINTF("start branch and cut\n");
         do {
-            ++info.nof_iterations;
             lp_solver->run();
-            PACE_DEBUG_PRINTF(
-                "iteration=%5u, "
-                "depth=%5u, "
-                "objective_val=%6.0f, "
-                "upper_bound=%5u, "
-                "nof_rows=%5u\n",
-                info.nof_iterations,               //
-                stack.size(),                      //
-                lp_solver->get_objective_value(),  //
-                upper_bound,                       //
-                lp_solver->get_nof_rows());
+            PACE_DEBUG_INFO(info, info_lp);
+            ++info.nof_iterations;
         } while (!branch_and_bound_and_cut());
+        PACE_DEBUG_PRINTF("end   branch and cut\n");
 
-        PACE_DEBUG_PRINTF("OPTIMAL VALUE:   %u\n", upper_bound);
+        PACE_DEBUG_PRINTF("OPT: %u\n", upper_bound);
         if constexpr (DO_OUTPUT_PRINT) {
             print_output(instance.graph().get_n_fixed(), ordering);
         }
