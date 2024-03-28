@@ -37,8 +37,11 @@ struct highs_wrapper_info {
     std::size_t nof_deleted_rows{0};
     std::size_t nof_added_rows{0};
     std::size_t nof_iterations_simplex{0};
+    std::size_t nof_iterations_3cycles{0};
+    std::size_t nof_bucket_entries{0};
 
     double t_simplex{0.};
+    double objective_value;
 };
 
 /**
@@ -152,7 +155,6 @@ class highs_wrapper {
     bool cut() {
         nof_old_rows = get_nof_rows();
         bool success = check_3cycles();
-        // todo: k-fence
         return success;
     }
 
@@ -162,6 +164,7 @@ class highs_wrapper {
         info.nof_rows = get_nof_rows();
         info.nof_iterations_simplex = lp.getSimplexIterationCount();
         info.t_simplex = lp.getRunTime();
+        info.objective_value = get_objective_value();
     }
 
     //
@@ -172,6 +175,9 @@ class highs_wrapper {
      * @brief delete rows with positive slack from the lp
      */
     void delete_positive_slack_rows() {
+        info.nof_deleted_rows = 0;
+        if (info.nof_iterations_3cycles >= 4) return;
+
         // gather rows to delete
         rows_to_delete.clear();
         for (std::size_t i = 0; i < nof_old_rows; ++i) {
@@ -538,6 +544,7 @@ class highs_wrapper {
                 }
             }
         }
+        ++info.nof_iterations_3cycles;
         for (u = 0; u < n - 2; ++u) {
             bool u_eq_old = u == u_old;
             for (v = u + 1; v < n - 1; ++v) {
@@ -554,6 +561,7 @@ class highs_wrapper {
         }
 
     check_3cycles_after_for:
+        info.nof_bucket_entries = get_nof_bucket_entries();
         u_old = u, v_old = v, w_old = w;
         return add_3cycle_rows() > 0;
     }
