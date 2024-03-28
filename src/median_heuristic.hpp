@@ -28,11 +28,10 @@ class median_heuristic {
     const bipartite_graph<T>& graph;
     const std::size_t n_free;
     std::vector<T> medians;
+    shift_heuristic<T, R> shift_h;
     const uint32_t lower_bound;
 
    public:
-    shift_heuristic<T, R> shift_h;
-
     /**
      * @brief initializes median heuristic for `instance`
      */
@@ -83,8 +82,7 @@ class median_heuristic {
     uint32_t operator()(std::vector<T>& ordering) {
         ordering.resize(n_free);
         for (T i = 0; i < n_free; ++i) ordering[i] = i;
-        sort(ordering.begin(), ordering.end(),
-             [=](const T& a, const T& b) -> bool { return this->compare(a, b); });
+        sort(ordering.begin(), ordering.end(), [=](const T& a, const T& b) -> bool { return this->compare(a, b); });
         const uint32_t nof_crossings = number_of_crossings(graph, ordering);
         assert(lower_bound <= nof_crossings);
         if (lower_bound >= nof_crossings) return nof_crossings;
