@@ -32,22 +32,33 @@ void test_branch_and_cut_with(const pace::instance<T, R>& instance) {
     const double t = pace::test::time_in_ms(start, end);
 
     uint32_t test = solver.get_nof_crossings();
-    uint32_t ref = pace::test::get_ref_nof_crossings(instance.filepath);
-    PACE_DEBUG_PRINTF("REFERENCE VALUE: %u\n", ref);
-    assert(test == ref);
-    assert(test == pace::number_of_crossings(instance.graph(), solver.get_ordering()));
-    (void)ref;
-
+    (void)test;
+    std::string warning;
+    try {
+        uint32_t ref = pace::test::get_ref_nof_crossings(instance.filepath);
+        PACE_DEBUG_PRINTF("REF: %u\n\n", ref);
+        assert(test == ref);
+        assert(test == pace::number_of_crossings(instance.graph(), solver.get_ordering()));
+        (void)ref;
+    } catch (std::exception& e) {
+        warning = e.what();
+    }
+    
     const pace::branch_and_cut_info& info = solver.get_info();
-    fmt::printf("|%11.1f%11u%11u%11u\n", t, info.nof_rows, info.nof_iterations, info.nof_branch_nodes);
+    fmt::printf("|%11.1f%11u%11u%11u|%11u%11u%11u|%11s\n",                             //
+                t, info.nof_rows, info.nof_iterations, info.nof_branch_nodes,          //
+                instance.get_lower_bound(), info.nof_crossings_h, info.nof_crossings,  //
+                warning);
 }
 
 void test_branch_and_cut(const fs::path dirpath) {
     fmt::printf("%s\n\n", dirpath);
-    fmt::printf("%11s%11s%11s%11s|%11s%11s%11s%11s\n",  //
-                "instance", "n fixed", "n free", "m",   //
-                "time in ms", "nof rows", "nof iter", "nof nodes");
-    pace::test::print_line(90);
+    fmt::printf("%11s%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%11s|%11s\n",  //
+                "instance", "n fixed", "n free", "m",                     //
+                "time in ms", "nof rows", "nof iter", "nof nodes",        //
+                "lower bound", "heuristic", "optimal",                    //
+                "warning");
+    pace::test::print_line(136);
     for (const auto& file : fs::directory_iterator(dirpath)) {
         if (!file.is_regular_file()) continue;
 
