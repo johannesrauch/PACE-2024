@@ -11,6 +11,7 @@
 
 #include <list>
 #include <vector>
+#include <limits>
 
 #include "crossings.hpp"
 #include "debug_printf.hpp"
@@ -35,8 +36,10 @@ class shift_heuristic {
     /// @brief internal ordering as list for fast shifting
     std::list<T> ordering_;
 
+    const uint32_t &lower_bound;
+
     /// @brief best upper bound (number of crossings)
-    uint32_t upper_bound{0};
+    uint32_t upper_bound{std::numeric_limits<uint32_t>::max()};
 
    public:
     /**
@@ -45,7 +48,8 @@ class shift_heuristic {
     shift_heuristic(const instance<T, R> &instance)
         : graph(instance.graph()),  //
           cr_matrix(instance.cr_matrix()),
-          ordering_(graph.get_n_free()) {}
+          ordering_(graph.get_n_free()),
+          lower_bound(instance.get_lower_bound()) {}
 
     /**
      * @brief runs the shift heuristic
@@ -67,6 +71,8 @@ class shift_heuristic {
      */
     template <std::size_t NOF_ITERATIONS = PACE_CONST_SHIFT_ITERATIONS>
     uint32_t operator()(std::vector<T> &ordering, const uint32_t nof_crossings) {
+        if (lower_bound >= nof_crossings) return nof_crossings;
+
         upper_bound = nof_crossings;
         assert(ordering.size() == graph.get_n_free());
         std::copy(ordering.begin(), ordering.end(), ordering_.begin());
