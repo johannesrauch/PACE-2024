@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <limits>
+#include <unordered_map>
 
 #include "Highs.h"
 #include "debug_printf.hpp"
@@ -35,13 +36,14 @@ struct highs_wrapper_info {
 
     std::size_t nof_rows{0};
     std::size_t nof_deleted_rows{0};
+    std::size_t nof_delete_rows_spared{0};
     std::size_t nof_added_rows{0};
     std::size_t nof_iterations_simplex{0};
     std::size_t nof_iterations_3cycles{0};
     std::size_t nof_bucket_entries{0};
 
     double t_simplex{0.};
-    double objective_value;
+    double objective_value{0.};
 };
 
 /**
@@ -91,7 +93,7 @@ class highs_wrapper {
     // bucket attributes and methods
     //
 
-    using bucket_entry = std::tuple<HighsInt, HighsInt, HighsInt>;
+    using bucket_entry = std::tuple<T, T, T>;
 
     /// @brief buckets for bucket sorting violated 3-cycle inequalities
     std::vector<std::vector<bucket_entry>> buckets{PACE_CONST_NOF_BUCKETS};
@@ -101,6 +103,29 @@ class highs_wrapper {
     //
 
     highs_wrapper_info<T> info;
+
+    //
+    // triples
+    //
+
+    struct ordered_triple {
+        T u, v, w;
+
+        ordered_triple(const T &u, const T &v, const T &w) : u(u), v(v), w(w) {}
+
+        bool operator==(const ordered_triple &other) const { return u == other.u && v == other.v && w == other.w; }
+    };
+
+    struct ordered_triple_hash {
+        std::size_t operator()(const ordered_triple &t) const {
+            const std::hash<T> hash;
+            return hash(t.u) ^ hash(t.v) ^ hash(t.w);
+        }
+    };
+
+    std::unordered_map<ordered_triple, uint8_t, ordered_triple_hash> nof_times_row_deleted;
+
+    std::list<ordered_triple> rows;
 
    public:
     template <typename R>
@@ -175,15 +200,29 @@ class highs_wrapper {
      * @brief delete rows with positive slack from the lp
      */
     void delete_positive_slack_rows() {
+        info.nof_delete_rows_spared = 0;
         // info.nof_deleted_rows = 0;
         // if (info.nof_iterations_3cycles >= 4) return;
 
         // gather rows to delete
         rows_to_delete.clear();
+        auto it_rows = rows.begin();
         for (std::size_t i = 0; i < nof_old_rows; ++i) {
-            if (has_row_slack(i)) {
+            assert(it_rows != rows.end());
+
+            const bool has_slack = has_row_slack(i);
+            auto it = nof_times_row_deleted.find(*it_rows);
+            const bool no_regard = it == nof_times_row_deleted.end() || it->second < 2;
+
+            if (has_slack && no_regard) {
                 rows_to_delete.emplace_back(i);
+                ++nof_times_row_deleted[*it_rows];
+                it_rows = rows.erase(it_rows);
+            } else {
+                ++it_rows;
             }
+
+            info.nof_delete_rows_spared += has_slack && !no_regard;
         }
 
         const HighsInt nof_rows_to_delete = rows_to_delete.size();
@@ -457,24 +496,30 @@ class highs_wrapper {
         std::size_t i = 0;
         bool go_on = true;
         for (auto r_it = buckets.rbegin(); r_it != buckets.rend() && go_on; ++r_it) {
-            for (const auto &[ij, jk, ik] : *r_it) {
-                const double bound_offset = get_3cycle_bound_offset(ij, jk, ik);
+            for (const auto &[u, v, w] : *r_it) {
+                const std::size_t uv = flat_index(n, n_choose_2, u, v);
+                const std::size_t vw = flat_index(n, n_choose_2, v, w);
+                const std::size_t uw = flat_index(n, n_choose_2, u, w);
+
+                const double bound_offset = get_3cycle_bound_offset(uv, vw, uw);
                 lower_bounds.emplace_back(0. + bound_offset);
                 upper_bounds.emplace_back(1. + bound_offset);
                 starts.emplace_back(indices.size());
-                if (magic[ij] >= 0) {
-                    indices.emplace_back(magic[ij]);
+                if (magic[uv] >= 0) {
+                    indices.emplace_back(magic[uv]);
                     values.emplace_back(1.);
                 }
-                if (magic[ik] >= 0) {
-                    indices.emplace_back(magic[ik]);
+                if (magic[uw] >= 0) {
+                    indices.emplace_back(magic[uw]);
                     values.emplace_back(-1.);
                 }
-                if (magic[jk] >= 0) {
-                    indices.emplace_back(magic[jk]);
+                if (magic[vw] >= 0) {
+                    indices.emplace_back(magic[vw]);
                     values.emplace_back(1.);
                 }
-                assert(magic[ij] >= 0 || magic[ik] >= 0 || magic[jk] >= 0);
+                assert(magic[uv] >= 0 || magic[uw] >= 0 || magic[vw] >= 0);
+
+                rows.emplace_back(u, v, w);
 
                 ++i;
                 if (i >= PACE_CONST_NOF_CYCLE_CONSTRAINTS) {
@@ -508,13 +553,13 @@ class highs_wrapper {
         constexpr double interval_width = 1. + 2e-7;
         if (is_3cycle_lb_violated(x)) {
             const double x_normalized = -x / interval_width;
-            get_bucket(x_normalized).emplace_back(uv, vw, uw);
+            get_bucket(x_normalized).emplace_back(u, v, w);
             return true;
         }
         if (is_3cycle_ub_violated(x)) {
             constexpr double ub = 1. + PACE_CONST_FEASIBILITY_TOLERANCE;
             const double x_normalized = (x - ub) / interval_width;
-            get_bucket(x_normalized).emplace_back(uv, vw, uw);
+            get_bucket(x_normalized).emplace_back(u, v, w);
             return true;
         }
         return false;
