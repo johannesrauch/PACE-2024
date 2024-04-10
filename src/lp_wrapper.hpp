@@ -116,6 +116,11 @@ class highs_wrapper {
         bool operator==(const ordered_triple &other) const { return u == other.u && v == other.v && w == other.w; }
     };
 
+    struct row_info {
+        uint16_t nof_times_deleted{0};
+        uint16_t nof_times_spared{0};
+    };
+
     struct ordered_triple_hash {
         std::size_t operator()(const ordered_triple &t) const {
             const std::hash<T> hash;
@@ -123,9 +128,11 @@ class highs_wrapper {
         }
     };
 
-    std::unordered_map<ordered_triple, uint8_t, ordered_triple_hash> nof_times_row_deleted;
+    std::unordered_map<ordered_triple, row_info, ordered_triple_hash> rows_info;
 
     std::list<ordered_triple> rows;
+
+    std::size_t nof_max_new_rows{PACE_CONST_NOF_CYCLE_CONSTRAINTS};
 
    public:
     template <typename R>
@@ -201,8 +208,6 @@ class highs_wrapper {
      */
     void delete_positive_slack_rows() {
         info.nof_delete_rows_spared = 0;
-        // info.nof_deleted_rows = 0;
-        // if (info.nof_iterations_3cycles >= 4) return;
 
         // gather rows to delete
         rows_to_delete.clear();
@@ -211,18 +216,30 @@ class highs_wrapper {
             assert(it_rows != rows.end());
 
             const bool has_slack = has_row_slack(i);
-            auto it = nof_times_row_deleted.find(*it_rows);
-            const bool no_regard = it == nof_times_row_deleted.end() || it->second < 2;
+            bool spare = false;
+            if (has_slack) {
+                auto it = rows_info.find(*it_rows);
+                if (it == rows_info.end()) {
+                    bool success;
+                    std::tie(it, success) = rows_info.emplace(*it_rows, row_info{});
+                    assert(success);
+                }
+                assert(it != rows_info.end());
+                spare = it->second.nof_times_deleted > it->second.nof_times_spared;
 
-            if (has_slack && no_regard) {
-                rows_to_delete.emplace_back(i);
-                ++nof_times_row_deleted[*it_rows];
-                it_rows = rows.erase(it_rows);
+                if (!spare) {
+                    rows_to_delete.emplace_back(i);
+                    ++it->second.nof_times_deleted;
+                    it->second.nof_times_spared = 0;
+                    it_rows = rows.erase(it_rows);
+                } else {
+                    ++it_rows;
+                    ++it->second.nof_times_spared;
+                    ++info.nof_delete_rows_spared;
+                }
             } else {
                 ++it_rows;
             }
-
-            info.nof_delete_rows_spared += has_slack && !no_regard;
         }
 
         const HighsInt nof_rows_to_delete = rows_to_delete.size();
@@ -478,13 +495,12 @@ class highs_wrapper {
 
     /**
      * @brief expects the violated 3-cycle ieqs in buckets.
-     * adds the most violated <= PACE_CONST_NOF_CYCLE_CONSTRAINTS to the lp.
+     * adds the most violated <= nof_max_new_rows to the lp.
      *
      * @return std::size_t number of new rows
      */
     inline std::size_t add_3cycle_rows() {
-        const std::size_t nof_new_rows =
-            std::min(get_nof_bucket_entries(), static_cast<std::size_t>(PACE_CONST_NOF_CYCLE_CONSTRAINTS));
+        const std::size_t nof_new_rows = std::min(get_nof_bucket_entries(), nof_max_new_rows);
         if (nof_new_rows <= 0) return 0;
 
         lower_bounds.clear();
@@ -522,7 +538,7 @@ class highs_wrapper {
                 rows.emplace_back(u, v, w);
 
                 ++i;
-                if (i >= PACE_CONST_NOF_CYCLE_CONSTRAINTS) {
+                if (i >= nof_max_new_rows) {
                     go_on = false;
                     break;
                 }
@@ -590,6 +606,9 @@ class highs_wrapper {
             }
         }
         ++info.nof_iterations_3cycles;
+        if (nof_max_new_rows < 4 * PACE_CONST_NOF_CYCLE_CONSTRAINTS) {
+            nof_max_new_rows *= 2;
+        }
         for (u = 0; u < n - 2; ++u) {
             bool u_eq_old = u == u_old;
             for (v = u + 1; v < n - 1; ++v) {
@@ -659,10 +678,10 @@ class highs_wrapper {
     /**
      * @brief returns if the last bucket is full
      *
-     * @return true if last bucket has >= PACE_CONST_NOF_CYCLE_CONSTRAINTS elements
+     * @return true if last bucket has >= nof_max_new_rows elements
      * @return false otherwise
      */
-    inline bool is_last_bucket_full() { return (*buckets.rbegin()).size() >= PACE_CONST_NOF_CYCLE_CONSTRAINTS; }
+    inline bool is_last_bucket_full() { return (*buckets.rbegin()).size() >= nof_max_new_rows; }
 };
 
 };  // namespace pace
