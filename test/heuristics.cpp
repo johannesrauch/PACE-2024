@@ -11,9 +11,6 @@
 
 namespace fs = std::filesystem;
 
-using T = uint16_t;
-using R = uint32_t;
-
 template <typename T, typename R>
 void test_heuristics(const pace::instance<T, R>& instance) {
     std::vector<T> ordering;
