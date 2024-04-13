@@ -108,8 +108,12 @@ class branch_and_cut {
 
     ~branch_and_cut() {
         if (lp_solver != nullptr) {
-            delete reli_branch;
             delete lp_solver;
+            lp_solver = nullptr;
+        }
+        if (reli_branch != nullptr) {
+            delete reli_branch;
+            reli_branch = nullptr;
         }
     }
 
