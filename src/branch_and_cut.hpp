@@ -282,9 +282,11 @@ class branch_and_cut {
 
         // driver loop for branch and cut
         const highs_wrapper_info<T> &info_lp = lp_solver->get_info();
-        (void) info_lp;
+        (void)info_lp;
         PACE_DEBUG_PRINTF("start branch and cut\n");
-        PACE_DEBUG_PRINTF("%11s=%11u\n", "nof cols", unsettled.size());
+        PACE_DEBUG_PRINTF("%11s=%11u, %11s=%11u\n",               //
+                          "nof cols", lp_solver->get_nof_cols(),  //
+                          "nof i rows", lp_solver->get_nof_rows());
         do {
             lp_solver->run();
             PACE_DEBUG_INFO(info, info_lp);
