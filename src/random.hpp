@@ -15,8 +15,8 @@ std::mt19937 generator(PACE_CONST_SEED);
  * @brief returns true with probability p
  */
 inline bool coinflip(const double p = 0.5) {
-    assert(0 <= p);
-    assert(p <= 1);
+    assert(0. <= p);
+    assert(p <= 1.);
     std::uniform_real_distribution<> distribution(0., 1.);
     return distribution(generator) < p;
 }
