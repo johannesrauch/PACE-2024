@@ -26,6 +26,10 @@
 #define PACE_CONST_INTEGER_TOLERANCE 1e-6
 #endif
 
+#ifndef PACE_CONST_NOF_INIT_ROWS
+#define PACE_CONST_NOF_INIT_ROWS 8192
+#endif
+
 namespace pace {
 
 template <typename T>
@@ -114,6 +118,19 @@ class highs_wrapper {
         ordered_triple(const T &u, const T &v, const T &w) : u(u), v(v), w(w) {}
 
         bool operator==(const ordered_triple &other) const { return u == other.u && v == other.v && w == other.w; }
+
+        bool operator<(const ordered_triple &other) const {
+            if (u < other.u)
+                return true;
+            else if (u > other.u)
+                return false;
+            else if (v < other.v)
+                return true;
+            else if (v > other.v)
+                return false;
+            else
+                return w < other.w;
+        }
     };
 
     struct row_info {
@@ -165,6 +182,7 @@ class highs_wrapper {
         values.reserve(3 * PACE_CONST_NOF_CYCLE_CONSTRAINTS);
 
         add_columns(instance, unsettled, objective_offset);
+        add_initial_rows(instance);
     }
 
     highs_wrapper(const highs_wrapper &rhs) = delete;
@@ -493,6 +511,91 @@ class highs_wrapper {
     // 3-cycle methods
     //
 
+    template <typename R>
+    inline void add_initial_rows(const instance<T, R> &instance) {
+        const folded_matrix<R> &cr_matrix = instance.cr_matrix();
+
+        clear_aux_vectors();
+        std::vector<ordered_triple> candidates;
+        for (T u = 0u; u + 2u < n; ++u) {
+            for (T v = u + 1u; v + 1u < n; ++v) {
+                const std::size_t uv = flat_index(n, n_choose_2, u, v);
+                const bool x_uv_in_lp = magic[uv] >= 0;
+
+                for (T w = v + 1u; w < n; ++w) {
+                    assert(u < v);
+                    assert(v < w);
+
+                    const std::size_t uw = flat_index(n, n_choose_2, u, w);
+                    const std::size_t vw = flat_index(n, n_choose_2, v, w);
+                    uint8_t nof_vars_in_lp = x_uv_in_lp;
+                    nof_vars_in_lp += magic[uw] >= 0;
+                    nof_vars_in_lp += magic[vw] >= 0;
+                    if (nof_vars_in_lp < 2) continue;
+
+                    const uint32_t c_uvw = cr_matrix(u, v) + cr_matrix(u, w) + cr_matrix(v, w);
+                    const uint32_t c_uwv = cr_matrix(u, v) + cr_matrix(u, w) + cr_matrix(w, v);
+                    const uint32_t c_vuw = cr_matrix(v, u) + cr_matrix(u, w) + cr_matrix(v, w);
+                    const uint32_t c_vwu = cr_matrix(v, u) + cr_matrix(w, u) + cr_matrix(v, w);
+                    const uint32_t c_wuv = cr_matrix(u, v) + cr_matrix(w, u) + cr_matrix(w, v);
+                    const uint32_t c_wvu = cr_matrix(v, u) + cr_matrix(w, u) + cr_matrix(w, v);
+                    const uint32_t c_min = std::min({c_uvw, c_uwv, c_vuw, c_vwu, c_wuv, c_wvu});
+
+                    const uint32_t c_uv_vw_wu = cr_matrix(u, v) + cr_matrix(v, w) + cr_matrix(w, u);
+                    const uint32_t c_vu_wv_uw = cr_matrix(v, u) + cr_matrix(w, v) + cr_matrix(u, w);
+                    const uint32_t c_min_forbidden = std::min(c_uv_vw_wu, c_vu_wv_uw);
+
+                    if (c_min_forbidden < c_min) {
+                        candidates.emplace_back(u, v, w);
+                    }
+                }
+            }
+        }
+
+        const double p = 16384.0 / candidates.size();
+        for (const auto &[u, v, w] : candidates) {
+            if (coinflip(p)) {
+                add_3cycle_row_to_aux_vectors(u, v, w);
+            }
+        }
+
+        lp.addRows(lower_bounds.size(), &lower_bounds[0], &upper_bounds[0],  //
+                   indices.size(), &starts[0], &indices[0], &values[0]);
+    }
+
+    void add_3cycle_row_to_aux_vectors(const T &u, const T &v, const T &w) {
+        const std::size_t uv = flat_index(n, n_choose_2, u, v);
+        const std::size_t vw = flat_index(n, n_choose_2, v, w);
+        const std::size_t uw = flat_index(n, n_choose_2, u, w);
+
+#ifndef NDEBUG
+        // at least two must be in the lp as variables since we compute transitive hull in oracle
+        uint8_t test = magic[uv] >= 0;
+        test += magic[uw] >= 0;
+        test += magic[vw] >= 0;
+        assert(test >= 2);
+#endif
+
+        const double bound_offset = get_3cycle_bound_offset(uv, vw, uw);
+        lower_bounds.emplace_back(0. + bound_offset);
+        upper_bounds.emplace_back(1. + bound_offset);
+        starts.emplace_back(indices.size());
+        if (magic[uv] >= 0) {
+            indices.emplace_back(magic[uv]);
+            values.emplace_back(1.);
+        }
+        if (magic[uw] >= 0) {
+            indices.emplace_back(magic[uw]);
+            values.emplace_back(-1.);
+        }
+        if (magic[vw] >= 0) {
+            indices.emplace_back(magic[vw]);
+            values.emplace_back(1.);
+        }
+
+        rows.emplace_back(u, v, w);
+    }
+
     /**
      * @brief expects the violated 3-cycle ieqs in buckets.
      * adds the most violated <= nof_max_new_rows to the lp.
@@ -503,40 +606,13 @@ class highs_wrapper {
         const std::size_t nof_new_rows = std::min(get_nof_bucket_entries(), nof_max_new_rows);
         if (nof_new_rows <= 0) return 0;
 
-        lower_bounds.clear();
-        upper_bounds.clear();
-        starts.clear();
-        indices.clear();
-        values.clear();
+        clear_aux_vectors();
 
         std::size_t i = 0;
         bool go_on = true;
         for (auto r_it = buckets.rbegin(); r_it != buckets.rend() && go_on; ++r_it) {
             for (const auto &[u, v, w] : *r_it) {
-                const std::size_t uv = flat_index(n, n_choose_2, u, v);
-                const std::size_t vw = flat_index(n, n_choose_2, v, w);
-                const std::size_t uw = flat_index(n, n_choose_2, u, w);
-
-                const double bound_offset = get_3cycle_bound_offset(uv, vw, uw);
-                lower_bounds.emplace_back(0. + bound_offset);
-                upper_bounds.emplace_back(1. + bound_offset);
-                starts.emplace_back(indices.size());
-                if (magic[uv] >= 0) {
-                    indices.emplace_back(magic[uv]);
-                    values.emplace_back(1.);
-                }
-                if (magic[uw] >= 0) {
-                    indices.emplace_back(magic[uw]);
-                    values.emplace_back(-1.);
-                }
-                if (magic[vw] >= 0) {
-                    indices.emplace_back(magic[vw]);
-                    values.emplace_back(1.);
-                }
-                assert(magic[uv] >= 0 || magic[uw] >= 0 || magic[vw] >= 0);
-
-                rows.emplace_back(u, v, w);
-
+                add_3cycle_row_to_aux_vectors(u, v, w);
                 ++i;
                 if (i >= nof_max_new_rows) {
                     go_on = false;
@@ -593,8 +669,8 @@ class highs_wrapper {
         // yes, I use the dark forces here, because it speeds things up and is imo cleaner
         T u = u_old, v = v_old, w = w_old;
         goto check_3cycles_in_for;
-        for (; u < n - 2; ++u) {
-            for (v = u + 1; v < n - 1; ++v) {
+        for (; u + 2u < n; ++u) {
+            for (v = u + 1; v + 1u < n; ++v) {
                 for (w = v + 1; w < n; ++w) {
                 check_3cycles_in_for:  // to pick off where we left
                     assert(u < v);
@@ -609,9 +685,9 @@ class highs_wrapper {
         if (nof_max_new_rows < 4 * PACE_CONST_NOF_CYCLE_CONSTRAINTS) {
             nof_max_new_rows *= 2;
         }
-        for (u = 0; u < n - 2; ++u) {
+        for (u = 0; u + 2u < n; ++u) {
             bool u_eq_old = u == u_old;
-            for (v = u + 1; v < n - 1; ++v) {
+            for (v = u + 1; v + 1u < n; ++v) {
                 bool v_eq_old = v == v_old;
                 for (w = v + 1; w < n; ++w) {
                     if (u_eq_old && v_eq_old && w == w_old) goto check_3cycles_after_for;
@@ -628,6 +704,14 @@ class highs_wrapper {
         info.nof_bucket_entries = get_nof_bucket_entries();
         u_old = u, v_old = v, w_old = w;
         return add_3cycle_rows() > 0;
+    }
+
+    inline void clear_aux_vectors() {
+        lower_bounds.clear();
+        upper_bounds.clear();
+        starts.clear();
+        indices.clear();
+        values.clear();
     }
 
     /**
