@@ -115,7 +115,7 @@ class input {
             if (u_r > v_r) return false;
             const T u_l = graph_ptr->get_leftmost_nbor_of_free(u);
             const T v_l = graph_ptr->get_leftmost_nbor_of_free(v);
-            return u_l > v_l;
+            return u_l < v_l;
         });
 
         // leftmost_nbors[i] is the leftmost nbor of free_layer[i], ..., free_layer[n_free - 1]
