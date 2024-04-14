@@ -4,11 +4,13 @@
 #include <cstddef>
 #include <vector>
 
+#include "printf.hpp"
+
 namespace pace {
 
 /**
  * @brief inverses a permutation of {0, 1, ..., in.size()}
- * 
+ *
  * @param in permutation, in parameter
  * @param out out parameter
  */
@@ -33,7 +35,7 @@ inline void inverse(const std::vector<T> &in, std::vector<T> &out) {
  * @return T the median of vec
  */
 template <typename T>
-inline T median(const std::vector<T>& vec) {
+inline T median(const std::vector<T> &vec) {
     const std::size_t len = vec.size();
     if (len == 0) {
         return 0;
@@ -73,10 +75,10 @@ R sorted_vector_intersection(const std::vector<T> &vec1, const std::vector<T> &v
 
 /**
  * @brief returns the union of the ascending sorted vectors `vec1` and `vec2` in `out`
- * 
+ *
  * @tparam T element type of vectors
- * @param vec1 
- * @param vec2 
+ * @param vec1
+ * @param vec2
  * @param out out-parameter, union of `vec1` and `vec2` is stored here
  */
 template <typename T>
@@ -100,6 +102,13 @@ void sorted_vector_union(const std::vector<T> &vec1, const std::vector<T> &vec2,
     }
     while (i < len1) out.emplace_back(vec1[i++]);
     while (j < len2) out.emplace_back(vec2[j++]);
+}
+
+template <typename T>
+void print_vector(const std::vector<T> &vec) {
+    for (const T &elem : vec) {
+        fmt::printf("%d\n", elem);
+    }
 }
 
 };  // namespace pace
