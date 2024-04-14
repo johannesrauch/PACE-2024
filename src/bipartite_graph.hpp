@@ -71,16 +71,12 @@ class bipartite_graph {
     /**
      * @brief adds `n` vertices to the fixed layer
      */
-    void add_fixed_vertices(const std::size_t n) {
-        n_fixed += n;
-    }
+    void add_fixed_vertices(const std::size_t n) { n_fixed += n; }
 
     /**
      * @brief adds `n` vertices to the free layer
      */
-    void add_free_vertices(const std::size_t n) {
-        adjacency_lists.resize(adjacency_lists.size() + n);
-    }
+    void add_free_vertices(const std::size_t n) { adjacency_lists.resize(adjacency_lists.size() + n); }
 
     //
     // clear modifiers
@@ -127,6 +123,24 @@ class bipartite_graph {
     }
 
     /**
+     * @brief returns the first element in neighbor list of v
+     */
+    T get_leftmost_nbor_of_free(const T v) const {
+        const std::vector<T> &nbors = get_neighbors_of_free(v);
+        assert(nbors.size() > 0);
+        return *get_neighbors_of_free(v).begin();
+    }
+
+    /**
+     * @brief returns the last element in neighbor list of v
+     */
+    T get_rightmost_nbor_of_free(const T v) const {
+        const std::vector<T> &nbors = get_neighbors_of_free(v);
+        assert(nbors.size() > 0);
+        return *get_neighbors_of_free(v).rbegin();
+    }
+
+    /**
      * @brief returns a reference to all edges
      */
     std::vector<std::pair<T, T>> &get_edges() { return edges; }
@@ -139,9 +153,7 @@ class bipartite_graph {
     /**
      * @brief returns the degree of vertex `v` in the free layer
      */
-    std::size_t degree_of_free(const std::size_t v) const {
-        return get_neighbors_of_free(v).size();
-    }
+    std::size_t degree_of_free(const std::size_t v) const { return get_neighbors_of_free(v).size(); }
 
     //
     // sorting methods

@@ -79,6 +79,95 @@ class instance {
     const uint32_t &get_lower_bound() const { return lower_bound; }
 };
 
+/**
+ * @brief general input that is able to split into (smaller) instances
+ *
+ * @tparam T vertex type
+ * @tparam R crossing number type
+ */
+template <typename T = uint16_t, typename R = uint32_t>
+class input {
+    bipartite_graph<T> *graph_ptr{new bipartite_graph<T>()};
+
+    std::vector<instance<T, R> *> instances;
+
+    std::size_t n_instances{1};
+
+    bool trivial_instance{false};
+
+   public:
+    input(const fs::path filepath) {
+        parse_input(filepath, *graph_ptr);
+
+        // sort free_layer according to rightmost nbors
+        const std::size_t n_free = graph_ptr->get_n_free();
+        std::vector<T> free_layer(n_free);
+        for (T v = 0; v < n_free; ++v) free_layer[v] = v;
+        std::sort(free_layer.begin(), free_layer.end(), [=](const T &u, const T &v) -> bool {
+            const bool deg_u_0 = graph_ptr->degree_of_free(u) == 0;
+            const bool deg_v_0 = graph_ptr->degree_of_free(v) == 0;
+            if (deg_u_0 && deg_v_0) return u < v;
+            if (deg_u_0) return true;
+            if (deg_v_0) return false;
+            const T u_r = graph_ptr->get_rightmost_nbor_of_free(u);
+            const T v_r = graph_ptr->get_rightmost_nbor_of_free(v);
+            if (u_r < v_r) return true;
+            if (u_r > v_r) return false;
+            const T u_l = graph_ptr->get_leftmost_nbor_of_free(u);
+            const T v_l = graph_ptr->get_leftmost_nbor_of_free(v);
+            return u_l > v_l;
+        });
+
+        // leftmost_nbors[i] is the leftmost nbor of free_layer[i], ..., free_layer[n_free - 1]
+        std::vector<T> leftmost_nbors(n_free);
+        T leftmost = n_free;
+        auto rit_free_layer = free_layer.rbegin();
+        for (auto rit = leftmost_nbors.rbegin(); rit != leftmost_nbors.rend(); ++rit) {
+            assert(rit_free_layer != free_layer.rend());
+            if (graph_ptr->degree_of_free(*rit_free_layer) == 0) break;
+            leftmost = std::min(leftmost, graph_ptr->get_leftmost_nbor_of_free(*rit_free_layer));
+            *rit = leftmost;
+            ++rit_free_layer;
+        }
+
+        // borders contains indices where subinstances in free_layer begin
+        std::vector<T> borders;
+        T i = 0;
+        while (i < n_free && graph_ptr->degree_of_free(free_layer[i]) == 0) ++i;
+        if (i > 0) {
+            trivial_instance = true;
+            borders.emplace_back(i);
+        }
+        while (i + 1u < n_free) {
+            assert(graph_ptr->degree_of_free(free_layer[i]) > 0);
+            const T rightmost_nbor = graph_ptr->get_rightmost_nbor_of_free(free_layer[i]);
+            if (rightmost_nbor <= leftmost_nbors[i + 1u]) {
+                borders.emplace_back(i + 1u);
+            }
+            ++i;
+        }
+
+        n_instances = borders.size() + 1u;
+    }
+
+    // delete copy and move constructor as well as copy and move assignment
+    input(const input<T, R> &other) = delete;
+    input(input<T, R> &&other) = delete;
+    input<T, R> &operator=(const input<T, R> &other) = delete;
+    input<T, R> &operator=(input<T, R> &&other) = delete;
+
+    ~input() {
+        for (const instance<T, R> *instance_ptr : instances) {
+            delete instance_ptr;
+        }
+        instances.clear();
+    }
+
+    std::size_t get_n_instances() { return n_instances; }
+
+    bool exists_trivial_instance() { return trivial_instance; }
+};
+
 };  // namespace pace
 
 #endif
