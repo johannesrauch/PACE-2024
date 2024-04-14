@@ -3,8 +3,8 @@
 
 #include <cassert>
 #include <cstdint>
-#include <fstream>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -16,13 +16,13 @@ namespace pace {
 namespace fs = std::filesystem;
 
 /**
- * @brief creates ifstream `input` from filepath and calls `parse_input(input, graph)` 
- * 
+ * @brief creates ifstream `input` from filepath and calls `parse_input(input, graph)`
+ *
  * @tparam T vertex type
  * @param input
  * @param graph in-out parameter; where instance gets stored
  */
-template<typename T>
+template <typename T>
 void parse_input(fs::path filepath, bipartite_graph<T> &graph) {
     std::ifstream input(filepath);
     parse_input(input, graph);
@@ -30,9 +30,9 @@ void parse_input(fs::path filepath, bipartite_graph<T> &graph) {
 
 /**
  * @brief reads an instance of one-sided crossing minimization from `input` and stores it in `graph`
- * 
+ *
  * @tparam T vertex type
- * @param input 
+ * @param input
  * @param graph in-out parameter; where instance gets stored
  */
 template <typename T>
@@ -59,9 +59,7 @@ void parse_input(std::ifstream &input, bipartite_graph<T> &graph) {
                 break;
 
             default:
-                std::cerr
-                    << "pace::parse_input(): unknown line type"
-                    << std::endl;
+                std::cerr << "pace::parse_input(): unknown line type" << std::endl;
                 return;
         }
     } while (type_of_line != 'p' && type_of_line != 'P');
