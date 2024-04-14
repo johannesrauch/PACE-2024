@@ -14,8 +14,6 @@ std::vector<std::pair<uint16_t, uint16_t>> ref_edges = {{1, 3}, {2, 4}, {1, 5},
 
 /**
  * @brief tests input.hpp
- * 
- * @return int 
  */
 int main() {
     const std::filesystem::path filepath{"tiny_test_set/instances/star_6.gr"};
