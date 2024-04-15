@@ -40,6 +40,8 @@ class bipartite_graph {
      */
     std::vector<std::pair<T, T>> edges;
 
+    bool is_sorted{false};
+
    public:
     using vertex_t = T;
 
@@ -64,6 +66,7 @@ class bipartite_graph {
     void add_edge(const T u, const T v) {
         assert(u < get_n_fixed());
         assert(v < get_n_free());
+        is_sorted = false;
         adjacency_lists[v].emplace_back(u);
         edges.emplace_back(u, v);
     }
@@ -125,7 +128,8 @@ class bipartite_graph {
     /**
      * @brief returns the first element in neighbor list of v
      */
-    T get_leftmost_nbor_of_free(const T v) const {
+    T get_leftmost_nbor(const T v) const {
+        assert(is_sorted);
         const std::vector<T> &nbors = get_neighbors_of_free(v);
         assert(nbors.size() > 0);
         return *get_neighbors_of_free(v).begin();
@@ -134,7 +138,8 @@ class bipartite_graph {
     /**
      * @brief returns the last element in neighbor list of v
      */
-    T get_rightmost_nbor_of_free(const T v) const {
+    T get_rightmost_nbor(const T v) const {
+        assert(is_sorted);
         const std::vector<T> &nbors = get_neighbors_of_free(v);
         assert(nbors.size() > 0);
         return *get_neighbors_of_free(v).rbegin();
@@ -166,6 +171,7 @@ class bipartite_graph {
         for (auto &adjacency_list : adjacency_lists) {
             std::sort(adjacency_list.begin(), adjacency_list.end());
         }
+        is_sorted = true;
     }
 };
 

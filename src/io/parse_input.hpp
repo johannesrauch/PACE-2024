@@ -1,5 +1,5 @@
-#ifndef PACE_INPUT_HPP
-#define PACE_INPUT_HPP
+#ifndef PACE_IO_PARSE_INPUT_HPP
+#define PACE_IO_PARSE_INPUT_HPP
 
 #include <cassert>
 #include <cstdint>
