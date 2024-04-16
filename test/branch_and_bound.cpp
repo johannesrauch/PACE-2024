@@ -30,7 +30,7 @@ void test_branch_and_bound_with(const pace::instance<T, R>& instance) {
     (void)test;
     std::string warning;
     try {
-        uint32_t ref = pace::test::get_ref_nof_crossings(instance.filepath);
+        uint32_t ref = pace::test::get_ref_n_crossings(instance.filepath);
         PACE_DEBUG_PRINTF("REF: %u\n\n", ref);
         assert(test == ref);
         assert(test == pace::number_of_crossings(instance.graph(), solver.get_ordering()));

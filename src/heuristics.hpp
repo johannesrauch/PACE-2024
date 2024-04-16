@@ -10,7 +10,7 @@
 namespace pace {
 
 template <typename T, typename R>
-uint32_t heuristics(const instance<T, R> &instance, std::vector<T> &ordering) {
+uint32_t heuristics(instance<T, R> &instance, std::vector<T> &ordering) {
     const uint32_t &lb = instance.get_lower_bound();
     uint32_t ub = barycenter_heuristic{instance}(ordering);
     assert(lb <= ub);

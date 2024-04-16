@@ -25,7 +25,7 @@ void test_shift_heuristic(const pace::instance<T, R> &instance, bool print_optim
 
     int32_t optimal = -1;
     if (print_optimal) {
-        optimal = pace::test::get_ref_nof_crossings(instance.filepath);
+        optimal = pace::test::get_ref_n_crossings(instance.filepath);
     }
     fmt::printf("%11s%11d|%11u%11u%11.4f%11u|%11u%11u%11.4f%11u|%11u%11.4f\n",
                 instance.filepath.filename(), optimal,  //

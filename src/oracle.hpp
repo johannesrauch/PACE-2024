@@ -37,9 +37,9 @@ class oracle {
 
    public:
     /// @brief initializes the oracle
-    oracle(const instance<T, R> &instance, const uint32_t upper_bound)
-        : graph(instance.graph()),  //
-          cr_matrix(instance.cr_matrix()),
+    oracle(instance<T, R> &instance, const uint32_t upper_bound)
+        : graph(instance.get_graph()),  //
+          cr_matrix(instance.get_cr_matrix()),
           lower_bound(instance.get_lower_bound()),
           upper_bound(upper_bound),
           n(graph.get_n_free()),
@@ -161,8 +161,8 @@ class oracle {
      * @brief based on an idea of Dujmovic et al, see https://doi.org/10.1016/j.jda.2006.12.008
      */
     inline pattern based_on_pattern(const T &u, const T &v, const R &c_uv, const R &c_vu) {
-        const std::vector<T> &nbors_u = graph.get_neighbors_of_free(u);
-        const std::vector<T> &nbors_v = graph.get_neighbors_of_free(v);
+        const std::vector<T> &nbors_u = graph.get_neighbors(u);
+        const std::vector<T> &nbors_v = graph.get_neighbors(v);
         // necessary condition for further statements
         if (nbors_u.size() != nbors_v.size()) return indeterminate;
         assert(nbors_u.size() > 0 && nbors_v.size() > 0);

@@ -5,7 +5,7 @@
 
 #include "branch_and_cut.hpp"
 #include "crossings.hpp"
-#include "input.hpp"
+#include "io/parse_input.hpp"
 #include "output.hpp"
 #include "printf.hpp"
 #include "test_utils.hpp"
@@ -20,7 +20,7 @@ void test_solver_w_instance(std::filesystem::path filepath_instance) {
     solver.solve(false);
 
     uint32_t ref_nof_crossings =
-        pace::test::get_ref_nof_crossings<uint32_t>(filepath_instance);
+        pace::test::get_ref_n_crossings<uint32_t>(filepath_instance);
     (void)ref_nof_crossings;
 
     uint32_t test_nof_crossings =

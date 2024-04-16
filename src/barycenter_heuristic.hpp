@@ -1,10 +1,6 @@
 #ifndef PACE_BARYCENTER_HEURISTIC_HPP
 #define PACE_BARYCENTER_HEURISTIC_HPP
 
-#include <vector>
-
-#include "crossings.hpp"
-#include "instance.hpp"
 #include "shift_heuristic.hpp"
 
 namespace pace {
@@ -16,7 +12,7 @@ namespace pace {
  * @tparam R crossing numbers type
  */
 template <typename T, typename R>
-class barycenter_heuristic {
+class barycenter_heuristic : public instance_view<T, R> {
     /// @brief input instance of one-sided crossing minimization
     const bipartite_graph<T> &graph;
 
@@ -42,9 +38,9 @@ class barycenter_heuristic {
      * @param graph input instance of one-sided crossing minimization
      * @param ordering in-out parameter, in which the computed ordering is stored
      */
-    barycenter_heuristic(const instance<T, R> &instance)
-        : graph(instance.graph()),
-          cr_matrix(instance.cr_matrix()),
+    barycenter_heuristic(instance<T, R> &instance_) : instance_view(instance_)
+        : graph(instance.get_graph()),
+          cr_matrix(instance.get_cr_matrix()),
           n_free(graph.get_n_free()),
           barycenters(n_free),
           shift_h(instance),
@@ -89,7 +85,7 @@ class barycenter_heuristic {
 
     /// @brief returns (sum of every neighbor j of i) / degree(i)
     inline double barycenter(const T &i) {
-        const std::vector<T> &neighbors = graph.get_neighbors_of_free(i);
+        const std::vector<T> &neighbors = graph.get_neighbors(i);
         if (neighbors.empty()) return 0.;
         double sum = 0.;
         for (const T &j : neighbors) sum += j;

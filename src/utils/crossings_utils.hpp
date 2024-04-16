@@ -1,13 +1,13 @@
-#ifndef PACE_CROSSINGS_HPP
-#define PACE_CROSSINGS_HPP
+#ifndef PACE_UTILS_CROSSINGS_UTILS_HPP
+#define PACE_UTILS_CROSSINGS_UTILS_HPP
 
 #include <algorithm>
 #include <utility>
 #include <vector>
 
-#include "bipartite_graph.hpp"
-#include "matrix.hpp"
-#include "vector_utils.hpp"
+#include "model/bipartite_graph.hpp"
+#include "matrix/matrix.hpp"
+#include "utils/vector_utils.hpp"
 
 namespace pace {
 
@@ -18,9 +18,9 @@ namespace pace {
  * @tparam R return type
  */
 template <typename T, typename R = uint32_t>
-std::pair<R, R> crossing_numbers_of(const bipartite_graph<T>& graph, T u, T v) {
-    const auto& nbors_u = graph.get_neighbors_of_free(u);
-    const auto& nbors_v = graph.get_neighbors_of_free(v);
+std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph, T u, T v) {
+    const auto& nbors_u = graph.get_neighbors(u);
+    const auto& nbors_v = graph.get_neighbors(v);
 
     const std::size_t deg_u = nbors_u.size();
     const std::size_t deg_v = nbors_v.size();
@@ -62,17 +62,14 @@ std::pair<R, R> crossing_numbers_of(const bipartite_graph<T>& graph, T u, T v) {
  * @tparam R accumulation tree type
  */
 template <typename T, typename R = uint32_t>
-uint32_t number_of_crossings(const bipartite_graph<T>& graph, const std::vector<T>& ordering) {
-    // compute the positions of each element
-    // (inverse of the permutation ordering)
+uint32_t number_of_crossings(const general_bipartite_graph<T>& graph, const std::vector<T>& ordering) {
+    // compute the positions of each element (inverse of the permutation ordering)
     const std::size_t n1 = graph.get_n_free();
     std::vector<T> positions(n1);
-    for (std::size_t i = 0; i < n1; ++i) {
-        positions[ordering[i]] = i;
-    }
+    inverse(ordering, positions);
 
     // sort, we need the positions of the ends of the edges in the free layer
-    auto& edges = const_cast<bipartite_graph<T>&>(graph).get_edges();
+    auto& edges = const_cast<general_bipartite_graph<T>&>(graph).get_edges();
     std::sort(edges.begin(), edges.end(), [&](const std::pair<T, T>& a, const std::pair<T, T>& b) {
         if (a.first < b.first)
             return true;
@@ -82,26 +79,30 @@ uint32_t number_of_crossings(const bipartite_graph<T>& graph, const std::vector<
             return positions[a.second] < positions[b.second];
     });
 
-    /* build the accumulator tree */
+    // build the accumulator tree
     std::size_t q = ordering.size();
     std::size_t firstindex = 1;
     while (firstindex < q) firstindex *= 2;
-    std::size_t treesize = 2 * firstindex - 1; /* number of tree nodes */
-    firstindex -= 1;                           /* index of leftmost leaf */
+    // number of tree nodes
+    std::size_t treesize = 2 * firstindex - 1;
+    // index of leftmost leaf
+    firstindex -= 1;
     std::vector<R> tree(treesize);
 
-    /* count the crossings */
-    uint32_t crosscount = 0;                          /* number of crossings */
-    for (std::size_t k = 0; k < graph.get_m(); ++k) { /* insert edge k */
+    // count the crossings
+    uint32_t n_crossings = 0;
+    for (std::size_t k = 0; k < graph.get_m(); ++k) {
+        // insert edge k
         std::size_t index = positions[edges[k].second] + firstindex;
         ++tree[index];
         while (index > 0) {
-            if (index % 2) crosscount += tree[index + 1];
+            if (index % 2) n_crossings += tree[index + 1];
             index = (index - 1) / 2;
             ++tree[index];
         }
     }
-    return crosscount;
+
+    return n_crossings;
 }
 
 /**
@@ -126,33 +127,6 @@ uint32_t number_of_crossings(const folded_matrix<R>& cr_matrix, const std::vecto
                 nof_crossings += cr_matrix(i, j);
             else
                 nof_crossings += cr_matrix(j, i);
-        }
-    }
-    return nof_crossings;
-}
-
-/**
- * @brief returns the number of crossings in the given ordering
- *
- * @tparam T vertex type
- * @tparam R crossing number type
- * @param cr_matrix crossing number matrix
- * @param ordering ordering of free layer
- */
-template <typename T, typename R>
-uint32_t number_of_crossings(const sparse_matrix<R>& cr_matrix, const std::vector<T>& ordering) {
-    const std::size_t n_free = cr_matrix.get_m();
-    assert(n_free == ordering.size());
-    std::vector<T> positions(n_free);
-    inverse(ordering, positions);  // to access `cr_matrix` cache-friendly
-
-    uint32_t nof_crossings = 0;
-    for (std::size_t i = 0; i < cr_matrix.get_nof_nonzero_elements(); ++i) {
-        const std::pair<T, T>& p = cr_matrix.get_indices(i);
-        if (p.first < p.second && positions[p.first] < positions[p.second]) {
-            nof_crossings += cr_matrix.get_datum(i);
-        } else if (p.first > p.second && positions[p.first] < positions[p.second]) {
-            nof_crossings += cr_matrix.get_datum(i);
         }
     }
     return nof_crossings;

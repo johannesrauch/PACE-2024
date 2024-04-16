@@ -1,16 +1,11 @@
-#ifndef PACE_BIPARTITE_GRAPH_HPP
-#define PACE_BIPARTITE_GRAPH_HPP
+#ifndef PACE_MODEL_BIPARTITE_GRAPH_HPP
+#define PACE_MODEL_BIPARTITE_GRAPH_HPP
 
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
-#include <string>
+#include <type_traits>
 #include <vector>
-
-#include "debug_printf.hpp"
 
 namespace pace {
 
@@ -21,8 +16,8 @@ namespace pace {
  * @tparam T vertex type
  * @tparam std::enable_if_t<std::is_unsigned<T>::value>
  */
-template <typename T = uint16_t, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
-class bipartite_graph {
+template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
+class general_bipartite_graph {
     /**
      * @brief number of vertices in the fixed layer
      */
@@ -34,24 +29,25 @@ class bipartite_graph {
     std::vector<std::vector<T>> adjacency_lists;
 
     /**
-     * @brief edges
-     * first vertex is in fixed layer
-     * second vertex is in free layer
+     * @brief edges, first vertex is in fixed layer, second vertex is in free layer
      */
     std::vector<std::pair<T, T>> edges;
 
+    /**
+     * @brief true iff all adjacency lists are sorted
+     */
     bool is_sorted{false};
 
    public:
     using vertex_t = T;
 
-    bipartite_graph() {}
+    general_bipartite_graph() {}
 
     // delete copy and move constructor, copy assignment and move assignment
-    bipartite_graph(const bipartite_graph &rhs) = delete;
-    bipartite_graph(bipartite_graph &&rhs) = delete;
-    bipartite_graph &operator=(const bipartite_graph &rhs) = delete;
-    bipartite_graph &operator=(bipartite_graph &&rhs) = delete;
+    general_bipartite_graph(const general_bipartite_graph &rhs) = delete;
+    general_bipartite_graph(general_bipartite_graph &&rhs) = delete;
+    general_bipartite_graph &operator=(const general_bipartite_graph &rhs) = delete;
+    general_bipartite_graph &operator=(general_bipartite_graph &&rhs) = delete;
 
     //
     // add modifiers
@@ -79,7 +75,9 @@ class bipartite_graph {
     /**
      * @brief adds `n` vertices to the free layer
      */
-    void add_free_vertices(const std::size_t n) { adjacency_lists.resize(adjacency_lists.size() + n); }
+    void add_free_vertices(const std::size_t n) {
+        adjacency_lists.resize(adjacency_lists.size() + n);
+    }
 
     //
     // clear modifiers
@@ -120,7 +118,7 @@ class bipartite_graph {
     /**
      * @brief get neighbors of vertex v, which is in the free layer
      */
-    const std::vector<T> &get_neighbors_of_free(const T v) const {
+    const std::vector<T> &get_neighbors(const T v) const {
         assert(v < get_n_free());
         return adjacency_lists[v];
     }
@@ -130,9 +128,9 @@ class bipartite_graph {
      */
     T get_leftmost_nbor(const T v) const {
         assert(is_sorted);
-        const std::vector<T> &nbors = get_neighbors_of_free(v);
+        const std::vector<T> &nbors = get_neighbors(v);
         assert(nbors.size() > 0);
-        return *get_neighbors_of_free(v).begin();
+        return *get_neighbors(v).begin();
     }
 
     /**
@@ -140,9 +138,9 @@ class bipartite_graph {
      */
     T get_rightmost_nbor(const T v) const {
         assert(is_sorted);
-        const std::vector<T> &nbors = get_neighbors_of_free(v);
+        const std::vector<T> &nbors = get_neighbors(v);
         assert(nbors.size() > 0);
-        return *get_neighbors_of_free(v).rbegin();
+        return *get_neighbors(v).rbegin();
     }
 
     /**
@@ -151,14 +149,9 @@ class bipartite_graph {
     std::vector<std::pair<T, T>> &get_edges() { return edges; }
 
     /**
-     * @brief returns a constant reference to all edges
-     */
-    const std::vector<std::pair<T, T>> &get_edges() const { return edges; }
-
-    /**
      * @brief returns the degree of vertex `v` in the free layer
      */
-    std::size_t degree_of_free(const std::size_t v) const { return get_neighbors_of_free(v).size(); }
+    std::size_t get_degree(const std::size_t v) const { return get_neighbors(v).size(); }
 
     //
     // sorting methods
@@ -175,9 +168,7 @@ class bipartite_graph {
     }
 };
 
-using uint64_bipartite_graph = bipartite_graph<uint64_t>;
-using uint32_bipartite_graph = bipartite_graph<uint32_t>;
-using uint16_bipartite_graph = bipartite_graph<uint16_t>;
+using bipartite_graph = general_bipartite_graph<uint32_t>;
 
 };  // namespace pace
 

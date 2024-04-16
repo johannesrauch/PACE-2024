@@ -91,7 +91,7 @@ void test_position_oracle(const pace::instance<T, R>& instance, const bool do_te
         for (const auto& [u, v] : forced_pairs) {
             assert(positions[u] < positions[v]);
         }
-        optimal = pace::test::get_ref_nof_crossings(instance.filepath);
+        optimal = pace::test::get_ref_n_crossings(instance.filepath);
     }
     assert(pace::topological_sort(restriction_graph, ordering));
 

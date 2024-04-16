@@ -66,7 +66,7 @@ void test_heuristics(const pace::instance<T, R>& instance) {
 
     const std::string best = c_b < c_p ? "b" : (c_b == c_p ? "=" : (c_m == c_p ? "m" : "p"));
     const std::string fastest = t_b < t_m ? "b" : "m";
-    const uint32_t optimal = pace::test::get_ref_nof_crossings(instance.filepath);
+    const uint32_t optimal = pace::test::get_ref_n_crossings(instance.filepath);
     fmt::printf("%11s%11u%11u|%11u%11.3f%11.4f|%11u%11.3f%11.4f|%11u%11.3f%11.4f%11u|%11s%11.4f%11s|%11u%11u%11u\n",
                 instance.filepath.filename(), instance.get_lower_bound(), optimal, c_b, t_b,
                 (static_cast<double>(c_b) / optimal - 1) * 100, c_m, t_m,

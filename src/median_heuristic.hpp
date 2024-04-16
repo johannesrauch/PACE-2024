@@ -35,8 +35,8 @@ class median_heuristic {
     /**
      * @brief initializes median heuristic for `instance`
      */
-    median_heuristic(const instance<T, R>& instance)
-        : graph(instance.graph()),  //
+    median_heuristic(instance<T, R>& instance)
+        : graph(instance.get_graph()),  //
           n_free(graph.get_n_free()),
           medians(n_free),
           shift_h(instance),
@@ -63,9 +63,9 @@ class median_heuristic {
             return true;
         } else if (medians[a] > medians[b]) {
             return false;
-        } else if (graph.degree_of_free(a) % 2 == 1 && graph.degree_of_free(b) % 2 == 0) {
+        } else if (graph.get_degree(a) % 2 == 1 && graph.get_degree(b) % 2 == 0) {
             return true;
-        } else if (graph.degree_of_free(a) % 2 == 0 && graph.degree_of_free(b) % 2 == 1) {
+        } else if (graph.get_degree(a) % 2 == 0 && graph.get_degree(b) % 2 == 1) {
             return false;
         } else {
             return a < b;
@@ -100,7 +100,7 @@ class median_heuristic {
      */
     inline void fill_medians() {
         for (std::size_t i = 0; i < n_free; ++i) {
-            medians[i] = median(graph.get_neighbors_of_free(i));
+            medians[i] = median(graph.get_neighbors(i));
         }
     }
 
@@ -124,9 +124,9 @@ class median_heuristic {
                 return true;
             } else if (medians[a] > medians[b]) {
                 return false;
-            } else if (graph.degree_of_free(a) % 2 == 1 && graph.degree_of_free(b) % 2 == 0) {
+            } else if (graph.get_degree(a) % 2 == 1 && graph.get_degree(b) % 2 == 0) {
                 return true;
-            } else if (graph.degree_of_free(a) % 2 == 0 && graph.degree_of_free(b) % 2 == 1) {
+            } else if (graph.get_degree(a) % 2 == 0 && graph.get_degree(b) % 2 == 1) {
                 return false;
             } else {
                 return a < b;
@@ -161,8 +161,8 @@ class probmedian_heuristic {
      * @param ordering vector where the ordering is stored
      * @param nof_iterations number of iterations
      */
-    probmedian_heuristic(const instance<T, R>& instance)
-        : graph(instance.graph()),
+    probmedian_heuristic(instance<T, R>& instance)
+        : graph(instance.get_graph()),
           n_free(graph.get_n_free()),
           another_ordering(n_free),
           medians(n_free),
@@ -201,9 +201,9 @@ class probmedian_heuristic {
             return true;
         } else if (medians[a] > medians[b]) {  // from here medians[a] == medians[b]
             return false;
-        } else if (graph.degree_of_free(a) % 2 == 1 && graph.degree_of_free(b) % 2 == 0) {
+        } else if (graph.get_degree(a) % 2 == 1 && graph.get_degree(b) % 2 == 0) {
             return true;
-        } else if (graph.degree_of_free(a) % 2 == 0 && graph.degree_of_free(b) % 2 == 1) {
+        } else if (graph.get_degree(a) % 2 == 0 && graph.get_degree(b) % 2 == 1) {
             return false;
         } else {
             return a < b;
@@ -253,22 +253,22 @@ class probmedian_heuristic {
     }
 
     /**
-     * @brief returns randomized median of `graph.get_neighbors_of_free(i)`
+     * @brief returns randomized median of `graph.get_neighbors(i)`
      */
     inline T randomized_median(const std::size_t& i) {
-        const auto& neighbors = graph.get_neighbors_of_free(i);
-        const std::size_t nof_neighbors = graph.degree_of_free(i);
+        const auto& neighbors = graph.get_neighbors(i);
+        const std::size_t nof_neighbors = graph.get_degree(i);
         if (nof_neighbors == 0) {
             return 0;
         } else {
-            const std::size_t j = static_cast<std::size_t>(distribution(generator) * nof_neighbors);
+            const std::size_t j = static_cast<std::size_t>(distribution(rd_generator) * nof_neighbors);
             assert(j < nof_neighbors);
             return neighbors[j];
         }
     }
 
     /**
-     * @brief computes randomized medians of every `graph.get_neighbors_of_free(i)`
+     * @brief computes randomized medians of every `graph.get_neighbors(i)`
      * using `randomized_median(i)` and stores them in `randomized_medians`
      */
     void fill_randomized_medians() {
@@ -278,12 +278,12 @@ class probmedian_heuristic {
     }
 
     /**
-     * @brief computes medians of every `graph.get_neighbors_of_free(i)` using
+     * @brief computes medians of every `graph.get_neighbors(i)` using
      * `internal::median(...)` and stores them in `medians`
      */
     inline void fill_medians() {
         for (std::size_t i = 0; i < n_free; ++i) {
-            medians[i] = median(graph.get_neighbors_of_free(i));
+            medians[i] = median(graph.get_neighbors(i));
         }
     }
 };

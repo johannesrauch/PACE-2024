@@ -8,7 +8,8 @@
 
 #include "crossings.hpp"
 #include "debug_printf.hpp"
-#include "input.hpp"
+#include "io/parse_input.hpp"
+#include "io/input.hpp"
 #include "instance.hpp"
 #include "output.hpp"
 #include "printf.hpp"
@@ -17,10 +18,11 @@
 namespace fs = std::filesystem;
 
 template <typename T, typename R>
-void test_branch_and_cut_with(const pace::instance<T, R>& instance) {
-    const pace::bipartite_graph<T>& graph = instance.graph();
+void test_branch_and_cut_with(pace::input<T, R>& input) {
+    pace::instance<T, R> instance(input.get_graph());
+    const pace::bipartite_graph<T>& graph = instance.get_graph();
     fmt::printf("%11s%11u%11u%11u",            //
-                instance.filepath.filename(),  //
+                input.filepath.filename(),  //
                 graph.get_n_fixed(),           //
                 graph.get_n_free(),            //
                 graph.get_m());
@@ -36,10 +38,10 @@ void test_branch_and_cut_with(const pace::instance<T, R>& instance) {
     (void)test;
     std::string warning;
     try {
-        uint32_t ref = pace::test::get_ref_nof_crossings(instance.filepath);
+        uint32_t ref = pace::test::get_ref_n_crossings(input.filepath);
         PACE_DEBUG_PRINTF("REF: %u\n\n", ref);
         assert(test == ref);
-        assert(test == pace::number_of_crossings(instance.graph(), solver.get_ordering()));
+        assert(test == pace::number_of_crossings(instance.get_graph(), solver.get_ordering()));
         (void)ref;
     } catch (std::exception& e) {
         warning = e.what();
@@ -67,8 +69,8 @@ void test_branch_and_cut(const fs::path dirpath) {
         }
     }
     for (const auto& filepath : testcases) {
-        pace::instance instance(filepath);
-        test_branch_and_cut_with(instance);
+        pace::input input(filepath);
+        test_branch_and_cut_with(input);
     }
     fmt::printf("\n");
 }
@@ -83,8 +85,8 @@ int main(int argc, char** argv) {
     } else {
         const fs::path path = argv[1];
         if (path.extension() == ".gr") {
-            pace::instance instance(path);
-            test_branch_and_cut_with(instance);
+            pace::input input(path);
+            test_branch_and_cut_with(input);
         } else {
             test_branch_and_cut(std::string{argv[1]} + "/instances");
         }

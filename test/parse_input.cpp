@@ -1,4 +1,4 @@
-#include "input.hpp"
+#include "io/parse_input.hpp"
 #include "test_utils.hpp"
 
 #include <cassert>

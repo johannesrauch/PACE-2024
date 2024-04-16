@@ -153,12 +153,12 @@ class highs_wrapper {
 
    public:
     template <typename R>
-    highs_wrapper(const instance<T, R> &instance,                 //
+    highs_wrapper(instance<T, R> &instance,                 //
                   const std::vector<int> &magic,                  //
                   const std::vector<std::pair<T, T>> &unsettled,  //
                   const uint32_t objective_offset,                //
                   const uint32_t upper_bound)
-        : n(instance.graph().get_n_free()),
+        : n(instance.get_graph().get_n_free()),
           n_choose_2(n * (n - 1) / 2),
           lower_bound(instance.get_lower_bound()),
           upper_bound(upper_bound),
@@ -279,10 +279,10 @@ class highs_wrapper {
      * @param instance the instance
      */
     template <typename R>
-    inline void add_columns(const instance<T, R> &instance,                 //
+    inline void add_columns(instance<T, R> &instance,                 //
                             const std::vector<std::pair<T, T>> &unsettled,  //
                             uint32_t objective_offset) {
-        const folded_matrix<R> &cr_matrix = instance.cr_matrix();
+        const folded_matrix<R> &cr_matrix = instance.get_cr_matrix();
 
         // add variables which are not yet settled
         for (const auto &[u, v] : unsettled) {
@@ -512,8 +512,8 @@ class highs_wrapper {
     //
 
     template <typename R>
-    inline void add_initial_rows(const instance<T, R> &instance) {
-        const folded_matrix<R> &cr_matrix = instance.cr_matrix();
+    inline void add_initial_rows(instance<T, R> &instance) {
+        const folded_matrix<R> &cr_matrix = instance.get_cr_matrix();
 
         clear_aux_vectors();
         std::vector<ordered_triple> candidates;

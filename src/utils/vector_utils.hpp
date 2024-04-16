@@ -1,12 +1,44 @@
-#ifndef PACE_VECTOR_INTERSECTION_HPP
-#define PACE_VECTOR_INTERSECTION_HPP
+#ifndef PACE_UTILS_VECTOR_UTILS_HPP
+#define PACE_UTILS_VECTOR_UTILS_HPP
 
 #include <cstddef>
 #include <vector>
 
-#include "printf.hpp"
+#include "fmt/printf.hpp"
 
 namespace pace {
+
+//
+// test functions
+//
+
+namespace test {
+
+template <typename T>
+void print_vector(const std::vector<T> &vec) {
+    for (const T &elem : vec) {
+        fmt::printf("%d, ", elem);
+    }
+    fmt::printf("\n");
+}
+
+template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
+bool is_permutation(const std::vector<T> &vec) {
+    const std::size_t n = vec.size();
+    std::vector<bool> test(n);
+    for (const T &v : vec) {
+        if (v > n) return false;
+        if (test[v]) return false;
+        test[v] = true;
+    }
+    return true;
+}
+
+};
+
+//
+// vector utility functions
+//
 
 /**
  * @brief inverses a permutation of {0, 1, ..., in.size()}
@@ -16,6 +48,7 @@ namespace pace {
  */
 template <typename T>
 inline void inverse(const std::vector<T> &in, std::vector<T> &out) {
+    assert(test::is_permutation(in));
     const std::size_t len = in.size();
     out.resize(len);
     for (std::size_t i = 0; i < len; ++i) {
@@ -103,30 +136,6 @@ void sorted_vector_union(const std::vector<T> &vec1, const std::vector<T> &vec2,
     while (i < len1) out.emplace_back(vec1[i++]);
     while (j < len2) out.emplace_back(vec2[j++]);
 }
-
-namespace test {
-
-template <typename T>
-void print_vector(const std::vector<T> &vec) {
-    for (const T &elem : vec) {
-        fmt::printf("%d, ", elem);
-    }
-    fmt::printf("\n");
-}
-
-template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
-bool is_permutation(const std::vector<T> &vec) {
-    const std::size_t n = vec.size();
-    std::vector<bool> test(n);
-    for (const T &v : vec) {
-        if (v > n) return false;
-        if (test[v]) return false;
-        test[v] = true;
-    }
-    return true;
-}
-
-};
 
 };  // namespace pace
 

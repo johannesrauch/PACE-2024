@@ -1,13 +1,11 @@
-#ifndef PACE_MATRIX_HPP
-#define PACE_MATRIX_HPP
+#ifndef PACE_MATRIX_MATRIX_HPP
+#define PACE_MATRIX_MATRIX_HPP
 
-#include <cstdint>
 #include <iterator>
-#include <type_traits>
 
-#include "bipartite_graph.hpp"
-#include "printf.hpp"
-#include "vector_utils.hpp"
+#include "fmt/printf.hpp"
+#include "model/bipartite_graph.hpp"
+#include "utils/vector_utils.hpp"
 
 namespace pace {
 
@@ -22,13 +20,13 @@ template <typename R>
 class folded_matrix;
 
 template <typename T, class MATRIX>
-void fill_crossing_matrix_binary_search(const bipartite_graph<T> &graph, MATRIX &cr_matrix);
+void fill_crossing_matrix_binary_search(const general_bipartite_graph<T> &graph, MATRIX &cr_matrix);
 
 template <typename T, class MATRIX>
-uint32_t fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix);
+uint32_t fill_crossing_matrix(const general_bipartite_graph<T> &graph, MATRIX &cr_matrix);
 
 //
-// matrix types
+// full storage matrix classes
 //
 
 /**
@@ -36,7 +34,7 @@ uint32_t fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix
  *
  * @tparam R element type
  */
-template <typename R = uint32_t>
+template <typename R>
 class matrix {
    private:
     /**
@@ -70,7 +68,7 @@ class matrix {
      * @tparam T vertex type
      */
     template <typename T>
-    matrix(const bipartite_graph<T> &graph)
+    matrix(const general_bipartite_graph<T> &graph)
         : m(graph.get_n_free()),  //
           n(graph.get_n_free()),
           data(new R[m * n]()) {
@@ -119,10 +117,6 @@ class matrix {
     const R &operator()(std::size_t i, std::size_t j) const { return data[i * n + j]; }
 };
 
-using uint64_matrix = matrix<uint64_t>;
-using uint32_matrix = matrix<uint32_t>;
-using uint16_matrix = matrix<uint16_t>;
-
 /**
  * @brief special matrix for storing crossing number matrix of an instance
  * of one-sided crossing minimization.
@@ -131,7 +125,7 @@ using uint16_matrix = matrix<uint16_t>;
  *
  * @tparam R element type
  */
-template <typename R = uint32_t>
+template <typename R>
 class folded_matrix {
    private:
     /**
@@ -166,7 +160,7 @@ class folded_matrix {
      * @tparam T vertex type
      */
     template <typename T>
-    folded_matrix(const bipartite_graph<T> &graph) : folded_matrix(graph.get_n_free()) {
+    folded_matrix(const general_bipartite_graph<T> &graph) : folded_matrix(graph.get_n_free()) {
         fill_crossing_matrix(graph, *this);
     }
 
@@ -200,7 +194,7 @@ class folded_matrix {
 
     std::size_t get_n2() const { return n2; }
 
-    const R& get_element(const std::size_t i) const {
+    const R &get_element(const std::size_t i) const {
         assert(i < n2);
         return data[i];
     }
@@ -242,114 +236,10 @@ class folded_matrix {
     }
 };
 
-using uint64_folded_matrix = folded_matrix<uint64_t>;
-using uint32_folded_matrix = folded_matrix<uint32_t>;
-using uint16_folded_matrix = folded_matrix<uint16_t>;
+using crossing_matrix = folded_matrix<uint32_t>;
 
 //
-// sparse random access matrix
-//
-
-/**
- * @brief quadratic sparse matrix class where the elements are intended to be stored in the some
- * order as in `folded_matrix`
- *
- * @tparam T index or vertex type
- * @tparam R element type
- */
-template <typename T = uint16_t, typename R = uint32_t>
-class sparse_matrix {
-    /// @brief orders the index pairs (i,j) as in folded_matrix
-    struct custom_less {
-        inline bool operator()(const std::pair<T, T> &p1, const std::pair<T, T> &p2) const {
-            const bool flip_p1 = p1.first > p1.second;
-            const bool flip_p2 = p2.first > p2.second;
-            const std::pair<T, T> p1_ = flip_p1 ? std::make_pair(p1.second, p1.first) : p1;
-            const std::pair<T, T> p2_ = flip_p2 ? std::make_pair(p2.second, p2.first) : p2;
-            if (p1_ < p2_) return true;
-            return p1_ == p2_ && !flip_p1 && flip_p2;
-        }
-    };
-
-    /// @brief also the dimension of the quadratic sparse matrix
-    const std::size_t n_free;
-
-    /// @brief if indices[k] = (i, j), data[k] is in the i-th row and j-th column
-    std::vector<std::pair<T, T>> indices;
-
-    /// @brief if indices[k] = (i, j), data[k] is in the i-th row and j-th column
-    std::vector<R> data;
-
-   public:
-    using datatype = R;
-
-    /// @brief just sets the dimension to (n_free x n_free)
-    sparse_matrix(const std::size_t n_free) : n_free(n_free) {
-        indices.reserve(n_free << 4);
-        data.reserve(n_free << 4);
-    }
-
-    /// @brief creates the crossing number matrix of `graph`
-    sparse_matrix(const bipartite_graph<T> &graph) : sparse_matrix(graph.get_n_free()) {
-        fill_crossing_matrix(graph, *this);
-    }
-
-    /// @brief returns the element at (u, v) if it exists and 0 otherwise
-    R operator()(const T u, const T v) const {
-        assert(u != v);
-        assert(u < n_free);
-        assert(v < n_free);
-        const std::pair<T, T> p{u, v};
-        auto it = std::lower_bound(indices.begin(), indices.end(), p, custom_less{});
-        if (it == indices.end() || *it != p) return 0;
-        const std::ptrdiff_t i = std::distance(indices.begin(), it);
-        assert(0 <= i);
-        assert(static_cast<std::size_t>(i) < data.size());
-        return data[i];
-    }
-
-    void clear() {
-        indices.clear();
-        data.clear();
-    }
-
-    std::size_t get_m() const { return n_free; }
-
-    std::size_t get_n() const { return n_free; }
-
-    std::size_t get_nof_nonzero_elements() const { return data.size(); }
-
-    const R &get_datum(const std::size_t i) const { return data[i]; }
-
-    const std::pair<T, T> &get_indices(const std::size_t i) const { return indices[i]; }
-
-    /// @brief inserts value at the back, (u, v) must be greater than the last index
-    void insert(const T u, const T v, const R value) {
-        assert(u != v);
-        assert(u < n_free);
-        assert(v < n_free);
-        if (value == 0) return;
-        const std::pair<T, T> p{u, v};
-        assert(custom_less{}(*(--indices.end()), p));
-        indices.emplace_back(p);
-        data.emplace_back(value);
-    }
-
-    /// @brief returns if the matrix is good, that is, data.size() == indices.size() and indices are
-    /// ordered according to custom_less
-    bool good() const {
-        const std::size_t len = indices.size();
-        if (len != data.size()) return false;
-        if (len <= 1) return true;
-        for (std::size_t i = 0; i < len - 1; ++i) {
-            if (!custom_less{}(indices[i], indices[i + 1])) return false;
-        }
-        return true;
-    }
-};
-
-//
-// compute crossing numbers
+// functions to fill the crossing number matrix
 //
 
 /**
@@ -362,13 +252,14 @@ class sparse_matrix {
  * @param cr_matrix
  */
 template <typename T, class MATRIX>
-void fill_crossing_matrix_binary_search(const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
+void fill_crossing_matrix_binary_search(const general_bipartite_graph<T> &graph,
+                                        MATRIX &cr_matrix) {
     assert(graph.get_n_free() == cr_matrix.get_m() && cr_matrix.get_m() == cr_matrix.get_n());
     const std::size_t n1 = graph.get_n_free();
     using R = typename MATRIX::datatype;
 
     for (T v = 0; v < n1; ++v) {
-        const auto &neighbors_v = graph.get_neighbors_of_free(v);
+        const auto &neighbors_v = graph.get_neighbors(v);
         if (neighbors_v.size() == 0) continue;
         const T rv = neighbors_v[neighbors_v.size() - 1];
 
@@ -376,7 +267,7 @@ void fill_crossing_matrix_binary_search(const bipartite_graph<T> &graph, MATRIX 
             if (v == w) continue;
 
             R c_vw = 0;
-            const auto &neighbors_w = graph.get_neighbors_of_free(w);
+            const auto &neighbors_w = graph.get_neighbors(w);
             for (const T &wp : neighbors_w) {
                 if (wp >= rv) break;
 
@@ -405,7 +296,7 @@ void fill_crossing_matrix_binary_search(const bipartite_graph<T> &graph, MATRIX 
  * @return uint32_t sum min(c_uv, c_vu)
  */
 template <typename T, class MATRIX>
-uint32_t fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
+uint32_t fill_crossing_matrix(const general_bipartite_graph<T> &graph, MATRIX &cr_matrix) {
     assert(graph.get_n_free() == cr_matrix.get_n());
     using R = typename MATRIX::datatype;
 
@@ -416,7 +307,7 @@ uint32_t fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix
     // nbors(i, j) = number of nbors of i (free layer) to the right of j (fixed layer)
     matrix<R> nbors(n1, n0);
     for (T i = 0; i < n1; ++i) {
-        const auto &neighbors_i = graph.get_neighbors_of_free(i);
+        const auto &neighbors_i = graph.get_neighbors(i);
         auto it_end = neighbors_i.end();
         auto it = neighbors_i.begin();
         nbors(i, 0) = neighbors_i.size();
@@ -435,7 +326,7 @@ uint32_t fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix
 
     uint32_t lb = 0;
     for (T v = 0; v < n1; ++v) {
-        const auto &neighbors_v = graph.get_neighbors_of_free(v);
+        const auto &neighbors_v = graph.get_neighbors(v);
         const std::size_t deg_v = neighbors_v.size();
         if (deg_v == 0) continue;
         const T rv = neighbors_v[deg_v - 1];
@@ -443,7 +334,7 @@ uint32_t fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix
         for (T w = v + 1; w < n1; ++w) {
             R c_vw = 0;
 
-            const auto &neighbors_w = graph.get_neighbors_of_free(w);
+            const auto &neighbors_w = graph.get_neighbors(w);
             std::size_t deg_w = neighbors_w.size();
             if (deg_w == 0) continue;
 
@@ -454,12 +345,10 @@ uint32_t fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix
             }
 
             const R nof_common_nbors = sorted_vector_intersection(neighbors_v, neighbors_w);
-            cr_matrix.insert(v, w, c_vw);
-            // cr_matrix(v, w) = c_vw;
+            cr_matrix(v, w) = c_vw;
             assert(deg_v * deg_w >= nof_common_nbors + c_vw);
             const R c_wv = deg_v * deg_w - nof_common_nbors - c_vw;
-            cr_matrix.insert(w, v, c_wv);
-            // cr_matrix(w, v) = c_wv;
+            cr_matrix(w, v) = c_wv;
 
             lb += std::min(c_vw, c_wv);
         }
@@ -467,6 +356,10 @@ uint32_t fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix
 
     return lb;
 }
+
+//
+// functions for testing
+//
 
 namespace test {
 
@@ -480,14 +373,15 @@ namespace test {
  * @param matrix
  */
 template <typename T, typename R>
-void fill_crossing_matrix_naivly(const bipartite_graph<T> &graph, folded_matrix<R> &matrix) {
+void fill_crossing_matrix_naivly(const general_bipartite_graph<T> &graph,
+                                 folded_matrix<R> &matrix) {
     assert(graph.get_n_free() == matrix.get_m());
 
     const std::size_t n1 = matrix.get_m();
     for (T i = 0; i < n1 - 1; ++i) {
         for (T j = i + 1; j < n1; ++j) {
-            for (const T &x : graph.get_neighbors_of_free(i)) {
-                for (const T &y : graph.get_neighbors_of_free(j)) {
+            for (const T &x : graph.get_neighbors(i)) {
+                for (const T &y : graph.get_neighbors(j)) {
                     if (x < y)
                         ++matrix(j, i);
                     else if (x > y)

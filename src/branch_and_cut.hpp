@@ -50,7 +50,7 @@ template <typename T, typename R>
 class branch_and_cut {
    private:
     /// @brief the instance
-    const pace::instance<T, R> &instance;
+    pace::instance<T, R> &instance;
 
     /// @brief  n_free = graph.get_n_free()
     const std::size_t n_free;
@@ -96,9 +96,9 @@ class branch_and_cut {
     /**
      * @brief constructs and initializes the branch and cut solver
      */
-    branch_and_cut(const pace::instance<T, R> &instance)
+    branch_and_cut(pace::instance<T, R> &instance)
         : instance(instance),
-          n_free(instance.graph().get_n_free()),
+          n_free(instance.get_graph().get_n_free()),
           lower_bound(instance.get_lower_bound()),
           ordering(n_free),
           restriction_graph(n_free),
@@ -152,7 +152,7 @@ class branch_and_cut {
         assert(acyclic);
         uint32_t new_upper_bound = lp_solver->get_rounded_objective_value();
         assert(new_upper_bound < upper_bound);
-        assert(new_upper_bound == number_of_crossings(instance.graph(), ordering));
+        assert(new_upper_bound == number_of_crossings(instance.get_graph(), ordering));
 
         // try to improve new solution
         new_upper_bound = shift_heuristic{instance}(ordering, new_upper_bound);
@@ -296,7 +296,7 @@ class branch_and_cut {
 
         PACE_DEBUG_PRINTF("OPT: %u\n", upper_bound);
         if constexpr (DO_OUTPUT_PRINT) {
-            print_output(instance.graph().get_n_fixed(), ordering);
+            print_output(instance.get_graph().get_n_fixed(), ordering);
         }
         return upper_bound;
     }

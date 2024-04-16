@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include "bipartite_graph.hpp"
-#include "input.hpp"
+#include "io/parse_input.hpp"
 #include "lp_wrapper.hpp"
 
 int main() {

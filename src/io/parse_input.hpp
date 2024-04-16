@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "bipartite_graph.hpp"
+#include "model/bipartite_graph.hpp"
 
 namespace pace {
 
@@ -23,7 +23,7 @@ namespace fs = std::filesystem;
  * @param graph in-out parameter; where instance gets stored
  */
 template <typename T>
-void parse_input(fs::path filepath, bipartite_graph<T> &graph) {
+void parse_input(fs::path filepath, general_bipartite_graph<T> &graph) {
     std::ifstream input(filepath);
     parse_input(input, graph);
 }
@@ -36,7 +36,7 @@ void parse_input(fs::path filepath, bipartite_graph<T> &graph) {
  * @param graph in-out parameter; where instance gets stored
  */
 template <typename T>
-void parse_input(std::ifstream &input, bipartite_graph<T> &graph) {
+void parse_input(std::ifstream &input, general_bipartite_graph<T> &graph) {
     assert(input.good());
     graph.clear();
 
