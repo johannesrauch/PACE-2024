@@ -1,5 +1,5 @@
-#ifndef PACE_INDEX_HPP
-#define PACE_INDEX_HPP
+#ifndef PACE_UTILS_INDEX_HPP
+#define PACE_UTILS_INDEX_HPP
 
 #include <cassert>
 

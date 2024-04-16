@@ -6,6 +6,7 @@
 #include "fmt/printf.hpp"
 #include "model/bipartite_graph.hpp"
 #include "utils/vector_utils.hpp"
+#include "types/types.hpp"
 
 namespace pace {
 
@@ -236,7 +237,7 @@ class folded_matrix {
     }
 };
 
-using crossing_matrix = folded_matrix<uint32_t>;
+using crossing_matrix = folded_matrix<crossing_number_t>;
 
 //
 // functions to fill the crossing number matrix
@@ -291,9 +292,7 @@ void fill_crossing_matrix_binary_search(const general_bipartite_graph<T> &graph,
  * uses an "enhanced" adjacency matrix.
  *
  * @tparam T vertex type
- * @param graph
- * @param cr_matrix
- * @return uint32_t sum min(c_uv, c_vu)
+ * @return uint32_t lower_bound = sum min(c_uv, c_vu)
  */
 template <typename T, class MATRIX>
 uint32_t fill_crossing_matrix(const general_bipartite_graph<T> &graph, MATRIX &cr_matrix) {

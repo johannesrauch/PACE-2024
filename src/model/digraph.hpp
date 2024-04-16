@@ -1,43 +1,47 @@
-#ifndef PACE_DIGRAPH_HPP
-#define PACE_DIGRAPH_HPP
+#ifndef PACE_MODEL_DIGRAPH_HPP
+#define PACE_MODEL_DIGRAPH_HPP
 
-#include <cstdint>
+#include <cassert>
 #include <vector>
+#include <type_traits>
 
-#include "debug_printf.hpp"
+#include "types/types.hpp"
 
 namespace pace {
 
 /**
- * @brief class for a generic directed graph with
- * definable vertex type
+ * @brief class for a generic directed graph with definable vertex type
  *
  * @tparam T vertex type
  */
-template <typename T = uint16_t>
-class digraph {
+template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
+class general_digraph {
    private:
-    /// @brief stores all neighbors of each vertex
+    /**
+     * @brief stores all neighbors of each vertex
+     */
     std::vector<std::vector<T>> adjacency_lists;
 
-    /// @brief to rollback the digraph, see method with same name
+    /**
+     * @brief to rollback the digraph, see method with same name
+     */
     std::vector<std::size_t> rollback_lists;
 
    public:
-    using vertex_type = T;
+    using vertex_t = T;
 
     // delete copy constructor, move constructor, copy assignment and move assignment
-    digraph(const digraph &rhs) = delete;
-    digraph(digraph &&rhs) = delete;
-    digraph &operator=(const digraph &rhs) = delete;
-    digraph &operator=(digraph &&rhs) = delete;
+    general_digraph(const general_digraph<T> &rhs) = delete;
+    general_digraph(general_digraph<T> &&rhs) = delete;
+    general_digraph &operator=(const general_digraph<T> &rhs) = delete;
+    general_digraph &operator=(general_digraph<T> &&rhs) = delete;
 
     /**
      * @brief constructs an empty digraph with n vertices
      *
      * @param n number of vertices
      */
-    digraph(const std::size_t n) : adjacency_lists(n), rollback_lists(n, 0) {}
+    general_digraph(const std::size_t n) : adjacency_lists(n), rollback_lists(n, 0) {}
 
     /**
      * @brief add arc (u, v)
@@ -105,6 +109,8 @@ class digraph {
         }
     }
 };
+
+using digraph = general_digraph<vertex_t>;
 
 };  // namespace pace
 

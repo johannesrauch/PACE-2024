@@ -1,11 +1,11 @@
-#ifndef PACE_TOPOLOGICAL_SORT_HPP
-#define PACE_TOPOLOGICAL_SORT_HPP
+#ifndef PACE_UTILS_TOPOLOGICAL_SORT_HPP
+#define PACE_UTILS_TOPOLOGICAL_SORT_HPP
 
 #include <algorithm>
 #include <cassert>
 #include <stack>
 
-#include "digraph.hpp"
+#include "model/digraph.hpp"
 
 namespace pace {
 
@@ -24,7 +24,7 @@ namespace internal {
  * @return false if a (directed) cycle was found
  */
 template <typename T>
-bool topological_sort_dfs(const digraph<T>& graph,
+bool topological_sort_dfs(const general_digraph<T>& graph,
                           std::vector<T>& ordering,       //
                           std::vector<uint8_t>& visited,  //
                           T v) {
@@ -56,7 +56,7 @@ bool topological_sort_dfs(const digraph<T>& graph,
  * @return false if a (directed) cycle was found
  */
 template <typename T>
-bool topological_sort(const digraph<T>& graph, std::vector<T>& ordering) {
+bool topological_sort(const general_digraph<T>& graph, std::vector<T>& ordering) {
     const std::size_t n = graph.get_n();
     ordering.clear();
     ordering.reserve(n);

@@ -16,7 +16,6 @@ namespace pace {
 class input {
     bipartite_graph graph;
     std::vector<std::unique_ptr<bipartite_graph>> subgraph_ptrs;
-    using vertex_t = bipartite_graph::vertex_t;
 
     std::vector<vertex_t> free_layer;
     std::vector<vertex_t> borders;

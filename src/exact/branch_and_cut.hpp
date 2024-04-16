@@ -1,5 +1,5 @@
-#ifndef PACE_BRANCH_AND_CUT_HPP
-#define PACE_BRANCH_AND_CUT_HPP
+#ifndef PACE_EXACT_BRANCH_AND_CUT_HPP
+#define PACE_EXACT_BRANCH_AND_CUT_HPP
 
 #include <glpk.h>
 #include <math.h>

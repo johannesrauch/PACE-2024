@@ -1,9 +1,9 @@
-#ifndef PACE_DEBUG_PRINTF_HPP
-#define PACE_DEBUG_PRINTF_HPP
+#ifndef PACE_LOG_DEBUG_PRINTF_HPP
+#define PACE_LOG_DEBUG_PRINTF_HPP
 
 #include <iostream>
 
-#include "printf.hpp"
+#include "fmt/printf.hpp"
 
 #ifdef DEBUG_PRINT
 #define PACE_DEBUG_PRINTF(...)    \

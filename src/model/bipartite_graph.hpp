@@ -3,9 +3,10 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cstdint>
 #include <type_traits>
 #include <vector>
+
+#include "types/types.hpp"
 
 namespace pace {
 
@@ -168,7 +169,7 @@ class general_bipartite_graph {
     }
 };
 
-using bipartite_graph = general_bipartite_graph<uint32_t>;
+using bipartite_graph = general_bipartite_graph<vertex_t>;
 
 };  // namespace pace
 

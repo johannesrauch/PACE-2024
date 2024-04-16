@@ -1,5 +1,5 @@
-#ifndef PACE_LP_WRAPPER_HPP
-#define PACE_LP_WRAPPER_HPP
+#ifndef PACE_EXACT_LP_WRAPPER_HPP
+#define PACE_EXACT_LP_WRAPPER_HPP
 
 #include <cassert>
 #include <limits>

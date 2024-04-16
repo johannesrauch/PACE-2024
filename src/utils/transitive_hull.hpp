@@ -3,9 +3,9 @@
 
 #include <unordered_set>
 
-#include "digraph.hpp"
-#include "index.hpp"
-#include "topological_sort.hpp"
+#include "model/digraph.hpp"
+#include "utils/index_utils.hpp"
+#include "utils/topological_sort.hpp"
 
 namespace pace {
 
@@ -20,7 +20,7 @@ namespace internal {
  * @param u current vertex
  */
 template <typename T>
-void transitive_hull_dfs(const digraph<T> &graph, std::vector<uint8_t> &visited, const T u) {
+void transitive_hull_dfs(const general_digraph<T> &graph, std::vector<uint8_t> &visited, const T u) {
     visited[u] += 2;
     for (const T &v : graph.get_neighbors(u)) {
         if (visited[v] <= 1) {
@@ -39,7 +39,7 @@ void transitive_hull_dfs(const digraph<T> &graph, std::vector<uint8_t> &visited,
  * @param new_arcs out parameter; new arcs are stored here
  */
 template <typename T>
-void transitive_hull(const digraph<T> &graph, std::vector<std::pair<T, T>> &new_arcs) {
+void transitive_hull(const general_digraph<T> &graph, std::vector<std::pair<T, T>> &new_arcs) {
     const std::size_t n = graph.get_n();
     std::vector<uint8_t> visited(n);
 
@@ -68,7 +68,7 @@ void transitive_hull(const digraph<T> &graph, std::vector<std::pair<T, T>> &new_
  * @param new_arcs out parameter; new arcs are stored here
  */
 template <typename T>
-void transitive_hull_of_acyclic(const digraph<T> &graph, std::vector<std::pair<T, T>> &new_arcs) {
+void transitive_hull_of_acyclic(const general_digraph<T> &graph, std::vector<std::pair<T, T>> &new_arcs) {
     const std::size_t n = graph.get_n();
     assert(n > 0);
     std::vector<T> ordering;

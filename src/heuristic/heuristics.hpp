@@ -1,5 +1,5 @@
-#ifndef PACE_HEURISTICS_HPP
-#define PACE_HEURISTICS_HPP
+#ifndef PACE_HEURISTICS_HEURISTICS_HPP
+#define PACE_HEURISTICS_HEURISTICS_HPP
 
 #include "crossings.hpp"
 #include "median_heuristic.hpp"
