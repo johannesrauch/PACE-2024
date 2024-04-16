@@ -104,12 +104,28 @@ void sorted_vector_union(const std::vector<T> &vec1, const std::vector<T> &vec2,
     while (j < len2) out.emplace_back(vec2[j++]);
 }
 
+namespace test {
+
 template <typename T>
 void print_vector(const std::vector<T> &vec) {
     for (const T &elem : vec) {
         fmt::printf("%d\n", elem);
     }
 }
+
+template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
+bool is_permutation(const std::vector<T> &vec) {
+    const std::size_t n = vec.size();
+    std::vector<bool> test(n);
+    for (const T &v : vec) {
+        if (v > n) return false;
+        if (test[v]) return false;
+        test[v] = true;
+    }
+    return true;
+}
+
+};
 
 };  // namespace pace
 
