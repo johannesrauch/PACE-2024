@@ -61,7 +61,7 @@ class input {
     const bipartite_graph<T> &get_subgraph(const std::size_t i) {
         if (!tried_split) try_split();
         assert(i < get_n_subgraphs());
-        return subgraph_ptrs;
+        return *subgraph_ptrs[i];
     }
 
     bool is_first_graph_empty() {
