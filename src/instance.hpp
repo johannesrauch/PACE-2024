@@ -42,11 +42,6 @@ class instance {
      */
     uint32_t upper_bound{std::numeric_limits<uint32_t>::max()};
 
-    /**
-     * @brief an ordering of the vertices of graph
-     */
-    std::vector<T> ordering;
-
    public:
     instance(const bipartite_graph<T> &graph) : graph(graph) {}
 
