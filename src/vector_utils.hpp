@@ -109,8 +109,9 @@ namespace test {
 template <typename T>
 void print_vector(const std::vector<T> &vec) {
     for (const T &elem : vec) {
-        fmt::printf("%d\n", elem);
+        fmt::printf("%d, ", elem);
     }
+    fmt::printf("\n");
 }
 
 template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
