@@ -402,6 +402,7 @@ void fill_crossing_matrix_binary_search(const bipartite_graph<T> &graph, MATRIX 
  * @tparam T vertex type
  * @param graph
  * @param cr_matrix
+ * @return uint32_t sum min(c_uv, c_vu)
  */
 template <typename T, class MATRIX>
 uint32_t fill_crossing_matrix(const bipartite_graph<T> &graph, MATRIX &cr_matrix) {
