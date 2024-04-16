@@ -18,7 +18,7 @@ namespace pace {
  */
 template <typename T = uint16_t, typename R = uint32_t>
 class input {
-    std::unique_ptr<bipartite_graph<T>> graph_ptr{new bipartite_graph<T>()};
+    bipartite_graph<T> graph;
     std::vector<std::unique_ptr<bipartite_graph<T>>> subgraph_ptrs;
 
     std::vector<T> free_layer;
@@ -30,28 +30,28 @@ class input {
    public:
     const fs::path filepath;
 
-    input(const fs::path filepath) : filepath(filepath) { parse_input(filepath, *graph_ptr); }
+    input(const fs::path filepath) : filepath(filepath) { parse_input(filepath, graph); }
 
     // delete copy constructor and assignment
     input(const input<T, R> &other) = delete;
     input<T, R> &operator=(const input<T, R> &other) = delete;
 
     bool compare(const T &u, const T &v) const {
-        const bool deg_u_0 = graph_ptr->degree_of_free(u) == 0;
-        const bool deg_v_0 = graph_ptr->degree_of_free(v) == 0;
+        const bool deg_u_0 = graph.degree_of_free(u) == 0;
+        const bool deg_v_0 = graph.degree_of_free(v) == 0;
         if (deg_u_0 && deg_v_0) return u < v;
         if (deg_u_0) return true;
         if (deg_v_0) return false;
-        const T u_r = graph_ptr->get_rightmost_nbor(u);
-        const T v_r = graph_ptr->get_rightmost_nbor(v);
+        const T u_r = graph.get_rightmost_nbor(u);
+        const T v_r = graph.get_rightmost_nbor(v);
         if (u_r < v_r) return true;
         if (u_r > v_r) return false;
-        const T u_l = graph_ptr->get_leftmost_nbor(u);
-        const T v_l = graph_ptr->get_leftmost_nbor(v);
+        const T u_l = graph.get_leftmost_nbor(u);
+        const T v_l = graph.get_leftmost_nbor(v);
         return u_l < v_l;
     }
 
-    const bipartite_graph<T> &get_graph() const { return *graph_ptr; }
+    const bipartite_graph<T> &get_graph() const { return graph; }
 
     std::size_t get_n_subgraphs() {
         if (!tried_split) try_split();
@@ -71,27 +71,30 @@ class input {
 
     bool try_split() {
         tried_split = true;
-        if (graph_ptr->get_m() == 0) return false;
+        if (graph.get_m() == 0) {
+            first_graph_empty = true;
+            return false;
+        }
         sort_free_layer();
 
         // borders contains indices where instances begin
         borders.clear();
-        const std::size_t n_free = graph_ptr->get_n_free();
+        const std::size_t n_free = graph.get_n_free();
         std::size_t i = n_free;
         if (i > 0) --i;
         T leftmost_nbor = std::numeric_limits<T>::max();
         while (i > 0) {
-            // since graph_ptr->get_m() > 0, and by the sorting, last vertex has degree > 0
-            leftmost_nbor = std::min(graph_ptr->get_leftmost_nbor(free_layer[i]), leftmost_nbor);
+            // since graph.get_m() > 0, and by the sorting, last vertex has degree > 0
+            leftmost_nbor = std::min(graph.get_leftmost_nbor(free_layer[i]), leftmost_nbor);
 
             --i;
-            if (graph_ptr->degree_of_free(free_layer[i]) == 0) {
+            if (graph.degree_of_free(free_layer[i]) == 0) {
                 borders.emplace_back(i + 1u);
                 first_graph_empty = true;
                 break;
             }
 
-            const T rightmost_nbor = graph_ptr->get_rightmost_nbor(free_layer[i]);
+            const T rightmost_nbor = graph.get_rightmost_nbor(free_layer[i]);
             if (rightmost_nbor <= leftmost_nbor) {
                 borders.emplace_back(i + 1u);
             }
@@ -133,7 +136,7 @@ class input {
             const T &v = free_layer[i];
 
             // add neighbors of v to subgraph
-            const std::vector<T> &nbors_v = graph_ptr->get_neighbors_of_free(v);
+            const std::vector<T> &nbors_v = graph.get_neighbors_of_free(v);
             for (const T &u : nbors_v) {
                 auto it = map_fixed.find(u);
                 T u_fixed;
@@ -154,7 +157,7 @@ class input {
     }
 
     inline void sort_free_layer() {
-        const std::size_t n_free = graph_ptr->get_n_free();
+        const std::size_t n_free = graph.get_n_free();
         free_layer.resize(n_free);
         for (T v = 0; v < n_free; ++v) free_layer[v] = v;
         std::sort(free_layer.begin(), free_layer.end(),
