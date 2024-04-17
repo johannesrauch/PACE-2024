@@ -1,5 +1,5 @@
-#ifndef PACE_OUTPUT_HPP
-#define PACE_OUTPUT_HPP
+#ifndef PACE_IO_OUTPUT_HPP
+#define PACE_IO_OUTPUT_HPP
 
 #include <vector>
 #include <iostream>
