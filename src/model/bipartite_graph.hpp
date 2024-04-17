@@ -37,7 +37,7 @@ class general_bipartite_graph {
     /**
      * @brief true iff all adjacency lists are sorted
      */
-    bool is_sorted{false};
+    bool is_sorted_{false};
 
    public:
     using vertex_t = T;
@@ -63,7 +63,7 @@ class general_bipartite_graph {
     void add_edge(const T u, const T v) {
         assert(u < get_n_fixed());
         assert(v < get_n_free());
-        is_sorted = false;
+        is_sorted_ = false;
         adjacency_lists[v].emplace_back(u);
         edges.emplace_back(u, v);
     }
@@ -128,7 +128,7 @@ class general_bipartite_graph {
      * @brief returns the first element in neighbor list of v
      */
     T get_leftmost_nbor(const T v) const {
-        assert(is_sorted);
+        assert(is_sorted_);
         const std::vector<T> &nbors = get_neighbors(v);
         assert(nbors.size() > 0);
         return *get_neighbors(v).begin();
@@ -138,7 +138,7 @@ class general_bipartite_graph {
      * @brief returns the last element in neighbor list of v
      */
     T get_rightmost_nbor(const T v) const {
-        assert(is_sorted);
+        assert(is_sorted_);
         const std::vector<T> &nbors = get_neighbors(v);
         assert(nbors.size() > 0);
         return *get_neighbors(v).rbegin();
@@ -158,6 +158,10 @@ class general_bipartite_graph {
     // sorting methods
     //
 
+    bool is_sorted() const {
+        return is_sorted_;
+    }
+
     /**
      * @brief sorts all adjacency lists in ascending order
      */
@@ -165,7 +169,7 @@ class general_bipartite_graph {
         for (auto &adjacency_list : adjacency_lists) {
             std::sort(adjacency_list.begin(), adjacency_list.end());
         }
-        is_sorted = true;
+        is_sorted_ = true;
     }
 };
 

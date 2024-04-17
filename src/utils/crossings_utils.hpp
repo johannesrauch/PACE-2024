@@ -19,6 +19,7 @@ namespace pace {
  */
 template <typename T, typename R = uint32_t>
 std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph, T u, T v) {
+    assert(graph.is_sorted());
     const auto& nbors_u = graph.get_neighbors(u);
     const auto& nbors_v = graph.get_neighbors(v);
 
@@ -63,6 +64,8 @@ std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph, T u
  */
 template <typename T, typename R = uint32_t>
 uint32_t number_of_crossings(const general_bipartite_graph<T>& graph, const std::vector<T>& ordering) {
+    assert(graph.is_sorted());
+
     // compute the positions of each element (inverse of the permutation ordering)
     const std::size_t n1 = graph.get_n_free();
     std::vector<T> positions(n1);

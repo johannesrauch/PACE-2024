@@ -2,11 +2,11 @@
 #define PACE_IO_INPUT_HPP
 
 #include <limits>
-#include <unordered_map>
+#include <map>
 #include <vector>
 
-#include "model/bipartite_graph.hpp"
 #include "io/parse_input.hpp"
+#include "model/bipartite_graph.hpp"
 
 namespace pace {
 
@@ -50,19 +50,33 @@ class input {
         return first_graph_empty;
     }
 
+    void lift_ordering(const std::size_t i, const std::vector<vertex_t> &subordering, std::vector<vertex_t> &ordering) {
+        assert(tried_split);
+        assert(i < get_n_subgraphs());
+        assert(ordering.size() == graph.get_n_free());
+
+        const std::size_t begin = i > 0 ? borders[i - 1] : 0;
+        const std::size_t end = borders[i];
+        assert(end == subordering.size() + begin);
+
+        for (std::size_t j = begin, k = 0; j < end; ++j, ++k) {
+            ordering[j] = free_layer[begin + subordering[k]];
+        }
+    }
+
     bool try_split() {
+        if (tried_split) return get_n_subgraphs() >= 2;
         tried_split = true;
-        if (graph.get_m() == 0) {
+        if (graph.get_m() == 0 || graph.get_n_free() == 0) {
             first_graph_empty = true;
             return false;
         }
         sort_free_layer();
 
         // borders contains indices where instances begin
-        borders.clear();
         const std::size_t n_free = graph.get_n_free();
         std::size_t i = n_free;
-        if (i > 0) --i;
+        --i;
         vertex_t leftmost_nbor = std::numeric_limits<vertex_t>::max();
         while (i > 0) {
             // since graph.get_m() > 0, and by the sorting, last vertex has degree > 0
@@ -116,38 +130,49 @@ class input {
 
    private:
     inline void add_subgraph(const std::size_t begin, const std::size_t end) {
-        assert(begin < end);
         assert(tried_split);
+        assert(begin < end);
+
         // construct new bipartite graph and add to list
         bipartite_graph *subgraph_ptr = new bipartite_graph();
         subgraph_ptrs.emplace_back(subgraph_ptr);
-
-        // basic parameters
         const std::size_t n_free = end - begin;
         subgraph_ptr->add_free_vertices(n_free);
         vertex_t v_free = 0;
+        vertex_t v_fixed = 0;
+        std::size_t m = 0;
 
-        std::unordered_map<vertex_t, vertex_t> map_fixed;
+        // setup map for fixed vertices
+        std::map<vertex_t, vertex_t> map_fixed;
         for (std::size_t i = begin; i < end; ++i) {
             const vertex_t &v = free_layer[i];
+            for (const vertex_t &u : graph.get_neighbors(v)) {
+                map_fixed.insert({u, 0});
+            }
+        }
+        for (auto &[v, u] : map_fixed) {
+            u = v_fixed;
+            ++v_fixed;
+        }
+        subgraph_ptr->add_fixed_vertices(v_fixed);
 
-            // add neighbors of v to subgraph
-            const std::vector<vertex_t> &nbors_v = graph.get_neighbors(v);
-            for (const vertex_t &u : nbors_v) {
+        // add edges to subgraph
+        for (std::size_t i = begin; i < end; ++i) {
+            const vertex_t &v = free_layer[i];
+            for (const vertex_t &u : graph.get_neighbors(v)) {
                 auto it = map_fixed.find(u);
-                vertex_t u_fixed;
-                if (it == map_fixed.end()) {
-                    u_fixed = map_fixed.size();
-                    map_fixed.insert({u, u_fixed});
-                    subgraph_ptr->add_fixed_vertices(1);
-                } else {
-                    u_fixed = it->second;
-                }
+                assert(it != map_fixed.end());
+                const vertex_t u_fixed = it->second;
                 subgraph_ptr->add_edge(u_fixed, v_free);
             }
 
+            m += graph.get_degree(v);
             ++v_free;
         }
+        subgraph_ptr->sort_adjacency_lists();
+
+        assert(subgraph_ptr->is_sorted());
+        assert(m == subgraph_ptr->get_m());
         assert(v_free == n_free);
         assert(map_fixed.size() == subgraph_ptr->get_n_fixed());
     }
