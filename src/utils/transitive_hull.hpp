@@ -60,6 +60,8 @@ void transitive_hull(const general_digraph<T> &graph, std::vector<std::pair<T, T
     }
 }
 
+// todo: speed the acyclic method up
+
 /**
  * @brief computes the transitive hull of an cyclic digraph (Purdom's algorithm)
  *
