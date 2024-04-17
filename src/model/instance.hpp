@@ -41,13 +41,14 @@ class instance {
 
     /**
      * @brief stores the problem kernel (on demand)
-     * if magic[flat_index(u, v)] < 0, ~magic[flat_index(u, v)] is the value of x_uv in an optimal solution.
-     * otherwise, magic[flat_index(u, v)] stores the column index of x_uv in the lp.
+     * if magic[flat_index(u, v)] < 0, ~magic[flat_index(u, v)] is the value of x_uv in an optimal
+     * solution. otherwise, magic[flat_index(u, v)] stores the column index of x_uv in the lp.
      */
     std::vector<magic_t> magic;
 
     /**
-     * @brief stores u < v s.t. magic[flat_index(u, v)] >= 0, that is, these x_uv are in the lp (on demand)
+     * @brief stores u < v s.t. magic[flat_index(u, v)] >= 0, that is, these x_uv are in the lp (on
+     * demand)
      */
     std::vector<std::pair<vertex_t, vertex_t>> unsettled_pairs;
 
@@ -68,7 +69,10 @@ class instance {
 
    public:
     instance(const bipartite_graph &graph)
-        : graph(graph), n_free(graph.get_n_free()), n_free_2(n_free * (n_free - 1) / 2), n_fixed(graph.get_n_fixed()) {
+        : graph(graph),
+          n_free(graph.get_n_free()),
+          n_free_2(n_free * (n_free - 1) / 2),
+          n_fixed(graph.get_n_fixed()) {
         assert(n_free > 0);
     }
 
@@ -236,7 +240,8 @@ class instance {
      * - if c_uv == 0, we can fix u < v, and
      * - if c_vu == 0, we can fix v < u.
      */
-    inline pattern based_on_crossing_numbers(const crossing_number_t &c_uv, const crossing_number_t &c_vu) {
+    inline pattern based_on_crossing_numbers(const crossing_number_t &c_uv,
+                                             const crossing_number_t &c_vu) {
         assert(c_uv != c_vu);
         if (c_uv == 0) return pattern::u_before_v;
         if (c_vu == 0) return pattern::v_before_u;
@@ -313,6 +318,7 @@ class instance_view {
    protected:
     instance &instance_;
 
+   public:
     const bipartite_graph &graph;
     const std::size_t &n_free;
     const std::size_t &n_free_2;
@@ -320,7 +326,6 @@ class instance_view {
 
     const crossing_number_t &upper_bound;
 
-   public:
     instance_view(instance &instance_)
         : instance_(instance_),
           graph(instance_.get_graph()),
