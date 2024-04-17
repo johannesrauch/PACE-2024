@@ -123,16 +123,16 @@ uint32_t number_of_crossings(const folded_matrix<R>& cr_matrix, const std::vecto
     std::vector<T> positions(n1);
     inverse(ordering, positions);  // to access `cr_matrix` cache-friendly
 
-    uint32_t nof_crossings = 0;
+    uint32_t n_crossings = 0;
     for (std::size_t i = 0; i < n1; ++i) {
         for (std::size_t j = i + 1; j < n1; ++j) {
             if (positions[i] < positions[j])
-                nof_crossings += cr_matrix(i, j);
+                n_crossings += cr_matrix(i, j);
             else
-                nof_crossings += cr_matrix(j, i);
+                n_crossings += cr_matrix(j, i);
         }
     }
-    return nof_crossings;
+    return n_crossings;
 }
 
 /**

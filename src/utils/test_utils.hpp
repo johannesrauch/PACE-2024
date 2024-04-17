@@ -36,7 +36,7 @@ inline double time_in_ms(const std::clock_t start, const std::clock_t end) {
 uint32_t get_ref_n_crossings(std::filesystem::path filepath_instance) {
     auto filepath_n_crossings =                        //
         filepath_instance.parent_path().parent_path() /  //
-        "nof_crossings" /                                //
+        "n_crossings" /                                //
         filepath_instance.filename();
     filepath_n_crossings.replace_extension(".txt");
 

@@ -314,14 +314,12 @@ class instance {
     }
 };
 
-class instance_view {
-   protected:
+struct instance_view {
     instance &instance_;
 
-   public:
     const bipartite_graph &graph;
     const std::size_t &n_free;
-    const std::size_t &n_free_2;
+    const std::size_t &n_free_2; /**< = n_free choose 2 */
     const std::size_t &n_fixed;
 
     const crossing_number_t &upper_bound;
@@ -337,6 +335,16 @@ class instance_view {
     const crossing_matrix &cr_matrix() { return instance_.get_cr_matrix(); }
 
     const crossing_number_t &lower_bound() { return instance_.get_lower_bound(); }
+
+    digraph &restriction_graph() { return instance_.get_restriction_graph(); }
+
+    const std::vector<std::pair<vertex_t, vertex_t>> &unsettled_pairs() {
+        return instance_.get_unsettled_pairs();
+    }
+
+    const std::vector<magic_t> &magic() { return instance_.get_magic(); }
+
+    const crossing_number_t &objective_offset() { return instance_.get_objective_offset(); }
 
     void update_upper_bound(crossing_number_t ub) { instance_.update_upper_bound(ub); }
 };

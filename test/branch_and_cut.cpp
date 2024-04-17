@@ -1,40 +1,35 @@
-#include "branch_and_cut.hpp"
+#include "exact/branch_and_cut.hpp"
 
-#include <filesystem>
-#include <fstream>
-#include <iostream>
 #include <set>
-#include <string>
 
-#include "crossings.hpp"
-#include "debug_printf.hpp"
-#include "io/parse_input.hpp"
 #include "io/input.hpp"
-#include "instance.hpp"
-#include "output.hpp"
-#include "printf.hpp"
-#include "test_utils.hpp"
+#include "io/output.hpp"
+#include "model/instance.hpp"
+#include "utils/crossings_utils.hpp"
+#include "utils/test_utils.hpp"
 
 namespace fs = std::filesystem;
 
-template <typename T, typename R>
-void test_branch_and_cut_with(pace::input<T, R>& input) {
-    pace::instance<T, R> instance(input.get_graph());
-    const pace::bipartite_graph<T>& graph = instance.get_graph();
-    fmt::printf("%11s%11u%11u%11u",            //
+using vertex_t = pace::vertex_t;
+using crossing_number_t = pace::crossing_number_t;
+
+void test_branch_and_cut_with(pace::input& input) {
+    pace::instance instance(input.get_graph());
+    const pace::bipartite_graph& graph = instance.get_graph();
+    fmt::printf("%11s%11u%11u%11u",         //
                 input.filepath.filename(),  //
-                graph.get_n_fixed(),           //
-                graph.get_n_free(),            //
+                graph.get_n_fixed(),        //
+                graph.get_n_free(),         //
                 graph.get_m());
     std::cout << std::flush;
 
     pace::branch_and_cut solver(instance);
     std::clock_t start = std::clock();
-    solver.template operator()<false>();
+    solver();
     std::clock_t end = std::clock();
     const double t = pace::test::time_in_ms(start, end);
 
-    uint32_t test = solver.get_nof_crossings();
+    crossing_number_t test = solver.upper_bound;
     (void)test;
     std::string warning;
     try {
@@ -48,9 +43,9 @@ void test_branch_and_cut_with(pace::input<T, R>& input) {
     }
 
     const pace::branch_and_cut_info& info = solver.get_info();
-    fmt::printf("|%11.1f%11u%11u%11u|%11u%11u%11u|%11s\n",                             //
-                t, info.nof_rows, info.nof_iterations, info.nof_branch_nodes,          //
-                instance.get_lower_bound(), info.nof_crossings_h, info.nof_crossings,  //
+    fmt::printf("|%11.1f%11u%11u%11u|%11u%11u%11u|%11s\n",               //
+                t, info.n_rows, info.n_iterations, info.n_branch_nodes,  //
+                instance.get_lower_bound(), info.n_crossings_h, test,    //
                 warning);
 }
 

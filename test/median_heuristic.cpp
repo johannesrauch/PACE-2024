@@ -20,9 +20,9 @@
 template <typename T, typename R>
 void test_median_heuristics(const pace::instance<T, R>& instance) {
     std::vector<T> ordering;
-    uint32_t nof_crossings = pace::median_heuristic{instance}(ordering);
+    uint32_t n_crossings = pace::median_heuristic{instance}(ordering);
     uint32_t nof_crossings_ = pace::probmedian_heuristic{instance}(ordering);
-    assert(nof_crossings_ <= nof_crossings);
+    assert(nof_crossings_ <= n_crossings);
 }
 
 /**

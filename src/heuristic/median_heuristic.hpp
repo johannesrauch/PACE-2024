@@ -116,7 +116,7 @@ class probmedian_heuristic : public instance_view {
      *
      * @param graph the instance
      * @param ordering vector where the ordering is stored
-     * @param nof_iterations number of iterations
+     * @param n_iterations number of iterations
      */
     probmedian_heuristic(instance& instance_, median_heuristic_params params = median_heuristic_params())
         : instance_view(instance_),
