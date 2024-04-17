@@ -24,8 +24,9 @@ crossing_number_t heuristics(instance &instance, std::vector<vertex_t> &ordering
     assert(lb <= ub);
     if (lb == ub) return ub;
 
+    ub = probmedian_heuristic{instance}(ordering, ub);
     PACE_DEBUG_PRINTF("end   heuristic\n");
-    return probmedian_heuristic{instance}(ordering, ub);
+    return ub;
 }
 
 };  // namespace pace
