@@ -1,11 +1,13 @@
 #ifndef PACE_LOG_DEBUG_PRINTF_HPP
 #define PACE_LOG_DEBUG_PRINTF_HPP
 
-#include <iostream>
+#include <chrono>
 #include <fstream>
+#include <iostream>
+#include <memory>
 
-#include "fmt/printf.hpp"
 #include "exact/info_structs.hpp"
+#include "fmt/printf.hpp"
 
 #ifdef DEBUG_PRINT
 #define PACE_DEBUG_PRINTF(...)    \
@@ -44,17 +46,17 @@ namespace pace {
 
 namespace test {
 
-class Logger {
-    std::ostream out{std::cout.rdbuf()};
+class pipe_cout_to_file {
+    std::ofstream out_f;
+    std::streambuf* buf_old;
 
-    public:
-    void to_file() {
-
-    }
+   public:
+    pipe_cout_to_file(const char* filename) : out_f(filename), buf_old(std::cout.rdbuf(out_f.rdbuf())) {}
+    ~pipe_cout_to_file() { std::cout.rdbuf(buf_old); }
 };
 
-};
+};  // namespace test
 
-};
+};  // namespace pace
 
 #endif
