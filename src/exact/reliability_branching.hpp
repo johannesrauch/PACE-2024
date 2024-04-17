@@ -5,48 +5,59 @@
 #define PACE_CONST_RELIBRANCH_LOOKAHEAD 8
 #endif
 
-#ifndef PACE_CONST_RELIBRANCH_RELIPARAM
-#define PACE_CONST_RELIBRANCH_RELIPARAM 8
+#ifndef PACE_CONST_RELIPARAM
+#define PACE_CONST_RELIPARAM 8
 #endif
 
 #include "lp_wrapper.hpp"
 
 namespace pace {
 
+struct reliability_branching_params {
+    const int32_t min_simplex_it{4096};
+    const int32_t max_simplex_it{16384};
+    const double limit_simplex_it_factor{0.75};
+    const uint8_t limit_lookahead{PACE_CONST_RELIBRANCH_LOOKAHEAD};
+    const uint8_t limit_reliable{PACE_CONST_RELIPARAM};
+};
+
 class reliability_branching {
     highs_wrapper &lp;
     const std::size_t n_cols;
     std::vector<double> col_value;
+    double obj_val{0.};
 
     std::vector<double> up_cost_sums;
     std::vector<double> down_cost_sums;
     std::vector<uint32_t> n_up_samples;
     std::vector<uint32_t> n_down_samples;
-
     std::vector<double> scores;
 
+    reliability_branching_params params;
+    bool all_reliable{false};
+    int32_t limit_simplex_it{0};
+
    public:
-    reliability_branching(highs_wrapper &lp)
+    reliability_branching(highs_wrapper &lp, reliability_branching_params params = reliability_branching_params())
         : lp(lp),  //
           n_cols(lp.get_n_cols()),
           up_cost_sums(n_cols),
           down_cost_sums(n_cols),
           n_up_samples(n_cols),
           n_down_samples(n_cols),
-          scores(n_cols) {}
+          scores(n_cols),
+          params(params) {}
 
     void update_up_cost(const std::size_t j, const double obj_val_new, const double obj_val_old, const double x_j) {
         assert(j < n_cols);
-        assert(obj_val_new >= obj_val_old);
-        assert(!lp.is_column_integral(j));
+        // assert(obj_val_new >= obj_val_old);
         up_cost_sums[j] += (obj_val_new - obj_val_old) / (1. - x_j);
         ++n_up_samples[j];
     }
 
     void update_down_cost(const std::size_t j, const double obj_val_new, const double obj_val_old, const double x_j) {
         assert(j < n_cols);
-        assert(obj_val_new >= obj_val_old);
-        assert(!lp.is_column_integral(j));
+        // assert(obj_val_new >= obj_val_old);
         down_cost_sums[j] += (obj_val_new - obj_val_old) / x_j;
         ++n_down_samples[j];
     }
@@ -72,7 +83,7 @@ class reliability_branching {
                 n_down_cost_summands += n_down_samples[j];
             }
         }
-        
+
         if (n_up_cost_summands > 0) {
             up_cost_avg /= n_up_cost_summands;
         }
@@ -83,12 +94,12 @@ class reliability_branching {
         // store scores
         for (std::size_t j = 0; j < n_cols; ++j) {
             const double x_j = col_value[j];
-            double up_cost =             //
+            double up_cost =          //
                 (n_up_samples[j] > 0  //
                      ? up_cost_sums[j] / n_up_samples[j]
                      : up_cost_avg)  //
                 * (1. - x_j);
-            double down_cost =             //
+            double down_cost =          //
                 (n_down_samples[j] > 0  //
                      ? down_cost_sums[j] / n_down_samples[j]
                      : down_cost_avg)  //
@@ -97,31 +108,42 @@ class reliability_branching {
         }
     }
 
-    double kinda_strong_branching(const std::size_t j) {
-        const double obj_val_old = lp.get_objective_value();
+    double score_strong_branching(const std::size_t j) {
         const double x_j = col_value[j];
 
         lp.fix_column(j, 1.);
-        lp.run();
-        assert(lp.is_optimal());
+        lp.run(limit_simplex_it);
+        assert(lp.is_feasible());
+        bool both_feasible = lp.is_feasible();
         double obj_val_new = lp.get_objective_value();
-        const double delta_up = obj_val_new - obj_val_old;
-        update_up_cost(j, obj_val_new, obj_val_old, x_j);
-        
+        const double delta_up = obj_val_new - obj_val;
+        if (lp.is_feasible()) {
+            update_up_cost(j, obj_val_new, obj_val, x_j);
+        }
+
         lp.fix_column(j, 0.);
-        lp.run();
-        assert(lp.is_optimal());
+        lp.run(limit_simplex_it);
+        both_feasible &= lp.is_feasible();
         obj_val_new = lp.get_objective_value();
-        const double delta_down = obj_val_new - obj_val_old;
-        update_down_cost(j, obj_val_new, obj_val_old, x_j);
+        const double delta_down = obj_val_new - obj_val;
+        if (lp.is_feasible()) {
+            update_down_cost(j, obj_val_new, obj_val, x_j);
+        }
 
         lp.unfix_column(j);
-        return score(delta_up, delta_down);
+        if (both_feasible) {
+            return score(delta_up, delta_down);
+        } else {
+            return scores[j];
+        }
     }
 
     std::size_t get_branching_column() {
-        // copy current column values
         lp.get_columns(col_value);
+        obj_val = lp.get_objective_value();
+        const int32_t limit_simplex_it_suggested =
+            lround(lp.get_info().n_iterations_simplex_avg * params.limit_simplex_it_factor);
+        limit_simplex_it = std::min(std::max(params.min_simplex_it, limit_simplex_it_suggested), params.max_simplex_it);
 
         // collect nonintegral columns in candidates
         std::vector<std::size_t> candidates;
@@ -137,23 +159,29 @@ class reliability_branching {
         std::sort(candidates.begin(), candidates.end(),
                   [&](const std::size_t &i, const std::size_t &j) -> bool { return scores[i] < scores[j]; });
 
-        // do strong branching for unreliable pseudo costs
         std::size_t best = *candidates.rbegin();
         double best_score = scores[best];
+        if (all_reliable) return best;
+
+        // do strong branching for unreliable pseudo costs
+        all_reliable = true;
         std::size_t n_it_since_improve = 0;
+        HighsInt frozen_basis_id = lp.freeze_basis();
         for (const std::size_t &j : candidates) {
-            if (std::min(n_up_samples[j], n_down_samples[j]) < PACE_CONST_RELIBRANCH_RELIPARAM) {
-                scores[j] = kinda_strong_branching(j);
-                if (scores[j] > best_score) {
-                    best = j;
-                    best_score = scores[j];
-                    n_it_since_improve = 0;
-                } else {
-                    ++n_it_since_improve;
-                    if (n_it_since_improve >= PACE_CONST_RELIBRANCH_LOOKAHEAD) break;
-                }
+            if (std::min(n_up_samples[j], n_down_samples[j]) >= params.limit_reliable) continue;
+
+            all_reliable = false;
+            scores[j] = score_strong_branching(j);
+            if (scores[j] > best_score) {
+                best = j;
+                best_score = scores[j];
+                n_it_since_improve = 1;
+            } else {
+                ++n_it_since_improve;
+                if (n_it_since_improve > params.limit_lookahead) break;
             }
         }
+        lp.unfreeze_basis(frozen_basis_id);
 
         return best;
     }

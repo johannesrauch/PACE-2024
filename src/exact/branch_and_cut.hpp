@@ -29,6 +29,7 @@ class branch_and_cut : public instance_view {
         const double obj_val_old;
         const double x_j_old;
         bool fix_opposite;
+        // HighsInt frozen_basis_id;
     };
 
     /**
@@ -140,6 +141,8 @@ class branch_and_cut : public instance_view {
         return true;
     }
 
+    // todo: freeze/unfreeze basis?
+
     /**
      * @brief branches by fixing a column
      */
@@ -204,6 +207,7 @@ class branch_and_cut : public instance_view {
      * @brief solves the given instance exactly with a branch and cut algorithm
      */
     uint32_t operator()() {
+        PACE_DEBUG_PRINTF("\n");
         info.n_crossings_h = heuristics(instance_, ordering);
         if (lower_bound() >= upper_bound) return upper_bound;
 

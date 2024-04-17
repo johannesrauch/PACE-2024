@@ -137,6 +137,7 @@ class instance {
     void create_kernel() {
         if (restriction_graph_ptr) return;
 
+        PACE_DEBUG_PRINTF("start create_kernel\n");
         get_cr_matrix();  // initializes crossing matrix
         const std::size_t n_free = graph.get_n_free();
         restriction_graph_ptr = std::make_unique<digraph>(graph.get_n_free());
@@ -192,6 +193,7 @@ class instance {
             }
         }
         assert(i == n_free_2);
+        PACE_DEBUG_PRINTF("end   create_kernel\n");
     }
 
     //

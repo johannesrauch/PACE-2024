@@ -33,13 +33,18 @@
 namespace pace {
 
 struct highs_wrapper_params {
-    std::size_t n_max_new_rows{PACE_CONST_N_MAX_NEW_ROWS};
-    const std::size_t n_max_init_rows{PACE_CONST_N_MAX_INIT_ROWS};
-    uint8_t n_max_new_rows_double{2};
+    std::size_t limit_new_rows{PACE_CONST_N_MAX_NEW_ROWS};
+    uint8_t limit_new_rows_double{2};
+    const std::size_t limit_initial_rows{PACE_CONST_N_MAX_INIT_ROWS};
+    const uint8_t limit_delete_slack_row{8};
+    const uint8_t limit_delete_rows{32};
+
     const uint8_t n_buckets{PACE_CONST_N_BUCKETS};
 
     const double tol_feasibility{PACE_CONST_TOL_FEASIBILITY};
     const double tol_integer{PACE_CONST_TOL_INTEGER};
+
+    double p_delete_slack_row{0.};
 };
 
 /**
@@ -97,8 +102,8 @@ class highs_wrapper : instance_view {
     //
 
     struct row_info {
-        uint16_t n_times_deleted{0};
-        uint16_t n_times_spared{0};
+        uint16_t n_deleted{0};
+        uint16_t n_spared{0};
     };
 
     struct triple_hash {
@@ -124,12 +129,12 @@ class highs_wrapper : instance_view {
         status = lp.setOptionValue("log_to_console", false);
         assert(status == HighsStatus::kOk);
 
-        rows_to_delete.reserve(params.n_max_new_rows);
-        lower_bounds.reserve(params.n_max_new_rows);
-        upper_bounds.reserve(params.n_max_new_rows);
-        starts.reserve(params.n_max_new_rows);
-        indices.reserve(3 * params.n_max_new_rows);
-        values.reserve(3 * params.n_max_new_rows);
+        rows_to_delete.reserve(params.limit_new_rows);
+        lower_bounds.reserve(params.limit_new_rows);
+        upper_bounds.reserve(params.limit_new_rows);
+        starts.reserve(params.limit_new_rows);
+        indices.reserve(3 * params.limit_new_rows);
+        values.reserve(3 * params.limit_new_rows);
 
         PACE_DEBUG_PRINTF("start add_columns\n");
         add_columns();
@@ -153,7 +158,7 @@ class highs_wrapper : instance_view {
     /**
      * @brief search for violated constraints and add these to the lp
      *
-     * @return true if successful
+     * @return true if violated constraints found
      * @return false otherwise
      */
     bool cut() {
@@ -162,13 +167,37 @@ class highs_wrapper : instance_view {
         return success;
     }
 
-    /// @brief solves the lp
+    inline void set_simplex_iteration_limit(const int32_t limit_simplex_it) {
+        status = lp.setOptionValue("simplex_iteration_limit", limit_simplex_it);
+        assert(status == HighsStatus::kOk);
+    }
+
+    /**
+     * @brief solves the current version of the lp relaxation
+     */
     void run() {
         lp.run();
+
         info.n_rows = get_n_rows();
         info.n_iterations_simplex = lp.getSimplexIterationCount();
+        info.n_iterations_simplex_avg =
+            (info.n_iterations_simplex_avg * info.n_runs + info.n_iterations_simplex) / (info.n_runs + 1);
+        
         info.t_simplex = lp.getRunTime();
+
         info.objective_value = get_objective_value();
+        ++info.n_runs;
+    }
+
+    /**
+     * @brief for reliability branching; no bookkeeping
+     * 
+     * @param limit_simplex_it max simplex iterations
+     */
+    void run(const int32_t limit_simplex_it) {
+        set_simplex_iteration_limit(limit_simplex_it);
+        lp.run();        
+        set_simplex_iteration_limit(std::numeric_limits<int32_t>::max());
     }
 
     //
@@ -179,39 +208,38 @@ class highs_wrapper : instance_view {
      * @brief delete rows with positive slack from the lp
      */
     void delete_positive_slack_rows() {
-        info.n_delete_rows_spared = 0;
+        reset_delete_count_info();
+        if (info.n_iterations_3cycles > params.limit_delete_rows) return;
 
         // gather rows to delete
         rows_to_delete.clear();
         auto it_rows = rows.begin();
         for (std::size_t i = n_fix_rows; i < n_old_rows; ++i) {
             assert(it_rows != rows.end());
+            auto it = rows_info.find(*it_rows);
+            assert(it != rows_info.end());
 
             const bool has_slack = has_row_slack(i);
-            bool spare = false;
-            if (has_slack) {
-                auto it = rows_info.find(*it_rows);
-                if (it == rows_info.end()) {
-                    bool success;
-                    std::tie(it, success) = rows_info.emplace(*it_rows, row_info{});
-                    assert(success);
-                }
-                assert(it != rows_info.end());
-                spare = it->second.n_times_deleted > it->second.n_times_spared;
+            const bool spare = it->second.n_deleted > it->second.n_spared;
+            const bool remove = has_slack && !spare;
+            const bool bad_luck =
+                it->second.n_deleted < params.limit_delete_slack_row && coinflip(params.p_delete_slack_row);
 
-                if (!spare) {
-                    rows_to_delete.emplace_back(i);
-                    ++it->second.n_times_deleted;
-                    it->second.n_times_spared = 0;
-                    it_rows = rows.erase(it_rows);
-                } else {
-                    ++it_rows;
-                    ++it->second.n_times_spared;
-                    ++info.n_delete_rows_spared;
-                }
+            if (remove || bad_luck) {
+                rows_to_delete.emplace_back(i);
+                ++it->second.n_deleted;
+                it->second.n_spared = 0;
+                it_rows = rows.erase(it_rows);
             } else {
                 ++it_rows;
             }
+
+            if (has_slack && spare) {
+                ++it->second.n_spared;
+                ++info.n_delete_rows_spared;
+            }
+            info.n_deleted_rows_slack += remove;
+            info.n_deleted_rows_bad_luck += !remove && bad_luck;
         }
 
         info.n_deleted_rows = rows_to_delete.size();
@@ -284,7 +312,7 @@ class highs_wrapper : instance_view {
     void fix_column(const std::size_t j, const double fix_to) {
         assert(0. <= fix_to);
         assert(fix_to <= 1.);
-        PACE_DEBUG_PRINTF("\tfixed variable %5d to %1.0f\n", j, fix_to);
+        PACE_DEBUG_PRINTF("\tfixed column %5d to %1.0f\n", j, fix_to);
         change_column_bounds(j, fix_to, fix_to);
     }
 
@@ -310,7 +338,10 @@ class highs_wrapper : instance_view {
     /**
      * @brief resets bounds of column j to 0 <= . <= 1
      */
-    void unfix_column(const std::size_t j) { change_column_bounds(j, 0., 1.); }
+    void unfix_column(const std::size_t j) {
+        PACE_DEBUG_PRINTF("\tunfixed column %5d\n", j);
+        change_column_bounds(j, 0., 1.);
+    }
 
     //
     // getter
@@ -468,6 +499,14 @@ class highs_wrapper : instance_view {
     }
 
     /**
+     * @brief returns true iff solution is feasible
+     */
+    bool is_feasible() {
+        const HighsModelStatus &model_status = lp.getModelStatus();
+        return model_status != HighsModelStatus::kInfeasible;
+    }
+
+    /**
      * @brief returns x < -params.tol_feasibility
      */
     inline bool is_3cycle_lb_violated(const double &x) { return x < -params.tol_feasibility; }
@@ -533,7 +572,7 @@ class highs_wrapper : instance_view {
                    indices.size(), &starts[0], &indices[0], &values[0]);
 
         info.n_init_rows_candidates = candidates.size();
-        info.n_rows = get_n_rows();        
+        info.n_rows = get_n_rows();
     }
 
     void add_3cycle_row_to_aux_vectors(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
@@ -561,16 +600,21 @@ class highs_wrapper : instance_view {
         }
 
         rows.emplace_back(u, v, w);
+        const triple uvw(u, v, w);
+        auto it = rows_info.find(uvw);
+        if (it == rows_info.end()) {
+            rows_info.emplace(uvw, row_info());
+        }
     }
 
     /**
      * @brief expects the violated 3-cycle ieqs in buckets.
-     * adds the most violated <= params.n_max_new_rows to the lp.
+     * adds the most violated <= params.limit_new_rows to the lp.
      *
      * @return std::size_t number of new rows
      */
     inline std::size_t add_3cycle_rows() {
-        info.n_added_rows = std::min(get_n_bucket_entries(), params.n_max_new_rows);
+        info.n_added_rows = std::min(get_n_bucket_entries(), params.limit_new_rows);
         if (info.n_added_rows <= 0) return 0;
 
         clear_aux_vectors();
@@ -581,7 +625,7 @@ class highs_wrapper : instance_view {
             for (const auto &[u, v, w] : *r_it) {
                 add_3cycle_row_to_aux_vectors(u, v, w);
                 ++i;
-                if (i >= params.n_max_new_rows) {
+                if (i >= params.limit_new_rows) {
                     go_on = false;
                     break;
                 }
@@ -643,11 +687,7 @@ class highs_wrapper : instance_view {
                 }
             }
         }
-        ++info.n_iterations_3cycles;
-        if (params.n_max_new_rows_double > 0) {
-            params.n_max_new_rows *= 2;
-            --params.n_max_new_rows_double;
-        }
+        update_3cycle_iteration_info();
         for (u = 0; u + 2u < n_free; ++u) {
             bool u_eq_old = u == u_old;
             for (v = u + 1; v + 1u < n_free; ++v) {
@@ -730,10 +770,47 @@ class highs_wrapper : instance_view {
     /**
      * @brief returns if the last bucket is full
      *
-     * @return true if last bucket has >= params.n_max_new_rows elements
+     * @return true if last bucket has >= params.limit_new_rows elements
      * @return false otherwise
      */
-    inline bool is_last_bucket_full() { return (*buckets.rbegin()).size() >= params.n_max_new_rows; }
+    inline bool is_last_bucket_full() { return (*buckets.rbegin()).size() >= params.limit_new_rows; }
+
+    //
+    // hot start methods
+    //
+
+    HighsInt freeze_basis() {
+        HighsInt frozen_basis_id;
+        status = lp.freezeBasis(frozen_basis_id);
+        assert(status == HighsStatus::kOk);
+        return frozen_basis_id;
+    }
+
+    void unfreeze_basis(const HighsInt frozen_basis_id) {
+        status = lp.unfreezeBasis(frozen_basis_id);
+        assert(status == HighsStatus::kOk);
+    }
+
+    //
+    // bookkeeping methods
+    //
+   private:
+    inline void reset_delete_count_info() {
+        info.n_deleted_rows = 0;
+        info.n_delete_rows_spared = 0;
+        info.n_deleted_rows_bad_luck = 0;
+        info.n_deleted_rows_slack = 0;
+    }
+
+    inline void update_3cycle_iteration_info() {
+        if (info.n_iterations_3cycles < params.limit_new_rows_double) {
+            params.limit_new_rows *= 2;
+        }
+        params.p_delete_slack_row /= 2;
+        ++info.n_iterations_3cycles;
+    }
+
+    //
 };
 
 };  // namespace pace
