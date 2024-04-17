@@ -131,7 +131,7 @@ class general_bipartite_graph {
         assert(is_sorted_);
         const std::vector<T> &nbors = get_neighbors(v);
         assert(nbors.size() > 0);
-        return *get_neighbors(v).begin();
+        return *nbors.begin();
     }
 
     /**
@@ -141,7 +141,7 @@ class general_bipartite_graph {
         assert(is_sorted_);
         const std::vector<T> &nbors = get_neighbors(v);
         assert(nbors.size() > 0);
-        return *get_neighbors(v).rbegin();
+        return *nbors.rbegin();
     }
 
     /**
