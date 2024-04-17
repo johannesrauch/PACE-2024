@@ -10,6 +10,7 @@ struct highs_wrapper_info {
     const vertex_t &v_old;
     const vertex_t &w_old;
 
+    std::size_t n_cols{0};
     std::size_t n_rows{0};
     std::size_t n_deleted_rows{0};
     std::size_t n_delete_rows_spared{0};
@@ -17,6 +18,7 @@ struct highs_wrapper_info {
     std::size_t n_iterations_simplex{0};
     std::size_t n_iterations_3cycles{0};
     std::size_t n_bucket_entries{0};
+    std::size_t n_init_rows_candidates{0};
 
     double t_simplex{0.};
     double objective_value{0.};

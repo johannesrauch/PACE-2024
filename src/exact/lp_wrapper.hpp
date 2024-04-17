@@ -60,6 +60,11 @@ class highs_wrapper : instance_view {
     std::size_t n_old_rows{0};
 
     /**
+     * @brief the first n_fix_rows are not subject to deletion
+     */
+    std::size_t n_fix_rows{0};
+
+    /**
      * @brief stores indices of the to deleted rows in delete_positive_slack_rows()
      */
     std::vector<HighsInt> rows_to_delete;
@@ -80,53 +85,32 @@ class highs_wrapper : instance_view {
     // bucket attributes and methods
     //
 
-    using bucket_entry = std::tuple<vertex_t, vertex_t, vertex_t>;
+    using triple = std::tuple<vertex_t, vertex_t, vertex_t>;
 
     /**
      * @brief buckets for bucket sorting violated 3-cycle inequalities
      */
-    std::vector<std::vector<bucket_entry>> buckets{PACE_CONST_N_BUCKETS};
+    std::vector<std::vector<triple>> buckets{PACE_CONST_N_BUCKETS};
 
     //
     // for row management, todo: unify bucket_entry and triple
     //
 
-    struct ordered_triple {
-        vertex_t u, v, w;
-
-        ordered_triple(const vertex_t &u, const vertex_t &v, const vertex_t &w) : u(u), v(v), w(w) {}
-
-        bool operator==(const ordered_triple &other) const { return u == other.u && v == other.v && w == other.w; }
-
-        bool operator<(const ordered_triple &other) const {
-            if (u < other.u)
-                return true;
-            else if (u > other.u)
-                return false;
-            else if (v < other.v)
-                return true;
-            else if (v > other.v)
-                return false;
-            else
-                return w < other.w;
-        }
-    };
-
     struct row_info {
-        uint16_t nof_times_deleted{0};
-        uint16_t nof_times_spared{0};
+        uint16_t n_times_deleted{0};
+        uint16_t n_times_spared{0};
     };
 
-    struct ordered_triple_hash {
-        std::size_t operator()(const ordered_triple &t) const {
+    struct triple_hash {
+        std::size_t operator()(const triple &t) const {
             const std::hash<vertex_t> hash;
-            return hash(t.u) ^ hash(t.v) ^ hash(t.w);
+            return hash(std::get<0>(t)) ^ hash(std::get<1>(t)) ^ hash(std::get<2>(t));
         }
     };
 
-    std::unordered_map<ordered_triple, row_info, ordered_triple_hash> rows_info;
+    std::unordered_map<triple, row_info, triple_hash> rows_info;
 
-    std::list<ordered_triple> rows;
+    std::list<triple> rows;
 
    public:
     highs_wrapper(instance &instance_, highs_wrapper_params params = highs_wrapper_params())
@@ -147,8 +131,12 @@ class highs_wrapper : instance_view {
         indices.reserve(3 * params.n_max_new_rows);
         values.reserve(3 * params.n_max_new_rows);
 
+        PACE_DEBUG_PRINTF("start add_columns\n");
         add_columns();
+        PACE_DEBUG_PRINTF("end   add_columns\n");
+        PACE_DEBUG_PRINTF("start add_initial_rows\n");
         add_initial_rows();
+        PACE_DEBUG_PRINTF("end   add_initial_rows\n");
     }
 
     highs_wrapper(const highs_wrapper &rhs) = delete;
@@ -169,7 +157,7 @@ class highs_wrapper : instance_view {
      * @return false otherwise
      */
     bool cut() {
-        n_old_rows = get_nof_rows();
+        n_old_rows = get_n_rows();
         bool success = check_3cycles();
         return success;
     }
@@ -177,7 +165,7 @@ class highs_wrapper : instance_view {
     /// @brief solves the lp
     void run() {
         lp.run();
-        info.n_rows = get_nof_rows();
+        info.n_rows = get_n_rows();
         info.n_iterations_simplex = lp.getSimplexIterationCount();
         info.t_simplex = lp.getRunTime();
         info.objective_value = get_objective_value();
@@ -196,7 +184,7 @@ class highs_wrapper : instance_view {
         // gather rows to delete
         rows_to_delete.clear();
         auto it_rows = rows.begin();
-        for (std::size_t i = 0; i < n_old_rows; ++i) {
+        for (std::size_t i = n_fix_rows; i < n_old_rows; ++i) {
             assert(it_rows != rows.end());
 
             const bool has_slack = has_row_slack(i);
@@ -209,16 +197,16 @@ class highs_wrapper : instance_view {
                     assert(success);
                 }
                 assert(it != rows_info.end());
-                spare = it->second.nof_times_deleted > it->second.nof_times_spared;
+                spare = it->second.n_times_deleted > it->second.n_times_spared;
 
                 if (!spare) {
                     rows_to_delete.emplace_back(i);
-                    ++it->second.nof_times_deleted;
-                    it->second.nof_times_spared = 0;
+                    ++it->second.n_times_deleted;
+                    it->second.n_times_spared = 0;
                     it_rows = rows.erase(it_rows);
                 } else {
                     ++it_rows;
-                    ++it->second.nof_times_spared;
+                    ++it->second.n_times_spared;
                     ++info.n_delete_rows_spared;
                 }
             } else {
@@ -260,8 +248,8 @@ class highs_wrapper : instance_view {
 
         // set constant term (shift/offset) in the objective function
         lp.changeObjectiveOffset(obj_offset);
-
-        assert(get_nof_cols() <= n_free_2);
+        info.n_cols = get_n_cols();
+        assert(get_n_cols() <= n_free_2);
     }
 
     /**
@@ -276,7 +264,7 @@ class highs_wrapper : instance_view {
      * @brief changes upper and lower bound of column j
      */
     inline void change_column_bounds(const std::size_t j, const double lb, const double ub) {
-        assert(j < get_nof_cols());
+        assert(j < get_n_cols());
         status = lp.changeColBounds(j, lb, ub);
         assert(status == HighsStatus::kOk);
     }
@@ -285,7 +273,7 @@ class highs_wrapper : instance_view {
      * @brief changes cost of column j
      */
     inline void change_column_cost(const std::size_t j, const double cost) {
-        assert(j < get_nof_cols());
+        assert(j < get_n_cols());
         status = lp.changeColCost(j, cost);
         assert(status == HighsStatus::kOk);
     }
@@ -308,7 +296,7 @@ class highs_wrapper : instance_view {
      * then we are able to fix x_ij to 0 if coeff > 0 and to 1 otherwise
      */
     void fix_columns() {
-        for (std::size_t j = 0; j < get_nof_cols(); ++j) {
+        for (std::size_t j = 0; j < get_n_cols(); ++j) {
             const crossing_number_t diff = upper_bound - lower_bound();
             const double coeff = get_objective_coefficient(j);
 
@@ -336,7 +324,7 @@ class highs_wrapper : instance_view {
      * @brief returns value of column j
      */
     double get_column_value(const std::size_t j) {
-        assert(j < get_nof_cols());
+        assert(j < get_n_cols());
         return lp.getSolution().col_value[j];
     }
 
@@ -356,12 +344,12 @@ class highs_wrapper : instance_view {
     /**
      * @brief returns the number of rows
      */
-    std::size_t get_nof_cols() const { return lp.getNumCol(); }
+    std::size_t get_n_cols() const { return lp.getNumCol(); }
 
     /**
      * @brief returns the number of rows
      */
-    std::size_t get_nof_rows() const { return lp.getNumRow(); }
+    std::size_t get_n_rows() const { return lp.getNumRow(); }
 
     /**
      * @brief returns the objective value of the lp
@@ -381,7 +369,7 @@ class highs_wrapper : instance_view {
      * @brief returns the objective coefficient (cost) of column j
      */
     inline double get_objective_coefficient(const std::size_t j) {
-        assert(j < get_nof_cols());
+        assert(j < get_n_cols());
         return lp.getLp().col_cost_[j];
     }
 
@@ -407,7 +395,7 @@ class highs_wrapper : instance_view {
      * due to permanently fixed variables that are not incorporated in the lp
      */
     inline std::pair<double, double> get_row_bounds(const std::size_t i) {
-        assert(i < get_nof_rows());
+        assert(i < get_n_rows());
         const HighsLp &lp_ = lp.getLp();
         const double lb = lp_.row_lower_[i];
         const double ub = lp_.row_upper_[i];
@@ -418,7 +406,7 @@ class highs_wrapper : instance_view {
      * @brief returns the value of row i
      */
     inline double get_row_value(const std::size_t i) {
-        assert(i < get_nof_rows());
+        assert(i < get_n_rows());
         return lp.getSolution().row_value[i];
     }
 
@@ -463,7 +451,7 @@ class highs_wrapper : instance_view {
      * @brief returns true iff current solution is integral
      */
     bool is_integral() {
-        for (std::size_t j = 0; j < get_nof_cols(); ++j) {
+        for (std::size_t j = 0; j < get_n_cols(); ++j) {
             if (!is_column_integral(j)) {
                 return false;
             }
@@ -521,7 +509,7 @@ class highs_wrapper : instance_view {
 
     inline void add_initial_rows() {
         clear_aux_vectors();
-        std::vector<ordered_triple> candidates;
+        std::vector<triple> candidates;
         for (vertex_t u = 0u; u + 2u < n_free; ++u) {
             for (vertex_t v = u + 1u; v + 1u < n_free; ++v) {
                 for (vertex_t w = v + 1u; w < n_free; ++w) {
@@ -543,6 +531,9 @@ class highs_wrapper : instance_view {
 
         lp.addRows(lower_bounds.size(), &lower_bounds[0], &upper_bounds[0],  //
                    indices.size(), &starts[0], &indices[0], &values[0]);
+
+        info.n_init_rows_candidates = candidates.size();
+        info.n_rows = get_n_rows();        
     }
 
     void add_3cycle_row_to_aux_vectors(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
@@ -574,12 +565,12 @@ class highs_wrapper : instance_view {
 
     /**
      * @brief expects the violated 3-cycle ieqs in buckets.
-     * adds the most violated <= nof_max_new_rows to the lp.
+     * adds the most violated <= params.n_max_new_rows to the lp.
      *
      * @return std::size_t number of new rows
      */
     inline std::size_t add_3cycle_rows() {
-        info.n_added_rows = std::min(get_nof_bucket_entries(), params.n_max_new_rows);
+        info.n_added_rows = std::min(get_n_bucket_entries(), params.n_max_new_rows);
         if (info.n_added_rows <= 0) return 0;
 
         clear_aux_vectors();
@@ -673,7 +664,7 @@ class highs_wrapper : instance_view {
         }
 
     check_3cycles_after_for:
-        info.n_bucket_entries = get_nof_bucket_entries();
+        info.n_bucket_entries = get_n_bucket_entries();
         u_old = u, v_old = v, w_old = w;
         return add_3cycle_rows() > 0;
     }
@@ -707,7 +698,7 @@ class highs_wrapper : instance_view {
      * @brief clears contents of each bucket in buckets
      */
     inline void clear_buckets() {
-        for (std::vector<bucket_entry> &bucket : buckets) {
+        for (std::vector<triple> &bucket : buckets) {
             bucket.clear();
         }
     }
@@ -717,9 +708,9 @@ class highs_wrapper : instance_view {
      * returns the corresponding bucket
      *
      * @param val in (0,1]
-     * @return std::vector<bucket_entry>& the corresponding bucket
+     * @return std::vector<triple>& the corresponding bucket
      */
-    inline std::vector<bucket_entry> &get_bucket(const double val) {
+    inline std::vector<triple> &get_bucket(const double val) {
         assert(0 <= val);
         assert(val < 1);
         const std::size_t i = static_cast<std::size_t>(val * params.n_buckets);
@@ -728,7 +719,7 @@ class highs_wrapper : instance_view {
     }
 
     /// @brief returns sum of the number of elements in each bucket of `buckets`
-    inline std::size_t get_nof_bucket_entries() {
+    inline std::size_t get_n_bucket_entries() {
         std::size_t n = 0;
         for (const auto &bucket : buckets) {
             n += bucket.size();

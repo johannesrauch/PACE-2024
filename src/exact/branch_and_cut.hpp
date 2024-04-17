@@ -210,14 +210,13 @@ class branch_and_cut : public instance_view {
         if (!lp_solver_ptr) lp_solver_ptr = std::make_unique<highs_wrapper>(instance_);
         if (!reli_branch_ptr) reli_branch_ptr = std::make_unique<reliability_branching>(*lp_solver_ptr);
 
-#ifndef NDEBUG
         const highs_wrapper_info &info_lp = lp_solver_ptr->get_info();
         (void)info_lp;
         PACE_DEBUG_PRINTF("start branch and cut\n");
-        PACE_DEBUG_PRINTF("%11s=%11u, %11s=%11u\n",               //
-                          "nof cols", lp_solver->get_nof_cols(),  //
-                          "nof i rows", lp_solver->get_nof_rows());
-#endif
+        PACE_DEBUG_PRINTF("%11s=%11u, %11s=%11u, %11s=%11u\n",  //
+                          "n cols", info_lp.n_cols,             //
+                          "n initrows", info_lp.n_rows,         //
+                          "n cand", info_lp.n_init_rows_candidates);
 
         // driver loop for branch and cut
         do {
@@ -238,7 +237,7 @@ class branch_and_cut : public instance_view {
 
     const branch_and_cut_info &get_info() {
         if (lp_solver_ptr) {
-            info.n_rows = lp_solver_ptr->get_nof_rows();
+            info.n_rows = lp_solver_ptr->get_n_rows();
         }
         return info;
     }

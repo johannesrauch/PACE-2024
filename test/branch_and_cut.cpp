@@ -53,7 +53,7 @@ void test_branch_and_cut(const fs::path dirpath) {
     fmt::printf("%s\n\n", dirpath);
     fmt::printf("%11s%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%11s|%11s\n",  //
                 "instance", "n fixed", "n free", "m",                     //
-                "time in ms", "nof rows", "nof iter", "nof nodes",        //
+                "time in ms", "n rows", "n iter", "n nodes",        //
                 "lower bound", "heuristic", "optimal",                    //
                 "warning");
     pace::test::print_line(136);

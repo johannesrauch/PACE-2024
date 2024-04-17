@@ -28,7 +28,7 @@ class reliability_branching {
    public:
     reliability_branching(highs_wrapper &lp)
         : lp(lp),  //
-          n_cols(lp.get_nof_cols()),
+          n_cols(lp.get_n_cols()),
           up_cost_sums(n_cols),
           down_cost_sums(n_cols),
           n_up_summands(n_cols),
