@@ -1,12 +1,12 @@
-#include "transitive_hull.hpp"
+#include "utils/transitive_hull.hpp"
 
 #include <algorithm>
 
-#include "random.hpp"
-#include "test_utils.hpp"
+#include "utils/randomness_utils.hpp"
+#include "utils/test_utils.hpp"
 
 template <typename T>
-void test_transitive_hull_with(const pace::digraph<T> &graph) {
+void test_transitive_hull(const pace::general_digraph<T> &graph) {
     std::vector<std::pair<T, T>> test1, test2;
 
     std::clock_t start = std::clock();
@@ -27,7 +27,7 @@ void test_transitive_hull_with(const pace::digraph<T> &graph) {
     std::cout << std::flush;
 }
 
-void test_transitive_hull() {
+void test_transitive_hull_with_rd_instances() {
     using T = uint16_t;
     constexpr std::size_t ns[3] = {10, 100, 1000};
     constexpr std::size_t t = 4;
@@ -38,7 +38,7 @@ void test_transitive_hull() {
     for (const std::size_t &n : ns) {
         for (std::size_t i = 0; i < t; ++i) {
             std::vector<T> ordering(n);
-            pace::digraph<T> graph(n);
+            pace::general_digraph<T> graph(n);
             pace::test::shuffle(ordering);
             for (T i = 0; i < n; ++i) {
                 for (T j = i + 1; j < n; ++j) {
@@ -48,12 +48,14 @@ void test_transitive_hull() {
                 }
             }
 
-            test_transitive_hull_with(graph);
+            test_transitive_hull(graph);
         }
     }
+    fmt::printf("\n");
 }
 
 int main() {
-    test_transitive_hull();
+    test_transitive_hull_with_rd_instances();
+    std::cout << "TEST::PACE::TRANSITIVE_HULL:\t\tOK" << std::endl;
     return 0;
 }

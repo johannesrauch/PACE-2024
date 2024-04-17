@@ -1,18 +1,15 @@
-#include "topological_sort.hpp"
+#include "utils/topological_sort.hpp"
 
-#include <cassert>
 #include <iostream>
 
-#include "digraph.hpp"
+#include "model/digraph.hpp"
 
 /**
- * @brief tests topological_sort.hpp (and graph.hpp a little bit)
- *
- * @return int
+ * @brief tests utils/topological_sort.hpp (and model/digraph.hpp a little bit)
  */
 int main() {
     {
-        pace::digraph<uint8_t> digraph(6);
+        pace::general_digraph<uint8_t> digraph(6);
         digraph.add_arc(5, 2);
         digraph.add_arc(5, 0);
         digraph.add_arc(4, 0);
@@ -30,7 +27,7 @@ int main() {
     }
 
     {
-        pace::digraph<uint8_t> digraph(6);
+        pace::general_digraph<uint8_t> digraph(6);
         digraph.add_arc(0, 1);
         digraph.add_arc(1, 2);
         digraph.add_arc(2, 3);
