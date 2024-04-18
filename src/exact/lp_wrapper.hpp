@@ -34,7 +34,7 @@ namespace pace {
 
 struct highs_wrapper_params {
     std::size_t limit_new_rows{PACE_CONST_N_MAX_NEW_ROWS};
-    uint8_t limit_new_rows_double{2};
+    const uint8_t limit_new_rows_double{2};
     const std::size_t limit_initial_rows{PACE_CONST_N_MAX_INIT_ROWS};
     const uint8_t limit_delete_slack_row{8};
     const uint8_t limit_delete_rows{32};
@@ -510,7 +510,7 @@ class highs_wrapper : instance_view {
     /**
      * @brief returns true iff 3-cycle ieq for u < v < w is interesting,
      * that is, the number of crossings of a combination that violates a 3-cycle ieq
-     * is less than the number of crossings of something that does not
+     * is less than the number of crossings of a combination (a permutation of uvw) that does not
      */
     inline bool is_3cycle_interesting(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
         assert(u < v);
@@ -537,6 +537,9 @@ class highs_wrapper : instance_view {
     // 3-cycle methods
     //
 
+    /**
+     * @brief adds at most params.limit_initial_rows "interesting" rows to the lp
+     */
     inline void add_initial_rows() {
         clear_aux_vectors();
         std::vector<triple> candidates;
@@ -552,7 +555,7 @@ class highs_wrapper : instance_view {
             }
         }
 
-        const double p = 16384.0 / candidates.size();
+        const double p = static_cast<double>(params.limit_initial_rows) / candidates.size();
         for (const auto &[u, v, w] : candidates) {
             if (coinflip(p)) {
                 add_3cycle_row_to_aux_vectors(u, v, w);
@@ -566,6 +569,9 @@ class highs_wrapper : instance_view {
         info.n_rows = get_n_rows();
     }
 
+    /**
+     * @brief prepares and adds entries to auxiliary vectors for adding 3-cycle ieq uvw/uwv to lp
+     */
     void add_3cycle_row_to_aux_vectors(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
         // at least two must be in the lp as variables since we compute transitive hull in oracle
         assert(get_n_vars_in_lp(u, v, w) >= 2);
