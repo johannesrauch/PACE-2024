@@ -47,8 +47,7 @@ class median_heuristic : public instance_view {
      * @return crossing_number_t number of crossings
      */
     crossing_number_t operator()(std::vector<vertex_t>& ordering) {
-        ordering.resize(n_free);
-        for (vertex_t i = 0; i < n_free; ++i) ordering[i] = i;
+        identity(n_free, ordering);
         sort(ordering.begin(), ordering.end(),
              [=](const vertex_t& a, const vertex_t& b) -> bool { return this->compare(a, b); });
 
@@ -140,6 +139,8 @@ class probmedian_heuristic : public instance_view {
      * @brief runs the probabilistic median heuristic solver
      * and stores the result in ordering; expects an initial solution in ordering
      *
+     * @param ordering a valid ordering with n_crossings number of crossings
+     * @param n_crossings number of crossings of ordering
      * @return crossing_number_t number of crossings
      */
     crossing_number_t operator()(std::vector<vertex_t>& ordering, crossing_number_t n_crossings) {
@@ -157,8 +158,7 @@ class probmedian_heuristic : public instance_view {
     }
 
     /**
-     * @brief runs the probabilistic median heuristic solver
-     * and stores the result in ordering
+     * @brief runs the (probabilistic) median heuristic solver and stores the result in ordering
      *
      * @return crossing_number_t number of crossings
      */

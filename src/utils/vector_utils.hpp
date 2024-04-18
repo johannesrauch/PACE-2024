@@ -58,6 +58,15 @@ inline void inverse(const std::vector<T> &in, std::vector<T> &out) {
     }
 }
 
+/**
+ * @brief resizes and stores vec[0]=0, vec[1]=1, ..., vec[n-1]=n-1 in vec
+ */
+template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
+inline void identity(const std::size_t n, std::vector<T> &vec) {
+    vec.resize(n);
+    for (std::size_t i = 0; i < n; ++i) vec[i] = i;
+}
+
 // todo: use stdlib functions
 
 /**
