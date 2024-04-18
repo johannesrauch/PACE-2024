@@ -54,7 +54,7 @@ class highs_wrapper : instance_view {
     /**
      * @brief interface to lp model and solver
      */
-    Highs lp;
+    Highs solver;
     HighsStatus status{HighsStatus::kOk};
     highs_wrapper_info info;
     highs_wrapper_params params;
@@ -120,13 +120,13 @@ class highs_wrapper : instance_view {
    public:
     highs_wrapper(instance &instance_, highs_wrapper_params params = highs_wrapper_params())
         : instance_view(instance_), info{u_old, v_old, w_old}, params(params) {
-        status = lp.setOptionValue("presolve", "off");
+        status = solver.setOptionValue("presolve", "off");
         assert(status == HighsStatus::kOk);
-        status = lp.setOptionValue("solver", "simplex");
+        status = solver.setOptionValue("solver", "simplex");
         assert(status == HighsStatus::kOk);
-        status = lp.setOptionValue("parallel", "off");
+        status = solver.setOptionValue("parallel", "off");
         assert(status == HighsStatus::kOk);
-        status = lp.setOptionValue("log_to_console", false);
+        status = solver.setOptionValue("log_to_console", false);
         assert(status == HighsStatus::kOk);
 
         rows_to_delete.reserve(params.limit_new_rows);
@@ -168,7 +168,7 @@ class highs_wrapper : instance_view {
     }
 
     inline void set_simplex_iteration_limit(const int32_t limit_simplex_it) {
-        status = lp.setOptionValue("simplex_iteration_limit", limit_simplex_it);
+        status = solver.setOptionValue("simplex_iteration_limit", limit_simplex_it);
         assert(status == HighsStatus::kOk);
     }
 
@@ -176,7 +176,7 @@ class highs_wrapper : instance_view {
      * @brief solves the current version of the lp relaxation
      */
     void run() {
-        lp.run();
+        solver.run();
         update_simplex_info();
     }
 
@@ -187,7 +187,7 @@ class highs_wrapper : instance_view {
      */
     void run(const int32_t limit_simplex_it) {
         set_simplex_iteration_limit(limit_simplex_it);
-        lp.run();
+        solver.run();
         set_simplex_iteration_limit(std::numeric_limits<int32_t>::max());
     }
 
@@ -235,7 +235,7 @@ class highs_wrapper : instance_view {
 
         info.n_deleted_rows = rows_to_delete.size();
         if (info.n_deleted_rows > 0) {
-            lp.deleteRows(info.n_deleted_rows, &rows_to_delete[0]);
+            solver.deleteRows(info.n_deleted_rows, &rows_to_delete[0]);
         }
     }
 
@@ -253,7 +253,7 @@ class highs_wrapper : instance_view {
         // add variables which are not yet settled
         const crossing_matrix &cr{cr_matrix()};
         for (const auto &[u, v] : unsettled_pairs()) {
-            const HighsInt l = lp.getNumCol();
+            const HighsInt l = solver.getNumCol();
             assert(l == magic()[flat_index(n_free, n_free_2, u, v)]);
             add_column();
 
@@ -266,7 +266,7 @@ class highs_wrapper : instance_view {
         }
 
         // set constant term (shift/offset) in the objective function
-        lp.changeObjectiveOffset(obj_offset);
+        solver.changeObjectiveOffset(obj_offset);
         info.n_cols = get_n_cols();
         assert(get_n_cols() <= n_free_2);
     }
@@ -275,7 +275,7 @@ class highs_wrapper : instance_view {
      * @brief adds a column with bounds 0. <= (*) <= 1.
      */
     inline void add_column() {
-        status = lp.addVar(0., 1.);
+        status = solver.addVar(0., 1.);
         assert(status == HighsStatus::kOk);
     }
 
@@ -284,7 +284,7 @@ class highs_wrapper : instance_view {
      */
     inline void change_column_bounds(const std::size_t j, const double lb, const double ub) {
         assert(j < get_n_cols());
-        status = lp.changeColBounds(j, lb, ub);
+        status = solver.changeColBounds(j, lb, ub);
         assert(status == HighsStatus::kOk);
     }
 
@@ -293,7 +293,7 @@ class highs_wrapper : instance_view {
      */
     inline void change_column_cost(const std::size_t j, const double cost) {
         assert(j < get_n_cols());
-        status = lp.changeColCost(j, cost);
+        status = solver.changeColCost(j, cost);
         assert(status == HighsStatus::kOk);
     }
 
@@ -340,14 +340,14 @@ class highs_wrapper : instance_view {
 
     const highs_wrapper_info &get_info() { return info; }
 
-    void get_columns(std::vector<double> &col_value) const { col_value = lp.getSolution().col_value; }
+    void get_columns(std::vector<double> &col_value) const { col_value = solver.getSolution().col_value; }
 
     /**
      * @brief returns value of column j
      */
     double get_column_value(const std::size_t j) {
         assert(j < get_n_cols());
-        return lp.getSolution().col_value[j];
+        return solver.getSolution().col_value[j];
     }
 
     /**
@@ -359,24 +359,24 @@ class highs_wrapper : instance_view {
         if (m[uv] < 0) {
             return static_cast<double>(~m[uv]);
         } else {
-            return lp.getSolution().col_value[m[uv]];
+            return solver.getSolution().col_value[m[uv]];
         }
     }
 
     /**
      * @brief returns the number of rows
      */
-    std::size_t get_n_cols() const { return lp.getNumCol(); }
+    std::size_t get_n_cols() const { return solver.getNumCol(); }
 
     /**
      * @brief returns the number of rows
      */
-    std::size_t get_n_rows() const { return lp.getNumRow(); }
+    std::size_t get_n_rows() const { return solver.getNumRow(); }
 
     /**
      * @brief returns the objective value of the lp
      */
-    double get_objective_value() { return lp.getInfo().objective_function_value; }
+    double get_objective_value() { return solver.getInfo().objective_function_value; }
 
     /**
      * @brief returns the objective value of the lp rounded to the next integer
@@ -392,7 +392,7 @@ class highs_wrapper : instance_view {
      */
     inline double get_objective_coefficient(const std::size_t j) {
         assert(j < get_n_cols());
-        return lp.getLp().col_cost_[j];
+        return solver.getLp().col_cost_[j];
     }
 
     /**
@@ -418,7 +418,7 @@ class highs_wrapper : instance_view {
      */
     inline std::pair<double, double> get_row_bounds(const std::size_t i) {
         assert(i < get_n_rows());
-        const HighsLp &lp_ = lp.getLp();
+        const HighsLp &lp_ = solver.getLp();
         const double lb = lp_.row_lower_[i];
         const double ub = lp_.row_upper_[i];
         return std::make_pair(lb, ub);
@@ -429,7 +429,7 @@ class highs_wrapper : instance_view {
      */
     inline double get_row_value(const std::size_t i) {
         assert(i < get_n_rows());
-        return lp.getSolution().row_value[i];
+        return solver.getSolution().row_value[i];
     }
 
     /**
@@ -485,7 +485,7 @@ class highs_wrapper : instance_view {
      * @brief returns true iff an optimal feasible solution has been found
      */
     bool is_optimal() {
-        const HighsModelStatus &model_status = lp.getModelStatus();
+        const HighsModelStatus &model_status = solver.getModelStatus();
         return model_status == HighsModelStatus::kOptimal;
     }
 
@@ -493,7 +493,7 @@ class highs_wrapper : instance_view {
      * @brief returns true iff solution is feasible
      */
     bool is_feasible() {
-        const HighsModelStatus &model_status = lp.getModelStatus();
+        const HighsModelStatus &model_status = solver.getModelStatus();
         return model_status != HighsModelStatus::kInfeasible;
     }
 
@@ -562,7 +562,7 @@ class highs_wrapper : instance_view {
             }
         }
 
-        lp.addRows(lower_bounds.size(), &lower_bounds[0], &upper_bounds[0],  //
+        solver.addRows(lower_bounds.size(), &lower_bounds[0], &upper_bounds[0],  //
                    indices.size(), &starts[0], &indices[0], &values[0]);
 
         info.n_init_rows_candidates = candidates.size();
@@ -630,7 +630,7 @@ class highs_wrapper : instance_view {
         }
         assert(i == info.n_added_rows);
 
-        lp.addRows(info.n_added_rows, &lower_bounds[0], &upper_bounds[0],  //
+        solver.addRows(info.n_added_rows, &lower_bounds[0], &upper_bounds[0],  //
                    indices.size(), &starts[0], &indices[0], &values[0]);
         return info.n_added_rows;
     }
@@ -778,13 +778,13 @@ class highs_wrapper : instance_view {
 
     HighsInt freeze_basis() {
         HighsInt frozen_basis_id;
-        status = lp.freezeBasis(frozen_basis_id);
+        status = solver.freezeBasis(frozen_basis_id);
         assert(status == HighsStatus::kOk);
         return frozen_basis_id;
     }
 
     void unfreeze_basis(const HighsInt frozen_basis_id) {
-        status = lp.unfreezeBasis(frozen_basis_id);
+        status = solver.unfreezeBasis(frozen_basis_id);
         assert(status == HighsStatus::kOk);
     }
 
@@ -809,11 +809,11 @@ class highs_wrapper : instance_view {
 
     inline void update_simplex_info() {
         info.n_rows = get_n_rows();
-        info.n_iterations_simplex = lp.getSimplexIterationCount();
+        info.n_iterations_simplex = solver.getSimplexIterationCount();
         info.n_iterations_simplex_avg =
             (info.n_iterations_simplex_avg * info.n_runs + info.n_iterations_simplex) / (info.n_runs + 1);
 
-        info.t_simplex = lp.getRunTime();
+        info.t_simplex = solver.getRunTime();
 
         info.objective_value = get_objective_value();
         ++info.n_runs;
