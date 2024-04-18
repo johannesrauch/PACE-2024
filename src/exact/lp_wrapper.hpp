@@ -44,7 +44,7 @@ struct highs_wrapper_params {
     const double tol_feasibility{PACE_CONST_TOL_FEASIBILITY};
     const double tol_integer{PACE_CONST_TOL_INTEGER};
 
-    double p_delete_slack_row{0.}; // should be < 0.001 if positive
+    double p_delete_slack_row{0.};  // should be < 0.001 if positive
 };
 
 /**
@@ -177,26 +177,17 @@ class highs_wrapper : instance_view {
      */
     void run() {
         lp.run();
-
-        info.n_rows = get_n_rows();
-        info.n_iterations_simplex = lp.getSimplexIterationCount();
-        info.n_iterations_simplex_avg =
-            (info.n_iterations_simplex_avg * info.n_runs + info.n_iterations_simplex) / (info.n_runs + 1);
-        
-        info.t_simplex = lp.getRunTime();
-
-        info.objective_value = get_objective_value();
-        ++info.n_runs;
+        update_simplex_info();
     }
 
     /**
      * @brief for reliability branching; no bookkeeping
-     * 
+     *
      * @param limit_simplex_it max simplex iterations
      */
     void run(const int32_t limit_simplex_it) {
         set_simplex_iteration_limit(limit_simplex_it);
-        lp.run();        
+        lp.run();
         set_simplex_iteration_limit(std::numeric_limits<int32_t>::max());
     }
 
@@ -810,7 +801,17 @@ class highs_wrapper : instance_view {
         ++info.n_iterations_3cycles;
     }
 
-    //
+    inline void update_simplex_info() {
+        info.n_rows = get_n_rows();
+        info.n_iterations_simplex = lp.getSimplexIterationCount();
+        info.n_iterations_simplex_avg =
+            (info.n_iterations_simplex_avg * info.n_runs + info.n_iterations_simplex) / (info.n_runs + 1);
+
+        info.t_simplex = lp.getRunTime();
+
+        info.objective_value = get_objective_value();
+        ++info.n_runs;
+    }
 };
 
 };  // namespace pace
