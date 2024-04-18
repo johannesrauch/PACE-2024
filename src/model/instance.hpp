@@ -4,6 +4,7 @@
 #include <limits>
 #include <memory>
 
+#include "log/debug_printf.hpp"
 #include "matrix/matrix.hpp"
 #include "model/bipartite_graph.hpp"
 #include "model/digraph.hpp"
