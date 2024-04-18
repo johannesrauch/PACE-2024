@@ -34,8 +34,8 @@ struct highs_wrapper_params {
     std::size_t limit_new_rows{PACE_CONST_N_MAX_NEW_ROWS};
     const uint8_t limit_new_rows_double{2};
     const std::size_t limit_initial_rows{PACE_CONST_N_MAX_INIT_ROWS};
-    const uint8_t limit_delete_slack_row{8};
-    const uint8_t limit_delete_rows{32};
+    const uint8_t limit_delete_slack_row{16};
+    const uint8_t limit_delete_rows{64};
 
     const uint8_t n_buckets{PACE_CONST_N_BUCKETS};
 
@@ -48,7 +48,7 @@ struct highs_wrapper_params {
 /**
  * @brief wrapper class for highs solver; creates and manages ilp relaxation of the instance
  */
-class highs_wrapper : public highs_base {
+class highs_lp : public highs_base {
     highs_wrapper_info info;
     highs_wrapper_params params;
 
@@ -67,16 +67,9 @@ class highs_wrapper : public highs_base {
      */
     std::vector<HighsInt> rows_to_delete;
 
-    //
-    // for row adding, e.g. add_3cycle_rows()
-    //
-
-    std::vector<double> lower_bounds;
-    std::vector<double> upper_bounds;
-    std::vector<HighsInt> starts;
-    std::vector<HighsInt> indices;
-    std::vector<double> values;
-
+    /**
+     * @brief where we last stopped checking 3-cycle ieqs
+     */
     vertex_t u_old{0}, v_old{1}, w_old{2};
 
     //
@@ -111,7 +104,7 @@ class highs_wrapper : public highs_base {
     std::list<triple> rows;
 
    public:
-    highs_wrapper(instance &instance_, highs_wrapper_params params = highs_wrapper_params())
+    highs_lp(instance &instance_, highs_wrapper_params params = highs_wrapper_params())
         : highs_base(instance_), info{u_old, v_old, w_old}, params(params) {
         rows_to_delete.reserve(params.limit_new_rows);
         lower_bounds.reserve(params.limit_new_rows);
@@ -121,17 +114,17 @@ class highs_wrapper : public highs_base {
         values.reserve(3 * params.limit_new_rows);
 
         info.n_cols = get_n_cols();
-        PACE_DEBUG_PRINTF("start add_initial_rows\n");
-        add_initial_rows();
-        PACE_DEBUG_PRINTF("end   add_initial_rows\n");
+        // PACE_DEBUG_PRINTF("start add_initial_rows\n");
+        // add_initial_rows();
+        // PACE_DEBUG_PRINTF("end   add_initial_rows\n");
     }
 
-    highs_wrapper(const highs_wrapper &rhs) = delete;
-    highs_wrapper(highs_wrapper &&rhs) = delete;
-    highs_wrapper &operator=(const highs_wrapper &rhs) = delete;
-    highs_wrapper &operator=(highs_wrapper &&rhs) = delete;
+    highs_lp(const highs_lp &rhs) = delete;
+    highs_lp(highs_lp &&rhs) = delete;
+    highs_lp &operator=(const highs_lp &rhs) = delete;
+    highs_lp &operator=(highs_lp &&rhs) = delete;
 
-    ~highs_wrapper() {}
+    ~highs_lp() {}
 
     //
     // lp solving methods
@@ -314,22 +307,6 @@ class highs_wrapper : public highs_base {
     }
 
     /**
-     * @brief returns true iff an optimal feasible solution has been found
-     */
-    bool is_optimal() {
-        const HighsModelStatus &model_status = solver.getModelStatus();
-        return model_status == HighsModelStatus::kOptimal;
-    }
-
-    /**
-     * @brief returns true iff solution is feasible
-     */
-    bool is_feasible() {
-        const HighsModelStatus &model_status = solver.getModelStatus();
-        return model_status != HighsModelStatus::kInfeasible;
-    }
-
-    /**
      * @brief returns x < -params.tol_feasibility
      */
     inline bool is_3cycle_lb_violated(const double &x) { return x < -params.tol_feasibility; }
@@ -391,6 +368,7 @@ class highs_wrapper : public highs_base {
         for (const auto &[u, v, w] : candidates) {
             if (coinflip(p)) {
                 add_3cycle_row_to_aux_vectors(u, v, w);
+                add_3cycle_row_to_internal_rows(u, v, w);
             }
         }
 
@@ -401,33 +379,7 @@ class highs_wrapper : public highs_base {
         info.n_rows = get_n_rows();
     }
 
-    /**
-     * @brief prepares and adds entries to auxiliary vectors for adding 3-cycle ieq uvw/uwv to lp
-     */
-    void add_3cycle_row_to_aux_vectors(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
-        // at least two must be in the lp as variables since we compute transitive hull in oracle
-        assert(get_n_vars_in_lp(u, v, w) >= 2);
-
-        const auto [uv, vw, uw] = flat_indices(n_free, n_free_2, u, v, w);
-        const double bound_offset = get_3cycle_bound_offset(uv, vw, uw);
-        const std::vector<magic_t> &m = magic();
-
-        lower_bounds.emplace_back(0. + bound_offset);
-        upper_bounds.emplace_back(1. + bound_offset);
-        starts.emplace_back(indices.size());
-        if (m[uv] >= 0) {
-            indices.emplace_back(m[uv]);
-            values.emplace_back(1.);
-        }
-        if (m[uw] >= 0) {
-            indices.emplace_back(m[uw]);
-            values.emplace_back(-1.);
-        }
-        if (m[vw] >= 0) {
-            indices.emplace_back(m[vw]);
-            values.emplace_back(1.);
-        }
-
+    inline void add_3cycle_row_to_internal_rows(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
         rows.emplace_back(u, v, w);
         const triple uvw(u, v, w);
         auto it = rows_info.find(uvw);
@@ -453,6 +405,7 @@ class highs_wrapper : public highs_base {
         for (auto r_it = buckets.rbegin(); r_it != buckets.rend() && go_on; ++r_it) {
             for (const auto &[u, v, w] : *r_it) {
                 add_3cycle_row_to_aux_vectors(u, v, w);
+                add_3cycle_row_to_internal_rows(u, v, w);
                 ++i;
                 if (i >= params.limit_new_rows) {
                     go_on = false;

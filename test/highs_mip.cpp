@@ -1,11 +1,9 @@
-#include "exact/branch_and_cut.hpp"
+#include "exact/highs_mip.hpp"
 
 #include <set>
 
+#include "exact/branch_and_cut.hpp"
 #include "io/input.hpp"
-#include "io/output.hpp"
-#include "model/instance.hpp"
-#include "utils/crossings_utils.hpp"
 #include "utils/test_utils.hpp"
 
 namespace fs = std::filesystem;
@@ -23,39 +21,40 @@ void test_highs_mip(pace::input& input) {
                 graph.get_m());
     std::cout << std::flush;
 
-    pace::branch_and_cut solver(instance);
+    pace::highs_mip solver(instance);
+    std::vector<vertex_t> ordering;
     std::clock_t start = std::clock();
-    solver();
+    solver(ordering);
     std::clock_t end = std::clock();
     const double t = pace::test::time_in_ms(start, end);
 
     crossing_number_t test = solver.upper_bound;
-    (void)test;
+    PACE_DEBUG_PRINTF("TEST: %u\n", test);
     std::string warning;
+    bool test_ok{true};
     try {
-        uint32_t ref = pace::test::get_ref_n_crossings(input.filepath);
-        PACE_DEBUG_PRINTF("REF: %u\n\n", ref);
+        crossing_number_t ref = pace::test::get_ref_n_crossings(input.filepath);
+        PACE_DEBUG_PRINTF("REF:  %u\n\n", ref);
+        test_ok &= test == ref;
         assert(test == ref);
-        assert(test == pace::number_of_crossings(instance.get_graph(), solver.get_ordering()));
-        (void)ref;
+        assert(test == pace::number_of_crossings(graph, ordering));
     } catch (std::exception& e) {
         warning = e.what();
     }
 
-    const pace::branch_and_cut_info& info = solver.get_info();
-    fmt::printf("|%11.1f%11u%11u%11u|%11u%11u%11u|%11s\n",               //
-                t, info.n_rows, info.n_iterations, info.n_branch_nodes,  //
-                instance.get_lower_bound(), info.n_crossings_h, test,    //
-                warning);
+    fmt::printf("|%11.1f|%11u%11u|%11s%11s\n",             //
+                t,                                         //
+                solver.lower_bound(), solver.upper_bound,  //
+                warning, test_ok ? "true" : "false");
 }
 
 void test_highs_mip_with(const fs::path dirpath) {
     fmt::printf("%s\n\n", dirpath);
-    fmt::printf("%11s%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%11s|%11s\n",  //
-                "instance", "n fixed", "n free", "m",                     //
-                "time in ms", "n rows", "n iter", "n nodes",        //
-                "lower bound", "heuristic", "optimal",                    //
-                "warning");
+    fmt::printf("%11s%11s%11s%11s|%11s|%11s%11s|%11s%11s\n",  //
+                "instance", "n fixed", "n free", "m",         //
+                "time in ms",                                 //
+                "lb", "ub",                                   //
+                "warning", "test ok");
     pace::test::print_line(136);
     std::set<fs::path> testcases;
     for (const auto& file : fs::directory_iterator(dirpath)) {
@@ -71,10 +70,10 @@ void test_highs_mip_with(const fs::path dirpath) {
 }
 
 /**
- * @brief tests branch_and_cut
+ * @brief tests highs_mip
  */
 int main(int argc, char** argv) {
-    pace::test::pipe_cout_to_file raii_pipe("branch_and_cut.log");
+    pace::test::pipe_cout_to_file raii_pipe("highs_mip.log");
     if (argc <= 1) {
         test_highs_mip_with("tiny_test_set/instances");
         test_highs_mip_with("my_tests/instances");
@@ -88,6 +87,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::cout << "TEST::PACE::BRANCH_AND_CUT:\t\t\tOK" << std::endl;
+    std::cout << "TEST::PACE::HIGHS_MIP:\t\t\t\tOK" << std::endl;
     return 0;
 }

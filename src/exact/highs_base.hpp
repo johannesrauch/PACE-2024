@@ -11,6 +11,15 @@ class highs_base : public instance_view {
     Highs solver;
     HighsStatus status{HighsStatus::kOk};
 
+    /*
+     * for row adding
+     */
+    std::vector<double> lower_bounds;
+    std::vector<double> upper_bounds;
+    std::vector<HighsInt> starts;
+    std::vector<HighsInt> indices;
+    std::vector<double> values;
+
     highs_base(instance &instance_) : instance_view(instance_) {
         status = solver.setOptionValue("presolve", "off");
         assert(status == HighsStatus::kOk);
@@ -25,6 +34,10 @@ class highs_base : public instance_view {
         add_columns();
         PACE_DEBUG_PRINTF("end   add_columns\n");
     }
+
+    /*
+     * column methods
+     */
 
     /**
      * @brief adds all variables of the ilp formulation of one-sided crossing minimization
@@ -70,8 +83,46 @@ class highs_base : public instance_view {
         assert(status == HighsStatus::kOk);
     }
 
+    /*
+     * row methods
+     */
+
+    /**
+     * @brief prepares and adds entries to auxiliary vectors for adding 3-cycle ieq uvw/uwv to lp
+     */
+    inline void add_3cycle_row_to_aux_vectors(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
+        // at least two must be in the lp as variables since we compute transitive hull in oracle
+        assert(get_n_vars_in_lp(u, v, w) >= 2);
+
+        const auto [uv, vw, uw] = flat_indices(n_free, n_free_2, u, v, w);
+        const double bound_offset = get_3cycle_bound_offset(uv, vw, uw);
+        const std::vector<magic_t> &m = magic();
+
+        lower_bounds.emplace_back(0. + bound_offset);
+        upper_bounds.emplace_back(1. + bound_offset);
+        starts.emplace_back(indices.size());
+        if (m[uv] >= 0) {
+            indices.emplace_back(m[uv]);
+            values.emplace_back(1.);
+        }
+        if (m[uw] >= 0) {
+            indices.emplace_back(m[uw]);
+            values.emplace_back(-1.);
+        }
+        if (m[vw] >= 0) {
+            indices.emplace_back(m[vw]);
+            values.emplace_back(1.);
+        }
+    }
+
+    /*
+     * getter
+     */
+
    public:
-    void get_columns(std::vector<double> &col_value) const { col_value = solver.getSolution().col_value; }
+    void copy_column_values(std::vector<double> &col_value) const { col_value = solver.getSolution().col_value; }
+
+    const std::vector<double> &get_column_values() { return solver.getSolution().col_value; }
 
     /**
      * @brief returns value of column j
@@ -174,6 +225,26 @@ class highs_base : public instance_view {
         n_vars_in_lp += m[uw] >= 0;
         n_vars_in_lp += m[vw] >= 0;
         return n_vars_in_lp;
+    }
+
+    /*
+     * boolean
+     */
+
+    /**
+     * @brief returns true iff an optimal feasible solution has been found
+     */
+    bool is_optimal() {
+        const HighsModelStatus &model_status = solver.getModelStatus();
+        return model_status == HighsModelStatus::kOptimal;
+    }
+
+    /**
+     * @brief returns true iff solution is feasible
+     */
+    bool is_feasible() {
+        const HighsModelStatus &model_status = solver.getModelStatus();
+        return model_status != HighsModelStatus::kInfeasible;
     }
 };
 

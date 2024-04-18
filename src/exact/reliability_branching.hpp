@@ -9,7 +9,7 @@
 #define PACE_CONST_RELIPARAM 8
 #endif
 
-#include "lp_wrapper.hpp"
+#include "exact/highs_lp.hpp"
 
 namespace pace {
 
@@ -22,7 +22,7 @@ struct reliability_branching_params {
 };
 
 class reliability_branching {
-    highs_wrapper &lp;
+    highs_lp &lp;
     const std::size_t n_cols;
     std::vector<double> col_value;
     double obj_val{0.};
@@ -38,7 +38,7 @@ class reliability_branching {
     int32_t limit_simplex_it{0};
 
    public:
-    reliability_branching(highs_wrapper &lp, reliability_branching_params params = reliability_branching_params())
+    reliability_branching(highs_lp &lp, reliability_branching_params params = reliability_branching_params())
         : lp(lp),  //
           n_cols(lp.get_n_cols()),
           up_cost_sums(n_cols),
@@ -139,7 +139,7 @@ class reliability_branching {
     }
 
     std::size_t get_branching_column() {
-        lp.get_columns(col_value);
+        lp.copy_column_values(col_value);
         obj_val = lp.get_objective_value();
         const int32_t limit_simplex_it_suggested =
             lround(lp.get_info().n_iterations_simplex_avg * params.limit_simplex_it_factor);

@@ -7,14 +7,14 @@
 #include <stack>
 #include <unordered_map>
 
-#include "exact/lp_wrapper.hpp"
+#include "exact/highs_lp.hpp"
 #include "exact/reliability_branching.hpp"
 #include "heuristic/heuristics.hpp"
 #include "io/output.hpp"
 #include "log/debug_printf.hpp"
 #include "model/instance.hpp"
 #include "utils/crossings_utils.hpp"
-#include "utils/topological_sort.hpp"
+#include "utils/restr_graph_utils.hpp"
 
 namespace pace {
 
@@ -40,7 +40,7 @@ class branch_and_cut : public instance_view {
     /**
      * @brief interface to the ilp relaxation solver
      */
-    std::unique_ptr<highs_wrapper> lp_solver_ptr;
+    std::unique_ptr<highs_lp> lp_solver_ptr;
 
     std::unique_ptr<reliability_branching> reli_branch_ptr;
 
@@ -70,33 +70,15 @@ class branch_and_cut : public instance_view {
      */
     void compute_ordering() {
         assert(lp_solver_ptr->is_integral());
-        digraph &restr_graph{restriction_graph()};
-        restr_graph.rollback();
-
-        // build the constraint graph
-        std::size_t i = 0;
-        for (const auto &[u, v] : unsettled_pairs()) {
-            const double x = lp_solver_ptr->get_column_value(i);
-            if (x < 0.5) {
-                restr_graph.add_arc(v, u);
-            } else {
-                restr_graph.add_arc(u, v);
-            }
-            ++i;
-        }
-
-        // the ordering computed by the lp is the topological sort
-        bool acyclic = topological_sort(restr_graph, ordering);
-        (void)acyclic;  // suppress unused warning
-        assert(acyclic);
+        build_restr_graph_ordering(  //
+            lp_solver_ptr->get_column_values(), unsettled_pairs(), restriction_graph(), ordering);
 
         crossing_number_t n_crossings = lp_solver_ptr->get_rounded_objective_value();
         assert(n_crossings < upper_bound);
         assert(n_crossings == number_of_crossings(graph, ordering));
 
         // try to improve new solution
-        n_crossings = shift_heuristic{instance_}(ordering, n_crossings);
-        update_upper_bound(n_crossings);
+        update_upper_bound(shift_heuristic{instance_}(ordering, n_crossings));
     }
 
     /**
@@ -211,7 +193,7 @@ class branch_and_cut : public instance_view {
         info.n_crossings_h = heuristics(instance_, ordering);
         if (lower_bound() >= upper_bound) return upper_bound;
 
-        if (!lp_solver_ptr) lp_solver_ptr = std::make_unique<highs_wrapper>(instance_);
+        if (!lp_solver_ptr) lp_solver_ptr = std::make_unique<highs_lp>(instance_);
         if (!reli_branch_ptr) reli_branch_ptr = std::make_unique<reliability_branching>(*lp_solver_ptr);
 
         const highs_wrapper_info &info_lp = lp_solver_ptr->get_info();
