@@ -44,7 +44,7 @@ struct highs_wrapper_params {
     const double tol_feasibility{PACE_CONST_TOL_FEASIBILITY};
     const double tol_integer{PACE_CONST_TOL_INTEGER};
 
-    double p_delete_slack_row{0.};
+    double p_delete_slack_row{0.}; // should be < 0.001 if positive
 };
 
 /**
