@@ -3,10 +3,8 @@
 
 #include <unordered_map>
 
-#include "Highs.h"
+#include "exact/highs_base.hpp"
 #include "exact/info_structs.hpp"
-#include "log/debug_printf.hpp"
-#include "model/instance.hpp"
 #include "utils/index_utils.hpp"
 #include "utils/randomness_utils.hpp"
 
@@ -50,12 +48,7 @@ struct highs_wrapper_params {
 /**
  * @brief wrapper class for highs solver; creates and manages ilp relaxation of the instance
  */
-class highs_wrapper : instance_view {
-    /**
-     * @brief interface to lp model and solver
-     */
-    Highs solver;
-    HighsStatus status{HighsStatus::kOk};
+class highs_wrapper : public highs_base {
     highs_wrapper_info info;
     highs_wrapper_params params;
 
@@ -119,16 +112,7 @@ class highs_wrapper : instance_view {
 
    public:
     highs_wrapper(instance &instance_, highs_wrapper_params params = highs_wrapper_params())
-        : instance_view(instance_), info{u_old, v_old, w_old}, params(params) {
-        status = solver.setOptionValue("presolve", "off");
-        assert(status == HighsStatus::kOk);
-        status = solver.setOptionValue("solver", "simplex");
-        assert(status == HighsStatus::kOk);
-        status = solver.setOptionValue("parallel", "off");
-        assert(status == HighsStatus::kOk);
-        status = solver.setOptionValue("log_to_console", false);
-        assert(status == HighsStatus::kOk);
-
+        : highs_base(instance_), info{u_old, v_old, w_old}, params(params) {
         rows_to_delete.reserve(params.limit_new_rows);
         lower_bounds.reserve(params.limit_new_rows);
         upper_bounds.reserve(params.limit_new_rows);
@@ -563,7 +547,7 @@ class highs_wrapper : instance_view {
         }
 
         solver.addRows(lower_bounds.size(), &lower_bounds[0], &upper_bounds[0],  //
-                   indices.size(), &starts[0], &indices[0], &values[0]);
+                       indices.size(), &starts[0], &indices[0], &values[0]);
 
         info.n_init_rows_candidates = candidates.size();
         info.n_rows = get_n_rows();
@@ -631,7 +615,7 @@ class highs_wrapper : instance_view {
         assert(i == info.n_added_rows);
 
         solver.addRows(info.n_added_rows, &lower_bounds[0], &upper_bounds[0],  //
-                   indices.size(), &starts[0], &indices[0], &values[0]);
+                       indices.size(), &starts[0], &indices[0], &values[0]);
         return info.n_added_rows;
     }
 
