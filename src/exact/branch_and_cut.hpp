@@ -20,10 +20,8 @@ namespace pace {
 
 class branch_and_cut : public instance_view {
     /**
-     * @brief ordering corresponding to upper_bound
+     * @brief relevant information of pre-branching situation
      */
-    std::vector<vertex_t> ordering;
-
     struct branch_node {
         const std::size_t j;
         const double obj_val_old;
@@ -41,7 +39,6 @@ class branch_and_cut : public instance_view {
      * @brief interface to the ilp relaxation solver
      */
     std::unique_ptr<highs_lp> lp_solver_ptr;
-
     std::unique_ptr<reliability_branching> reli_branch_ptr;
 
     branch_and_cut_info info;
@@ -50,7 +47,7 @@ class branch_and_cut : public instance_view {
     /**
      * @brief constructs and initializes the branch and cut solver
      */
-    branch_and_cut(instance &instance_) : instance_view(instance_), ordering(n_free), info{lower_bound(), upper_bound} {
+    branch_and_cut(instance &instance_) : instance_view(instance_), info{lower_bound(), upper_bound} {
         assert(n_free > 0);
     }
 
@@ -65,10 +62,8 @@ class branch_and_cut : public instance_view {
      * @brief constructs the restrictions graph into restriction_graph.
      * the topological sort of `restriction_graph` gives an ordering of the vertices of the free
      * layer of `graph`, which we store in `ordering`.
-     *
-     * @pre lp solution integral
      */
-    void compute_ordering() {
+    void build_ordering(std::vector<vertex_t> &ordering) {
         assert(lp_solver_ptr->is_integral());
         build_restr_graph_ordering(  //
             lp_solver_ptr->get_column_values(), unsettled_pairs(), restriction_graph(), ordering);
@@ -150,7 +145,7 @@ class branch_and_cut : public instance_view {
      * @return true optimal solution found
      * @return false otherwise
      */
-    inline bool branch_and_bound_and_cut() {
+    inline bool branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
         // test if the lp is optimal
         if (!lp_solver_ptr->is_optimal()) {
             return backtrack();
@@ -172,9 +167,11 @@ class branch_and_cut : public instance_view {
         // at this point, we have an optimal solution to the ilp relaxation
         update_costs();
 
+        // todo: heuristic?
+
         // test if solution is integral, then we found a better solution
         if (lp_solver_ptr->is_integral()) {
-            compute_ordering();
+            build_ordering(ordering);
             lp_solver_ptr->fix_columns();
             return backtrack();
         }
@@ -188,7 +185,7 @@ class branch_and_cut : public instance_view {
     /**
      * @brief solves the given instance exactly with a branch and cut algorithm
      */
-    uint32_t operator()() {
+    uint32_t operator()(std::vector<vertex_t> &ordering) {
         PACE_DEBUG_PRINTF("\n");
         info.n_crossings_h = heuristics(instance_, ordering);
         if (lower_bound() >= upper_bound) return upper_bound;
@@ -209,7 +206,7 @@ class branch_and_cut : public instance_view {
             lp_solver_ptr->run();
             PACE_DEBUG_INFO(info, info_lp);
             ++info.n_iterations;
-        } while (!branch_and_bound_and_cut());
+        } while (!branch_and_bound_and_cut(ordering));
         PACE_DEBUG_PRINTF("end   branch and cut\n");
 
         return upper_bound;
@@ -218,8 +215,6 @@ class branch_and_cut : public instance_view {
     //
     // getter
     //
-
-    const std::vector<vertex_t> &get_ordering() const { return ordering; }
 
     const branch_and_cut_info &get_info() {
         if (lp_solver_ptr) {
