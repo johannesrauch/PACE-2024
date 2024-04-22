@@ -2,7 +2,7 @@
 ## Dependencies
 - Modern version of `gcc`; we use `c++17`.
 - `make`.
-- [glpk](https://www.gnu.org/software/glpk/). `make` expects the glpk library in the standard folder `/usr/local/include`.
+- [HiGHS](https://github.com/ERGO-Code/HiGHS). `make` expects the headers in `/usr/local/include/highs` and the library in `/usr/local/lib`.
 
 ## Compiling
 ### Tests
@@ -15,24 +15,24 @@ Run
 ```
 make test.all
 ```
-for all tests (except the solver tests with large instances).
+for all tests (on `tiny_test_set`).
 The command
 ```
 make clean
 ```
-deletes all executables in the test folder.
+deletes all executables and logs in the test folder.
 
 ## Formatting
 Please use clang-format with
 ```
-{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 0 }
+{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 120 }
 ```
 options.
 
 Please use 
 ```
-#ifndef PACE_[YOUR FILE NAME IN CAPS WITH UNDERSCORES]_HPP
-#define PACE_[YOUR FILE NAME IN CAPS WITH UNDERSCORES]_HPP
+#ifndef PACE_[FILEPATH IN CAPS WITH UNDERSCORES]_HPP
+#define PACE_[FILEPATH IN CAPS WITH UNDERSCORES]_HPP
 
 // your code here
 
@@ -40,18 +40,6 @@ Please use
 ```
 to avoid multiple header inclusions.
 Please use the namespace `pace` for the project.
-
-## Add files
-```
-cd existing_repo
-git remote add origin https://gitlab.uni-ulm.de/zhh72/pace.git
-git branch -M main
-git push -uf origin main
-```
-
-## Roadmap
-- [ ] Switch linear program solver to [CLP](https://github.com/coin-or/Clp).
-- [ ] Implement improvements (todos) mentioned in `branch_and_cut::solve`.
 
 ## Authors
 Johannes Rauch.
