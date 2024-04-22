@@ -35,8 +35,8 @@ void parse_input(fs::path filepath, general_bipartite_graph<T> &graph) {
  * @param input
  * @param graph in-out parameter; where instance gets stored
  */
-template <typename T>
-void parse_input(std::ifstream &input, general_bipartite_graph<T> &graph) {
+template <typename T, typename CharT>
+void parse_input(std::basic_istream<CharT> &input, general_bipartite_graph<T> &graph) {
     assert(input.good());
     graph.clear();
 
