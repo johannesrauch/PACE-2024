@@ -26,6 +26,8 @@ class input {
    public:
     const fs::path filepath;
 
+    input() { parse_input(std::cin, graph); }
+
     input(const fs::path filepath) : filepath(filepath) { parse_input(filepath, graph); }
 
     // delete copy constructor and assignment
