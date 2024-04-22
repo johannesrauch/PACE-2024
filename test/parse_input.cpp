@@ -1,5 +1,5 @@
 #include "io/parse_input.hpp"
-#include "test_utils.hpp"
+#include "utils/test_utils.hpp"
 
 #include <cassert>
 #include <fstream>
