@@ -3,11 +3,10 @@
 
 #include "heuristic/barycenter_heuristic.hpp"
 #include "heuristic/median_heuristic.hpp"
-#include "utils/crossings_utils.hpp"
 
 namespace pace {
 
-crossing_number_t heuristics(instance &instance, std::vector<vertex_t> &ordering) {
+crossing_number_t heuristics(pace::instance &instance, std::vector<vertex_t> &ordering) {
     PACE_DEBUG_PRINTF("start heuristic\n");
 
     const crossing_number_t &lb = instance.get_lower_bound();
