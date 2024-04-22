@@ -1,19 +1,14 @@
-include_directories(${CMAKE_SOURCE_DIR}/src)
-include_directories(/usr/local/include/highs)
 
 set(ALL_TESTS
 bipartite_graph
-branch_and_cut_tiny
-branch_and_cut_medium
-crossings
-debug_printf
+branch_and_cut
+crossings_utils
 heuristics
 input
-lp_wrapper
 matrix
-median_heuristic
-shift_heuristic
+parse_input
 topological_sort
+transitive_hull
 )
 
 foreach(T IN LISTS ALL_TESTS)
