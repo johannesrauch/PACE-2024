@@ -42,7 +42,7 @@
 .gdb_history
 
 dep
-HiGHS
+highs
 *.log
 build/
 test/big_test_set
