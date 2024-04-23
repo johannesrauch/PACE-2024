@@ -42,7 +42,8 @@
 */.gdb_history
 
 dep
-highs
+highs/*
+!highs/CMakeLists.txt
 *.log
 build/
 test/big_test_set
