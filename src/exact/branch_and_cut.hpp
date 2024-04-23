@@ -204,7 +204,7 @@ class branch_and_cut : public instance_view {
         // driver loop for branch and cut
         do {
             lp_solver_ptr->run();
-            PACE_DEBUG_INFO(info, info_lp);
+            PACE_DEBUG_PRINTF_INFO(info, info_lp);
             ++info.n_iterations;
         } while (!branch_and_bound_and_cut(ordering));
         PACE_DEBUG_PRINTF("end   branch and cut\n");

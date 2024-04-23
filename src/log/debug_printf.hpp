@@ -55,7 +55,7 @@ class pipe_cout_to_file {
 
 };  // namespace pace
 
-#ifdef DEBUG_PRINT
+#ifdef PACE_DEBUG_PRINT
 #define PACE_DEBUG_PRINTF(...)    \
     do {                          \
         fmt::printf(__VA_ARGS__); \
@@ -67,14 +67,14 @@ class pipe_cout_to_file {
     } while (false)
 #endif
 
-#ifdef DEBUG_PRINT
-#define PACE_DEBUG_INFO(info_br, info_lp)          \
+#ifdef PACE_DEBUG_PRINT
+#define PACE_DEBUG_PRINTF_INFO(info_br, info_lp)          \
     do {                                           \
         pace::test::printf_info(info_br, info_lp); \
         std::cout << std::flush;                   \
     } while (false)
 #else
-#define PACE_DEBUG_INFO(...) \
+#define PACE_DEBUG_PRINTF_INFO(...) \
     do {                     \
     } while (false)
 #endif
