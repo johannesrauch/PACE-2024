@@ -1,19 +1,17 @@
+# deprecated!
+
 CXX = gcc -std=c++17 -Wall -Werror
-CXXFLAGS = -I../src -I/usr/local/include/highs
+CXXFLAGS = -I../src -I../highs/include/highs
 LFLAGS = -lhighs -lstdc++ -lm
 
-ifdef PRODUCTION
+ifdef RELEASE
 	CXXFLAGS += -O3 -DNDEBUG
 else
 	CXXFLAGS += -O0 -g
 endif
 
 ifdef VERBOSE
-	CXXFLAGS += -DDEBUG_PRINT
-endif
-
-ifdef FAST
-	CXXFLAGS += -DPACE_CONST_PROBMEDIAN_ITERATIONS=4
+	CXXFLAGS += -DPACE_DEBUG_PRINT
 endif
 
 .PHONY: all
