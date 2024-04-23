@@ -1,5 +1,5 @@
 
-set(ALL_TESTS
+set(PACE_ALL_TESTS
 bipartite_graph
 branch_and_cut
 crossings_utils
@@ -11,18 +11,18 @@ topological_sort
 transitive_hull
 )
 
-foreach(T IN LISTS ALL_TESTS)
-    message(STATUS "add_executable(${T} ${T}.cpp)")
-    add_executable(${T} ${T}.cpp)
-    target_link_libraries(${T} highs)
+foreach(PACE_TEST IN LISTS PACE_ALL_TESTS)
+    message(STATUS "add_executable(${PACE_TEST} ${PACE_TEST}.cpp)")
+    add_executable(${PACE_TEST} ${PACE_TEST}.cpp)
+    target_link_libraries(${PACE_TEST} highs::highs)
 endforeach()
 
 enable_testing()
 
-foreach(T IN LISTS ALL_TESTS)
+foreach(PACE_TEST IN LISTS PACE_ALL_TESTS)
     add_test(
-        NAME ${T} 
-        COMMAND $<TARGET_FILE:${T}> 
+        NAME ${PACE_TEST} 
+        COMMAND $<TARGET_FILE:${PACE_TEST}> 
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test
     )
 endforeach()
