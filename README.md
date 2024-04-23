@@ -10,6 +10,8 @@ Its main executable is the exact solver `weberknecht`.
 - [`fmt/printf.hpp`](https://github.com/afborchert/fmt/blob/master/printf.hpp) (copy included in this project).
 
 ## Building
+Currently only linux builds are supported.
+
 ### Installing HiGHS
 Run the script `INSTALL_HIGHS.sh` from the root project directory.
 It installs `HiGHS` locally, that is, in `highs/include` and `highs/lib`.
