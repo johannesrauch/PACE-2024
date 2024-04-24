@@ -30,7 +30,7 @@
 
 namespace pace {
 
-struct highs_wrapper_params {
+struct highs_lp_params {
     std::size_t limit_new_rows{PACE_CONST_N_MAX_NEW_ROWS};
     const uint8_t limit_new_rows_double{2};
     const std::size_t limit_initial_rows{PACE_CONST_N_MAX_INIT_ROWS};
@@ -50,7 +50,7 @@ struct highs_wrapper_params {
  */
 class highs_lp : public highs_base {
     highs_wrapper_info info;
-    highs_wrapper_params params;
+    highs_lp_params params;
 
     /**
      * @brief number of rows before cut() added new rows
@@ -104,7 +104,7 @@ class highs_lp : public highs_base {
     std::list<triple> rows;
 
    public:
-    highs_lp(instance &instance_, highs_wrapper_params params = highs_wrapper_params())
+    highs_lp(instance &instance_, highs_lp_params params = highs_lp_params())
         : highs_base(instance_), info{u_old, v_old, w_old}, params(params) {
         rows_to_delete.reserve(params.limit_new_rows);
         lower_bounds.reserve(params.limit_new_rows);
