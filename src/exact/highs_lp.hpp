@@ -31,11 +31,10 @@
 namespace pace {
 
 struct highs_lp_params {
-    std::size_t limit_new_rows{PACE_CONST_N_MAX_NEW_ROWS};
-    const uint8_t limit_new_rows_double{2};
-    const std::size_t limit_initial_rows{PACE_CONST_N_MAX_INIT_ROWS};
-    const uint8_t limit_delete_slack_row{16};
-    const uint8_t limit_delete_rows{64};
+    uint16_t max_new_rows{PACE_CONST_N_MAX_NEW_ROWS};             ///< maximum number of new rows per check_3cycles call
+    const uint8_t max_new_rows_doubling{2};                       ///< maximum number of times max_new_rows is doubled
+    const uint16_t max_initial_rows{PACE_CONST_N_MAX_INIT_ROWS};  ///< maximum number of initial rows
+    const uint8_t max_delete_rows_3cycle_iterations{64};  ///< maximum number of 3-cycle iterations with row deletion
 
     const uint8_t n_buckets{PACE_CONST_N_BUCKETS};
 
@@ -104,12 +103,12 @@ class highs_lp : public highs_base {
    public:
     highs_lp(instance &instance_, highs_lp_params params = highs_lp_params())
         : highs_base(instance_), info{u_old, v_old, w_old}, params(params) {
-        rows_to_delete.reserve(params.limit_new_rows);
-        lower_bounds.reserve(params.limit_new_rows);
-        upper_bounds.reserve(params.limit_new_rows);
-        starts.reserve(params.limit_new_rows);
-        indices.reserve(3 * params.limit_new_rows);
-        values.reserve(3 * params.limit_new_rows);
+        rows_to_delete.reserve(params.max_new_rows);
+        lower_bounds.reserve(params.max_new_rows);
+        upper_bounds.reserve(params.max_new_rows);
+        starts.reserve(params.max_new_rows);
+        indices.reserve(3 * params.max_new_rows);
+        values.reserve(3 * params.max_new_rows);
 
         info.n_cols = get_n_cols();
         // PACE_DEBUG_PRINTF("start add_initial_rows\n");
@@ -173,7 +172,7 @@ class highs_lp : public highs_base {
      */
     void delete_positive_slack_rows() {
         reset_delete_count_info();
-        if (info.n_iterations_3cycles > params.limit_delete_rows) return;
+        if (info.n_iterations_3cycles > params.max_delete_rows_3cycle_iterations) return;
 
         // gather rows to delete
         rows_to_delete.clear();
@@ -342,7 +341,7 @@ class highs_lp : public highs_base {
     //
 
     /**
-     * @brief adds at most params.limit_initial_rows "interesting" rows to the lp
+     * @brief adds at most params.max_initial_rows "interesting" rows to the lp
      */
     inline void add_initial_rows() {
         clear_aux_vectors();
@@ -359,7 +358,7 @@ class highs_lp : public highs_base {
             }
         }
 
-        const double p = static_cast<double>(params.limit_initial_rows) / candidates.size();
+        const double p = static_cast<double>(params.max_initial_rows) / candidates.size();
         for (const auto &[u, v, w] : candidates) {
             if (coinflip(p)) {
                 add_3cycle_row_to_aux_vectors(u, v, w);
@@ -385,12 +384,12 @@ class highs_lp : public highs_base {
 
     /**
      * @brief expects the violated 3-cycle ieqs in buckets.
-     * adds the most violated <= params.limit_new_rows to the lp.
+     * adds the most violated <= params.max_new_rows to the lp.
      *
      * @return std::size_t number of new rows
      */
     inline std::size_t add_3cycle_rows() {
-        info.n_added_rows = std::min(get_n_bucket_entries(), params.limit_new_rows);
+        info.n_added_rows = std::min(get_n_bucket_entries(), static_cast<std::size_t>(params.max_new_rows));
         if (info.n_added_rows <= 0) return 0;
 
         clear_aux_vectors();
@@ -402,7 +401,7 @@ class highs_lp : public highs_base {
                 add_3cycle_row_to_aux_vectors(u, v, w);
                 add_3cycle_row_to_internal_rows(u, v, w);
                 ++i;
-                if (i >= params.limit_new_rows) {
+                if (i >= params.max_new_rows) {
                     go_on = false;
                     break;
                 }
@@ -547,10 +546,10 @@ class highs_lp : public highs_base {
     /**
      * @brief returns if the last bucket is full
      *
-     * @return true if last bucket has >= params.limit_new_rows elements
+     * @return true if last bucket has >= params.max_new_rows elements
      * @return false otherwise
      */
-    inline bool is_last_bucket_full() { return (*buckets.rbegin()).size() >= params.limit_new_rows; }
+    inline bool is_last_bucket_full() { return (*buckets.rbegin()).size() >= params.max_new_rows; }
 
     //
     // hot start methods
@@ -579,8 +578,8 @@ class highs_lp : public highs_base {
     }
 
     inline void update_3cycle_iteration_info() {
-        if (info.n_iterations_3cycles < params.limit_new_rows_double) {
-            params.limit_new_rows *= 2;
+        if (info.n_iterations_3cycles < params.max_new_rows_doubling) {
+            params.max_new_rows *= 2;
         }
         ++info.n_iterations_3cycles;
     }
