@@ -10,7 +10,7 @@ namespace pace {
 std::string generic_log_filename() {
     const auto now = std::chrono::system_clock::now();
     const std::time_t t = std::chrono::system_clock::to_time_t(now);
-    return std::string(std::ctime(&t));
+    return std::string(std::ctime(&t)) + ".log";
 }
 
 /**
