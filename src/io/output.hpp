@@ -12,7 +12,7 @@ void print_help() {
 
 template <typename CharT, typename Traits, typename T, typename Allocator>
 void print_output(  //
-    std::basic_istream<CharT, Traits> ostream, const std::size_t n_fixed, const std::vector<T, Allocator>& ordering) {
+    std::basic_ostream<CharT, Traits> ostream, const std::size_t n_fixed, const std::vector<T, Allocator>& ordering) {
     for (const T& element : ordering) {
         ostream << element + n_fixed + 1 << std::endl;
     }
