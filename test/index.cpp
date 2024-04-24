@@ -1,4 +1,4 @@
-#include "index.hpp"
+#include "utils/index_utils.hpp"
 
 int main() {
     const std::size_t n = 1234;
