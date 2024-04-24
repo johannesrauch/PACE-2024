@@ -5,7 +5,7 @@
 
 namespace pace {
 
-struct highs_wrapper_info {
+struct highs_lp_info {
     const vertex_t &u_old;
     const vertex_t &v_old;
     const vertex_t &w_old;

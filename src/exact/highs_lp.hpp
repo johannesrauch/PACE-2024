@@ -49,7 +49,7 @@ struct highs_lp_params {
  * @brief wrapper class for highs solver; creates and manages ilp relaxation of the instance
  */
 class highs_lp : public highs_base {
-    highs_wrapper_info info;
+    highs_lp_info info;
     highs_lp_params params;
 
     /**
@@ -268,7 +268,7 @@ class highs_lp : public highs_base {
     // getter
     //
 
-    const highs_wrapper_info &get_info() { return info; }
+    const highs_lp_info &get_info() { return info; }
 
     //
     // information methods

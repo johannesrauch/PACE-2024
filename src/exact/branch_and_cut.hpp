@@ -193,7 +193,7 @@ class branch_and_cut : public instance_view {
         if (!lp_solver_ptr) lp_solver_ptr = std::make_unique<highs_lp>(instance_);
         if (!reli_branch_ptr) reli_branch_ptr = std::make_unique<reliability_branching>(*lp_solver_ptr);
 
-        const highs_wrapper_info &info_lp = lp_solver_ptr->get_info();
+        const highs_lp_info &info_lp = lp_solver_ptr->get_info();
         (void)info_lp;
         PACE_DEBUG_PRINTF("start branch and cut\n");
         PACE_DEBUG_PRINTF("%11s=%11u, %11s=%11u, %11s=%11u\n",  //

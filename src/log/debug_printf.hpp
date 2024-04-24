@@ -8,7 +8,7 @@ namespace pace {
 
 namespace test {
 
-void printf_info(const branch_and_cut_info& info_br, const highs_wrapper_info& info_lp) {
+void printf_info(const branch_and_cut_info& info_br, const highs_lp_info& info_lp) {
     if (info_br.n_iterations % 50 == 0) {
         fmt::printf("%11s%11s|%11s%11s%11s%11s%11s|%11s%11s%11s%11s%11s%11s|%11s%11s%11s%11s\n",  //
                     "lb", "ub",                                                                   //
