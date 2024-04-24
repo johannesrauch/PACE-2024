@@ -16,8 +16,8 @@ namespace pace {
 struct reliability_branching_params {
     const int32_t min_simplex_it{4096};
     const int32_t max_simplex_it{16384};
-    const double limit_simplex_it_factor{0.75};
-    const uint8_t limit_lookahead{PACE_CONST_RELIBRANCH_LOOKAHEAD};
+    const double max_simplex_it_factor{2};
+    const uint8_t max_lookaheads{PACE_CONST_RELIBRANCH_LOOKAHEAD};
     const uint8_t limit_reliable{PACE_CONST_RELIPARAM};
 };
 
@@ -141,9 +141,9 @@ class reliability_branching {
     std::size_t get_branching_column() {
         lp.copy_column_values(col_value);
         obj_val = lp.get_objective_value();
-        const int32_t limit_simplex_it_suggested =
-            lround(lp.get_info().n_iterations_simplex_avg * params.limit_simplex_it_factor);
-        limit_simplex_it = std::min(std::max(params.min_simplex_it, limit_simplex_it_suggested), params.max_simplex_it);
+        const int32_t max_simplex_it_suggested =
+            lround(lp.get_info().n_iterations_simplex_avg * params.max_simplex_it_factor);
+        limit_simplex_it = std::min(std::max(params.min_simplex_it, max_simplex_it_suggested), params.max_simplex_it);
 
         // collect nonintegral columns in candidates
         std::vector<std::size_t> candidates;
@@ -178,7 +178,7 @@ class reliability_branching {
                 n_it_since_improve = 1;
             } else {
                 ++n_it_since_improve;
-                if (n_it_since_improve > params.limit_lookahead) break;
+                if (n_it_since_improve > params.max_lookaheads) break;
             }
         }
         lp.unfreeze_basis(frozen_basis_id);
