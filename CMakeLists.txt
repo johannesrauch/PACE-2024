@@ -10,7 +10,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_BUILD_TYPE Release)
 
-# include and link directories
 include_directories(${CMAKE_SOURCE_DIR}/src)
 add_executable(weberknecht src/weberknecht.cpp)
 target_link_libraries(weberknecht highs::highs)
