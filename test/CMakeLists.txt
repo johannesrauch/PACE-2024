@@ -3,7 +3,9 @@ set(PACE_ALL_TESTS
 bipartite_graph
 branch_and_cut
 crossings_utils
+exact_solver
 heuristics
+index
 input
 matrix
 parse_input
