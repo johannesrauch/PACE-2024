@@ -23,7 +23,7 @@ namespace fs = std::filesystem;
  * @param graph in-out parameter; where instance gets stored
  */
 template <typename T>
-void parse_input(fs::path filepath, general_bipartite_graph<T> &graph) {
+void parse_input(const fs::path filepath, general_bipartite_graph<T> &graph) {
     std::ifstream input(filepath);
     parse_input(input, graph);
 }
