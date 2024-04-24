@@ -14,16 +14,16 @@ namespace pace {
 
 namespace test {
 
-template <typename T>
-void print_vector(const std::vector<T> &vec) {
+template <typename T, typename Allocator>
+void print_vector(const std::vector<T, Allocator> &vec) {
     for (const T &elem : vec) {
         fmt::printf("%d, ", elem);
     }
     fmt::printf("\n");
 }
 
-template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
-bool is_permutation(const std::vector<T> &vec) {
+template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>, typename Allocator>
+bool is_permutation(const std::vector<T, Allocator> &vec) {
     const std::size_t n = vec.size();
     std::vector<bool> test(n);
     for (const T &v : vec) {
@@ -34,7 +34,7 @@ bool is_permutation(const std::vector<T> &vec) {
     return true;
 }
 
-};
+};  // namespace test
 
 //
 // vector utility functions
@@ -46,8 +46,8 @@ bool is_permutation(const std::vector<T> &vec) {
  * @param in permutation, in parameter
  * @param out out parameter
  */
-template <typename T>
-inline void inverse(const std::vector<T> &in, std::vector<T> &out) {
+template <typename T, typename Allocator1, typename Allocator2>
+inline void inverse(const std::vector<T, Allocator1> &in, std::vector<T, Allocator2> &out) {
     assert(test::is_permutation(in));
     const std::size_t len = in.size();
     out.resize(len);
@@ -61,8 +61,8 @@ inline void inverse(const std::vector<T> &in, std::vector<T> &out) {
 /**
  * @brief resizes and stores vec[0]=0, vec[1]=1, ..., vec[n-1]=n-1 in vec
  */
-template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>>
-inline void identity(const std::size_t n, std::vector<T> &vec) {
+template <typename T, class = typename std::enable_if_t<std::is_unsigned<T>::value>, typename Allocator>
+inline void identity(const std::size_t n, std::vector<T, Allocator> &vec) {
     vec.resize(n);
     for (std::size_t i = 0; i < n; ++i) vec[i] = i;
 }
@@ -76,8 +76,8 @@ inline void identity(const std::size_t n, std::vector<T> &vec) {
  * @param vec vector
  * @return T the median of vec
  */
-template <typename T>
-inline T median(const std::vector<T> &vec) {
+template <typename T, typename Allocator>
+inline T median(const std::vector<T, Allocator> &vec) {
     const std::size_t len = vec.size();
     if (len == 0) {
         return 0;
