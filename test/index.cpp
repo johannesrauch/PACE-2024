@@ -9,4 +9,5 @@ int main() {
             ++ref;            
         }
     }
+    return 0;
 }

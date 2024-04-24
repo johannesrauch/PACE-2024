@@ -87,7 +87,5 @@ int main(int argc, char** argv) {
             test_branch_and_cut_with(std::string{argv[1]} + "/instances");
         }
     }
-
-    std::cout << "TEST::PACE::BRANCH_AND_CUT:\t\t\tOK" << std::endl;
     return 0;
 }

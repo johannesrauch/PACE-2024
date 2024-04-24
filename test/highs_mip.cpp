@@ -73,7 +73,6 @@ void test_highs_mip_with(const fs::path dirpath) {
  * @brief tests highs_mip
  */
 int main(int argc, char** argv) {
-    pace::test::pipe_cout_to_file raii_pipe("highs_mip.log");
     if (argc <= 1) {
         test_highs_mip_with("tiny_test_set/instances");
         test_highs_mip_with("my_tests/instances");
@@ -86,7 +85,5 @@ int main(int argc, char** argv) {
             test_highs_mip_with(std::string{argv[1]} + "/instances");
         }
     }
-
-    std::cout << "TEST::PACE::HIGHS_MIP:\t\t\t\tOK" << std::endl;
     return 0;
 }

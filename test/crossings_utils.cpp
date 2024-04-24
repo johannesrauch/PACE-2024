@@ -99,7 +99,5 @@ int main(int argc, char** argv) {
             test_crossing_numbers_of_with(std::string{argv[1]} + "/instances");
         }
     }
-
-    std::cout << "TEST::PACE::CROSSING_NUMBER:\t\tOK" << std::endl;
     return 0;
 }

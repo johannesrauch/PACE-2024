@@ -37,7 +37,5 @@ int main() {
         std::vector<uint8_t> ordering;
         assert(!pace::topological_sort(digraph, ordering));
     }
-
-    std::cout << "TEST::PACE::TOPOLOGICAL_SORT:\t\tOK" << std::endl;
     return 0;
 }

@@ -101,6 +101,5 @@ int main(int argc, char** argv) {
             test_heuristics_with(std::string{argv[1]} + "/instances");
         }
     }
-    std::cout << "TEST::PACE::HEURISTICS:\t\tOK" << std::endl;
     return 0;
 }

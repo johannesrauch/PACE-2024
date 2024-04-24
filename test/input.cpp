@@ -78,7 +78,5 @@ int main(int argc, char** argv) {
             test_input_with(std::string{argv[1]} + "/instances");
         }
     }
-
-    std::cout << "TEST::PACE::INPUT:\t\t\t\tOK" << std::endl;
     return 0;
 }

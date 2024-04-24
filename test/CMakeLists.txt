@@ -5,6 +5,7 @@ branch_and_cut
 crossings_utils
 exact_solver
 heuristics
+highs_mip
 index
 input
 matrix

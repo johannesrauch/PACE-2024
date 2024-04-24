@@ -28,7 +28,5 @@ int main() {
         assert(ref_edges[i].first == edges[i].first + 1);
         assert(ref_edges[i].second == edges[i].second + 1 + ref_n_fixed);
     }
-
-    std::cout << "TEST::PACE::INPUT:\t\t\t\tOK" << std::endl;
     return 0;
 }

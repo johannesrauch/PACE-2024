@@ -56,6 +56,5 @@ void test_transitive_hull_with_rd_instances() {
 
 int main() {
     test_transitive_hull_with_rd_instances();
-    std::cout << "TEST::PACE::TRANSITIVE_HULL:\t\tOK" << std::endl;
     return 0;
 }

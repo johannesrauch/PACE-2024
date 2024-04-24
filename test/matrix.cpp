@@ -69,7 +69,5 @@ int main(int argc, char** argv) {
             test_crossing_matrix(std::string{argv[1]} + "/instances");
         }
     }
-
-    std::cout << "TEST::PACE::MATRIX:\t\t\t\t\tOK" << std::endl;
     return 0;
 }

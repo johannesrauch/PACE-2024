@@ -77,7 +77,5 @@ int main(int argc, char** argv) {
             test_exact_solver_with(std::string{argv[1]} + "/instances");
         }
     }
-
-    std::cout << "TEST::PACE::BRANCH_AND_CUT:\t\t\tOK" << std::endl;
     return 0;
 }

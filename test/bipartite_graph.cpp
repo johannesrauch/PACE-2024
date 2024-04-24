@@ -32,7 +32,5 @@ int main() {
             ++i;
         }
     }
-
-    std::cout << "TEST::PACE::BIPARTITE_GRAPH:\t\tOK" << std::endl;
     return 0;
 }
