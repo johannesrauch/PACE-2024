@@ -15,7 +15,6 @@ struct highs_lp_info {
     std::size_t n_runs{0};
 
     std::size_t n_deleted_rows{0};
-    std::size_t n_deleted_rows_bad_luck{0};
     std::size_t n_deleted_rows_slack{0};
     std::size_t n_delete_rows_spared{0};
     

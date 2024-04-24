@@ -41,8 +41,6 @@ struct highs_lp_params {
 
     const double tol_feasibility{PACE_CONST_TOL_FEASIBILITY};
     const double tol_integer{PACE_CONST_TOL_INTEGER};
-
-    double p_delete_slack_row{0.};  // should be < 0.001 if positive
 };
 
 /**
@@ -188,10 +186,8 @@ class highs_lp : public highs_base {
             const bool has_slack = has_row_slack(i);
             const bool spare = it->second.n_deleted > it->second.n_spared;
             const bool remove = has_slack && !spare;
-            const bool bad_luck =
-                it->second.n_deleted < params.limit_delete_slack_row && coinflip(params.p_delete_slack_row);
 
-            if (remove || bad_luck) {
+            if (remove) {
                 rows_to_delete.emplace_back(i);
                 ++it->second.n_deleted;
                 it->second.n_spared = 0;
@@ -205,7 +201,6 @@ class highs_lp : public highs_base {
                 ++info.n_delete_rows_spared;
             }
             info.n_deleted_rows_slack += remove;
-            info.n_deleted_rows_bad_luck += !remove && bad_luck;
         }
 
         info.n_deleted_rows = rows_to_delete.size();
@@ -580,7 +575,6 @@ class highs_lp : public highs_base {
     inline void reset_delete_count_info() {
         info.n_deleted_rows = 0;
         info.n_delete_rows_spared = 0;
-        info.n_deleted_rows_bad_luck = 0;
         info.n_deleted_rows_slack = 0;
     }
 
@@ -588,7 +582,6 @@ class highs_lp : public highs_base {
         if (info.n_iterations_3cycles < params.limit_new_rows_double) {
             params.limit_new_rows *= 2;
         }
-        params.p_delete_slack_row /= 2;
         ++info.n_iterations_3cycles;
     }
 
