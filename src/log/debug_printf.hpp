@@ -1,11 +1,6 @@
 #ifndef PACE_LOG_DEBUG_PRINTF_HPP
 #define PACE_LOG_DEBUG_PRINTF_HPP
 
-#include <chrono>
-#include <fstream>
-#include <iostream>
-#include <memory>
-
 #include "exact/info_structs.hpp"
 #include "fmt/printf.hpp"
 
@@ -29,27 +24,6 @@ void printf_info(const branch_and_cut_info& info_br, const highs_wrapper_info& i
                 info_lp.n_deleted_rows_bad_luck, info_lp.n_delete_rows_spared,  //
                 info_lp.n_iterations_3cycles, info_lp.u_old, info_lp.v_old, info_lp.w_old);
 }
-
-std::string get_log_filename() {
-    const auto now = std::chrono::system_clock::now();
-    const std::time_t t = std::chrono::system_clock::to_time_t(now);
-    return std::string(std::ctime(&t));
-}
-
-/**
- * @brief raii class to pipeline std::cout to a certain logfile
- */
-class pipe_cout_to_file {
-    std::ofstream out_f;
-    std::streambuf* buf_old;
-
-   public:
-    pipe_cout_to_file(const std::string filename) : out_f(filename), buf_old(std::cout.rdbuf(out_f.rdbuf())) {}
-
-    pipe_cout_to_file() : pipe_cout_to_file(get_log_filename()) {}
-
-    ~pipe_cout_to_file() { std::cout.rdbuf(buf_old); }
-};
 
 };  // namespace test
 
