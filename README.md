@@ -13,8 +13,7 @@ Its main executable is the exact solver `weberknecht`.
 Currently only linux builds are supported.
 
 ### Installing HiGHS
-Run the script `INSTALL_HIGHS.sh` from the root project directory.
-It installs `HiGHS` locally, that is, in `highs/include` and `highs/lib`.
+This works automatically, just follow the steps below.
 
 ### Building `weberknecht`
 The command-chain is
