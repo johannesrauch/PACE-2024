@@ -75,7 +75,6 @@ void test_branch_and_cut_with(const fs::path dirpath) {
  * @brief tests branch_and_cut
  */
 int main(int argc, char** argv) {
-    pace::test::pipe_cout_to_file raii_pipe("branch_and_cut.log");
     if (argc <= 1) {
         test_branch_and_cut_with("tiny_test_set/instances");
         test_branch_and_cut_with("my_tests/instances");
