@@ -10,13 +10,13 @@ namespace test {
 
 void printf_info(const branch_and_cut_info& info_br, const highs_lp_info& info_lp) {
     if (info_br.n_iterations % 50 == 0) {
-        fmt::printf("%11s%11s|%11s%11s%11s%11s%11s|%11s%11s%11s%11s%11s%11s|%11s%11s%11s%11s\n",  //
+        fmt::printf("%11s%11s|%11s%11s%11s%11s%11s|%11s%11s%11s%11s%11s|%11s%11s%11s%11s\n",  //
                     "lb", "ub",                                                                   //
                     "iter", "obj val", "n simplex", "n rows", "n nodes",                          //
                     "n bucket", "n added", "n delete", "n d slack", "n spared",                   //
                     "uvw iter", "u", "v", "w");
     }
-    fmt::printf("%11u%11u|%11u%11.1f%11u%11u%11u|%11u%11u%11u%11u%11u%11u|%11u%11u%11u%11u\n",  //
+    fmt::printf("%11u%11u|%11u%11.1f%11u%11u%11u|%11u%11u%11u%11u%11u|%11u%11u%11u%11u\n",  //
                 info_br.lower_bound, info_br.upper_bound,                                       //
                 info_br.n_iterations, info_lp.objective_value, info_lp.n_iterations_simplex, info_lp.n_rows,
                 info_br.n_branch_nodes,  //
