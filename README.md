@@ -65,3 +65,8 @@ Johannes Rauch.
 
 ## Project Status
 Mostly done; some minor work in progress.
+
+### Possible Future Work
+Unfortunately, HiGHS does not (yet) support lazy constraint callbacks in its MIP solver.
+Therefore, this project implements a specialized branch and cut MIP solver using the HiGHS LP solver, which is not ideal.
+Once this feature is introduced in HiGHS, it might be worthwile to use it.
