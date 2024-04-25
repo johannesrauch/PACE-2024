@@ -76,6 +76,23 @@ class branch_and_cut : public instance_view {
         update_upper_bound(shift_heuristic{instance_}(ordering, n_crossings));
     }
 
+    void _build_ordering(std::vector<vertex_t> ordering) {
+        assert(lp_solver_ptr->is_integral());
+        ordering.resize(n_free);
+        for (vertex_t u = 0; u < n_free; ++u) {
+            std::size_t i = 0;
+            for (vertex_t v = 0; v < u; ++v) {
+                i += lp_solver_ptr->get_variable_value(flat_index(n_free, n_free_2, v, u)) > 0.5;
+            }
+            for (vertex_t v = u + 1u; v < n_free; ++v) {
+                i += lp_solver_ptr->get_variable_value(flat_index(n_free, n_free_2, u, v)) < 0.5;
+            }
+            assert(i < n_free);
+            ordering[i] = u;
+        }
+        assert(test::is_permutation(ordering));
+    }
+
     /**
      * @brief updates pseudo-costs
      */
@@ -171,7 +188,7 @@ class branch_and_cut : public instance_view {
 
         // test if solution is integral, then we found a better solution
         if (lp_solver_ptr->is_integral()) {
-            build_ordering(ordering);
+            _build_ordering(ordering);
             lp_solver_ptr->fix_columns();
             return backtrack();
         }
