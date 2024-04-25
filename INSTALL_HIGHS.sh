@@ -1,7 +1,7 @@
 #!/bin/sh
 # installs the highs lib locally in highs folder
 cd highs
-rm -rf build
+rm -rf build include lib
 mkdir build
 cd build
 cmake ..
