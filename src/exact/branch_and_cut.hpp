@@ -78,6 +78,9 @@ class branch_and_cut : public instance_view {
         update_upper_bound(shift_h(ordering, n_crossings));
     }
 
+    /**
+     * @brief why u not work?!
+     */
     void _build_ordering(std::vector<vertex_t> ordering) {
         assert(lp_solver_ptr->is_integral());
         ordering.resize(n_free);
@@ -193,7 +196,7 @@ class branch_and_cut : public instance_view {
 
         // test if solution is integral, then we found a better solution
         if (lp_solver_ptr->is_integral()) {
-            _build_ordering(ordering);
+            build_ordering(ordering);
             lp_solver_ptr->fix_columns();
             return backtrack();
         }
