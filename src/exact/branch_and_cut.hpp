@@ -43,11 +43,13 @@ class branch_and_cut : public instance_view {
 
     branch_and_cut_info info;
 
+    shift_heuristic shift_h;
+
    public:
     /**
      * @brief constructs and initializes the branch and cut solver
      */
-    branch_and_cut(instance &instance_) : instance_view(instance_), info{lower_bound(), upper_bound} {
+    branch_and_cut(instance &instance_) : instance_view(instance_), info{lower_bound(), upper_bound}, shift_h(instance_) {
         assert(n_free > 0);
     }
 
@@ -73,7 +75,7 @@ class branch_and_cut : public instance_view {
         assert(n_crossings == number_of_crossings(graph, ordering));
 
         // try to improve new solution
-        update_upper_bound(shift_heuristic{instance_}(ordering, n_crossings));
+        update_upper_bound(shift_h(ordering, n_crossings));
     }
 
     void _build_ordering(std::vector<vertex_t> ordering) {
@@ -91,6 +93,11 @@ class branch_and_cut : public instance_view {
             ordering[i] = u;
         }
         assert(test::is_permutation(ordering));
+
+        crossing_number_t n_crossings = lp_solver_ptr->get_rounded_objective_value();
+        assert(n_crossings < upper_bound);
+        assert(n_crossings == number_of_crossings(graph, ordering));
+        update_upper_bound(shift_h(ordering, n_crossings));
     }
 
     /**
@@ -184,14 +191,14 @@ class branch_and_cut : public instance_view {
         // at this point, we have an optimal solution to the ilp relaxation
         update_costs();
 
-        // todo: heuristic?
-
         // test if solution is integral, then we found a better solution
         if (lp_solver_ptr->is_integral()) {
             _build_ordering(ordering);
             lp_solver_ptr->fix_columns();
             return backtrack();
         }
+
+        // todo: heuristic?
 
         // branch by fixing a column
         branch();
