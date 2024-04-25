@@ -1,5 +1,5 @@
-#ifndef HEURISTIC_SORT_HEURISTIC_HPP
-#define HEURISTIC_SORT_HEURISTIC_HPP
+#ifndef PACE_HEURISTIC_SORT_HEURISTIC_HPP
+#define PACE_HEURISTIC_SORT_HEURISTIC_HPP
 
 #include "exact/highs_lp.hpp"
 #include "heuristic/shift_heuristic.hpp"
