@@ -200,7 +200,7 @@ class instance {
             objective_offset += (*cr_matrix_ptr)(u, v);
         }
 
-        // restriction graph is done, magic needs some last work
+        // restriction graph is done, magic and unsettled_pairs needs some last work
         restriction_graph_ptr->set_rollback_point();
         assert(topological_sort(*restriction_graph_ptr, ordering));
         std::size_t i = 0, j = 0;
