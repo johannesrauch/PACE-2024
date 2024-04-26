@@ -145,7 +145,7 @@ class probmedian_heuristic : public instance_view {
      */
     crossing_number_t operator()(std::vector<vertex_t>& ordering, crossing_number_t n_crossings) {
         // try to find a better solution with probabilistic median heuristic
-        for (std::size_t i = 1; lower_bound() < n_crossings && i <= params.n_lookahead; ++i) {
+        for (uint8_t i = 1; lower_bound() < n_crossings && i <= params.n_lookahead; ++i) {
             const crossing_number_t candidate = generate_another_ordering();
             if (candidate < n_crossings) {
                 i = 0;
