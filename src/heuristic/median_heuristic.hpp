@@ -13,7 +13,7 @@ namespace pace {
 
 struct median_heuristic_params {
     const bool do_shift{true};
-    const std::size_t n_lookahead{PACE_CONST_PROBMEDIAN_LOOKAHEAD};
+    const uint8_t n_lookahead{PACE_CONST_PROBMEDIAN_LOOKAHEAD};
 };
 
 /**
