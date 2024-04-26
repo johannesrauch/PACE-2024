@@ -41,20 +41,20 @@ class median_heuristic : public instance_view {
     median_heuristic& operator=(const median_heuristic& other) = delete;
 
     /**
-     * @brief runs the median heuristic and stores the result in `ordering`
+     * @brief runs the median heuristic and stores the result in 'ordering'
      *
      * @param ordering out parameter where result is stored
-     * @return crossing_number_t number of crossings
+     * @return crossing_number_t number of crossings of 'ordering'
      */
     crossing_number_t operator()(std::vector<vertex_t>& ordering) {
         identity(n_free, ordering);
         sort(ordering.begin(), ordering.end(),
              [=](const vertex_t& a, const vertex_t& b) -> bool { return this->compare(a, b); });
 
-        const uint32_t n_crossings = number_of_crossings(graph, ordering);
+        const crossing_number_t n_crossings = number_of_crossings(graph, ordering);
         assert(lower_bound() <= n_crossings);
         if (lower_bound() >= n_crossings || !do_shift) {
-            update_upper_bound(n_crossings);
+            update_ordering(ordering, n_crossings);
             return n_crossings;
         } else {
             return shift_h(ordering, n_crossings);
@@ -153,7 +153,7 @@ class probmedian_heuristic : public instance_view {
                 std::swap(ordering, another_ordering);
             }
         }
-        update_upper_bound(n_crossings);
+        update_ordering(ordering, n_crossings);
         return n_crossings;
     }
 

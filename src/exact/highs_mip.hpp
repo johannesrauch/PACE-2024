@@ -40,7 +40,7 @@ class highs_mip : public highs_base {
             topological_sort(restriction_graph(), ordering);
             n_crossings = number_of_crossings(graph, ordering);
         }
-        update_upper_bound(n_crossings);
+        update_ordering(ordering, n_crossings);
 
         return n_crossings;
     }

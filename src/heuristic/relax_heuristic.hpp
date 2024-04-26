@@ -31,7 +31,7 @@ class relax_heuristic : public instance_view {
             }
         }
 
-        update_upper_bound(n_crossings);
+        update_ordering(ordering, n_crossings);
         return n_crossings;
     }
 

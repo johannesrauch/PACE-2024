@@ -8,6 +8,7 @@
 #include "matrix/matrix.hpp"
 #include "model/bipartite_graph.hpp"
 #include "model/digraph.hpp"
+#include "utils/crossings_utils.hpp"
 #include "utils/index_utils.hpp"
 #include "utils/topological_sort.hpp"
 #include "utils/transitive_hull.hpp"
@@ -68,18 +69,28 @@ class instance {
      */
     crossing_number_t upper_bound{std::numeric_limits<crossing_number_t>::max()};
 
+    /**
+     * @brief ordering corresponding to upper_bound
+     */
+    std::vector<vertex_t> ordering;
+
    public:
     instance(const bipartite_graph &graph)
         : graph(graph),
           n_free(graph.get_n_free()),
           n_free_2(n_free * (n_free - 1) / 2),
-          n_fixed(graph.get_n_fixed()) {
+          n_fixed(graph.get_n_fixed()),
+          ordering(n_free) {
+        identity(n_free, ordering);
+        upper_bound = number_of_crossings(graph, ordering);
         assert(n_free > 0);
     }
 
-    // delete copy constructor and assignment
+    // delete copy and move constructor and assignment
     instance(const instance &other) = delete;
+    instance(instance &&other) = delete;
     instance &operator=(const instance &other) = delete;
+    instance &operator=(instance &&other) = delete;
 
     //
     // getter
@@ -123,7 +134,18 @@ class instance {
     // setter
     //
 
-    void update_upper_bound(crossing_number_t ub) { upper_bound = std::min(upper_bound, ub); }
+    void update_ordering(const std::vector<vertex_t> &another_ordering, const crossing_number_t n_crossings) {
+        if (n_crossings < upper_bound) {
+            upper_bound = n_crossings;
+            ordering = another_ordering;
+        }
+    }
+
+    void update_ordering(const std::vector<vertex_t> &another_ordering) {
+        update_ordering(another_ordering, number_of_crossings(graph, another_ordering));
+    }
+
+    // void update_upper_bound(crossing_number_t ub) { upper_bound = std::min(upper_bound, ub); }
 
     //
     // private helper methods
@@ -243,8 +265,7 @@ class instance {
      * - if c_uv == 0, we can fix u < v, and
      * - if c_vu == 0, we can fix v < u.
      */
-    inline pattern based_on_crossing_numbers(const crossing_number_t &c_uv,
-                                             const crossing_number_t &c_vu) {
+    inline pattern based_on_crossing_numbers(const crossing_number_t &c_uv, const crossing_number_t &c_vu) {
         assert(c_uv != c_vu);
         if (c_uv == 0) return pattern::u_before_v;
         if (c_vu == 0) return pattern::v_before_u;
@@ -341,15 +362,21 @@ struct instance_view {
 
     digraph &restriction_graph() { return instance_.get_restriction_graph(); }
 
-    const std::vector<std::pair<vertex_t, vertex_t>> &unsettled_pairs() {
-        return instance_.get_unsettled_pairs();
-    }
+    const std::vector<std::pair<vertex_t, vertex_t>> &unsettled_pairs() { return instance_.get_unsettled_pairs(); }
 
     const std::vector<magic_t> &magic() { return instance_.get_magic(); }
 
     const crossing_number_t &objective_offset() { return instance_.get_objective_offset(); }
 
-    void update_upper_bound(crossing_number_t ub) { instance_.update_upper_bound(ub); }
+    void update_ordering(const std::vector<vertex_t> &another_ordering) {
+        instance_.update_ordering(another_ordering);
+    }
+
+    void update_ordering(const std::vector<vertex_t> &another_ordering, const crossing_number_t n_crossings) {
+        instance_.update_ordering(another_ordering, n_crossings);
+    }
+
+    // void update_upper_bound(crossing_number_t ub) { instance_.update_upper_bound(ub); }
 };
 
 };  // namespace pace

@@ -45,7 +45,7 @@ class barycenter_heuristic : public instance_view {
         const crossing_number_t n_crossings = number_of_crossings(graph, ordering);
         assert(lower_bound() <= n_crossings);
         if (lower_bound() >= n_crossings || !do_shift) {
-            update_upper_bound(n_crossings);
+            update_ordering(ordering, n_crossings);
             return n_crossings;
         } else {
             return shift_h(ordering, n_crossings);

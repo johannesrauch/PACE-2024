@@ -80,7 +80,8 @@ class branch_and_cut : public instance_view {
         assert(n_crossings == number_of_crossings(graph, ordering));
 
         // try to improve new solution
-        update_upper_bound(shift_h(ordering, n_crossings));
+        n_crossings = shift_h(ordering, n_crossings);
+        update_ordering(ordering, n_crossings);
     }
 
     /**
@@ -105,7 +106,8 @@ class branch_and_cut : public instance_view {
         crossing_number_t n_crossings = lp_solver_ptr->get_rounded_objective_value();
         assert(n_crossings < upper_bound);
         assert(n_crossings == number_of_crossings(graph, ordering));
-        update_upper_bound(shift_h(ordering, n_crossings));
+        n_crossings = shift_h(ordering, n_crossings);
+        update_ordering(ordering, n_crossings);
     }
 
     /**

@@ -55,10 +55,11 @@ class shift_heuristic : public instance_view {
     /**
      * @brief runs the shift heuristic
      *
-     * @param n_crossings number of crossings of `ordering`
+     * @param n_crossings number of crossings of 'ordering'
      * @param ordering in-out parameter
      */
-    uint32_t operator()(std::vector<vertex_t> &ordering, uint32_t n_crossings) {
+    uint32_t operator()(std::vector<vertex_t> &ordering, crossing_number_t n_crossings) {
+        assert(ordering.size() == n_free);
         if (lower_bound() >= n_crossings) return n_crossings;
 
         assert(ordering.size() == graph.get_n_free());
@@ -78,7 +79,7 @@ class shift_heuristic : public instance_view {
         std::copy(ordering_.begin(), ordering_.end(), ordering.begin());
         assert(ordering.size() == graph.get_n_free());
         assert(number_of_crossings(graph, ordering) == n_crossings);
-        update_upper_bound(n_crossings);
+        update_ordering(ordering, n_crossings);
 
         return n_crossings;
     }
