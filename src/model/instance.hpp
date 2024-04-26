@@ -66,7 +66,7 @@ class instance {
     /**
      * @brief upper bound to the optimal value of this instance
      */
-    crossing_number_t upper_bound{std::numeric_limits<uint32_t>::max()};
+    crossing_number_t upper_bound{std::numeric_limits<crossing_number_t>::max()};
 
    public:
     instance(const bipartite_graph &graph)
