@@ -30,8 +30,12 @@ class highs_mip : public highs_base {
             solver.run();
             assert(is_optimal());
             n_crossings = get_rounded_objective_value();
-            build_restr_graph_ordering(  //
-                solver.getSolution().col_value, unsettled_pairs(), restriction_graph(), ordering);
+#ifndef NDEBUG
+            const bool acyclic =
+#endif
+                build_restr_graph_ordering(  //
+                    solver.getSolution().col_value, unsettled_pairs(), restriction_graph(), ordering);
+            assert(acyclic);
         } else {
             topological_sort(restriction_graph(), ordering);
             n_crossings = number_of_crossings(graph, ordering);

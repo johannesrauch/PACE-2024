@@ -49,7 +49,8 @@ class branch_and_cut : public instance_view {
     /**
      * @brief constructs and initializes the branch and cut solver
      */
-    branch_and_cut(instance &instance_) : instance_view(instance_), info{lower_bound(), upper_bound}, shift_h(instance_) {
+    branch_and_cut(instance &instance_)
+        : instance_view(instance_), info{lower_bound(), upper_bound}, shift_h(instance_) {
         assert(n_free > 0);
     }
 
@@ -67,8 +68,12 @@ class branch_and_cut : public instance_view {
      */
     void build_ordering(std::vector<vertex_t> &ordering) {
         assert(lp_solver_ptr->is_integral());
-        build_restr_graph_ordering(  //
-            lp_solver_ptr->get_column_values(), unsettled_pairs(), restriction_graph(), ordering);
+#ifndef NDEBUG
+        const bool acyclic =
+#endif
+            build_restr_graph_ordering(  //
+                lp_solver_ptr->get_column_values(), unsettled_pairs(), restriction_graph(), ordering);
+        assert(acyclic);
 
         crossing_number_t n_crossings = lp_solver_ptr->get_rounded_objective_value();
         assert(n_crossings < upper_bound);
