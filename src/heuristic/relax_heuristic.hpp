@@ -21,7 +21,7 @@ class relax_heuristic : public instance_view {
         n_cycles = topological_sort_rd(restriction_graph(), ordering);
         crossing_number_t n_crossings = number_of_crossings(graph, ordering);
 
-        n_iterations = 0;
+        n_iterations = 1;
         for (uint8_t i = 1; i < n_lookahead; ++i) {
             const crossing_number_t candidate = generate_another_ordering(column_values);
             if (candidate < n_crossings) {
@@ -29,10 +29,16 @@ class relax_heuristic : public instance_view {
                 n_crossings = candidate;
                 std::swap(ordering, another_ordering);
             }
+            ++n_iterations;
         }
 
         update_upper_bound(n_crossings);
         return n_crossings;
+    }
+
+    double get_confidence() const {
+        if (n_iterations == 0) return -1;
+        return static_cast<double>(n_cycles) / n_iterations;
     }
 
    private:
