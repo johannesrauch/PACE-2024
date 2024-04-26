@@ -27,11 +27,12 @@ namespace test {
  * @brief fills the given vector with 0, 1, ..., vec.size()-1
  * and suffles it (each permutation has some probability to appear)
  * 
- * @tparam T 
+ * @tparam T element type
+ * @tparam A allocator
  * @param vec 
  */
-template <typename T>
-void shuffle(std::vector<T>& vec) {
+template <typename T, typename A>
+void shuffle(std::vector<T, A>& vec) {
     // if vec is empty, do nothing
     if (vec.size() == 0) return;
 
