@@ -8,7 +8,7 @@ namespace pace {
 
 class relax_heuristic : public instance_view {
     uint8_t n_lookahead;
-    std::size_t n_iterations{0};
+    std::size_t n_restr_graphs_generated{0};
     std::size_t n_cycles{0};
     std::vector<vertex_t> another_ordering;
 
@@ -19,9 +19,9 @@ class relax_heuristic : public instance_view {
     crossing_number_t operator()(const std::vector<double> &column_values, std::vector<vertex_t> &ordering) {
         build_restr_graph(column_values, unsettled_pairs(), restriction_graph());
         n_cycles = topological_sort_rd(restriction_graph(), ordering);
+        n_restr_graphs_generated = 1;
         crossing_number_t n_crossings = number_of_crossings(graph, ordering);
 
-        n_iterations = 1;
         for (uint8_t i = 1; i < n_lookahead; ++i) {
             const crossing_number_t candidate = generate_another_ordering(column_values);
             if (candidate < n_crossings) {
@@ -29,7 +29,6 @@ class relax_heuristic : public instance_view {
                 n_crossings = candidate;
                 std::swap(ordering, another_ordering);
             }
-            ++n_iterations;
         }
 
         update_upper_bound(n_crossings);
@@ -37,14 +36,15 @@ class relax_heuristic : public instance_view {
     }
 
     double get_confidence() const {
-        if (n_iterations == 0) return -1;
-        return static_cast<double>(n_cycles) / n_iterations;
+        if (n_restr_graphs_generated == 0) return -1;
+        return static_cast<double>(n_cycles) / n_restr_graphs_generated;
     }
 
    private:
     crossing_number_t generate_another_ordering(const std::vector<double> &column_values) {
         build_restr_graph(column_values, unsettled_pairs(), restriction_graph());
         n_cycles += topological_sort_rd(restriction_graph(), another_ordering);
+        ++n_restr_graphs_generated;
         return number_of_crossings(graph, another_ordering);
     }
 };
