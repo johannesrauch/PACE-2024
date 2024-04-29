@@ -32,7 +32,7 @@ namespace pace {
 
 struct highs_lp_params {
     uint16_t max_new_rows{PACE_CONST_N_MAX_NEW_ROWS};             ///< maximum number of new rows per check_3cycles call
-    const uint8_t max_new_rows_doubling{2};                       ///< maximum number of times max_new_rows is doubled
+    const uint8_t max_new_rows_doubling{3};                       ///< maximum number of times max_new_rows is doubled
     const uint16_t max_initial_rows{PACE_CONST_N_MAX_INIT_ROWS};  ///< maximum number of initial rows
     const uint8_t max_delete_rows_3cycle_iterations{64};  ///< maximum number of 3-cycle iterations with row deletion
 
@@ -380,8 +380,6 @@ class highs_lp : public highs_base {
             rows_info.emplace(uvw, row_info());
         }
     }
-
-    void _add_initial_rows() {}
 
     /**
      * @brief expects the violated 3-cycle ieqs in buckets.
