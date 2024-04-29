@@ -8,6 +8,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(CMAKE_VERBOSE_MAKEFILE OFF)
 option(CMAKE_BUILD_TYPE Release)
+if (PACE_VERBOSE)
+    add_compile_definitions(PACE_DEBUG_PRINT)
+endif()
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
