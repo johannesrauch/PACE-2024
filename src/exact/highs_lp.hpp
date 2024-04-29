@@ -381,6 +381,8 @@ class highs_lp : public highs_base {
         }
     }
 
+    void _add_initial_rows() {}
+
     /**
      * @brief expects the violated 3-cycle ieqs in buckets.
      * adds the most violated <= params.max_new_rows to the lp.
@@ -427,12 +429,14 @@ class highs_lp : public highs_base {
         if (is_3cycle_lb_violated(x)) {
             const double x_normalized = -x / interval_width;
             get_bucket(x_normalized).emplace_back(u, v, w);
+            // get_bucket_from_score(u, v, w).emplace_back(u, v, w);
             return true;
         }
         if (is_3cycle_ub_violated(x)) {
             const double ub = 1. + params.tol_feasibility;
             const double x_normalized = (x - ub) / interval_width;
             get_bucket(x_normalized).emplace_back(u, v, w);
+            // get_bucket_from_score(u, v, w).emplace_back(u, v, w);
             return true;
         }
         return false;
@@ -516,13 +520,15 @@ class highs_lp : public highs_base {
         for (std::vector<triple> &bucket : buckets) {
             bucket.clear();
         }
+        info.min_viol_score = std::numeric_limits<double>::max();
+        info.max_viol_score = std::numeric_limits<double>::min();
     }
 
     /**
      * @brief given by how much the 3-cycle inequality is violated,
      * returns the corresponding bucket
      *
-     * @param val in (0,1]
+     * @param val in [0,1)
      * @return std::vector<triple>& the corresponding bucket
      */
     inline std::vector<triple> &get_bucket(const double val) {
@@ -531,6 +537,27 @@ class highs_lp : public highs_base {
         const std::size_t i = static_cast<std::size_t>(val * params.n_buckets);
         assert(i < params.n_buckets);
         return buckets[i];
+    }
+
+    inline double get_objective_value_contribution(const vertex_t &u, const vertex_t &v) {
+        const std::size_t uv = flat_index(n_free, n_free_2, u, v);
+        const crossing_matrix &cr = cr_matrix();
+        const std::vector<magic_t> &m = magic();
+        return (cr(u, v) - cr(v, u)) * get_variable_value(uv);
+    }
+
+    inline std::vector<triple> &get_bucket_from_score(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
+        const double score = get_objective_value_contribution(u, v) -  //
+                             get_objective_value_contribution(u, w) +  //
+                             get_objective_value_contribution(v, w);
+        info.min_viol_score = std::min(score, info.min_viol_score);
+        info.max_viol_score = std::max(score, info.max_viol_score);
+        const double interval = info.max_viol_score - info.min_viol_score;
+        double val = 0.99;
+        if (interval >= 0.1) 
+            val -= (score - info.min_viol_score) / interval;
+        val = std::max(0., val);
+        return get_bucket(val);
     }
 
     /// @brief returns sum of the number of elements in each bucket of `buckets`
