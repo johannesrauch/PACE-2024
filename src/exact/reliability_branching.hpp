@@ -183,6 +183,7 @@ class reliability_branching {
         }
         lp.unfreeze_basis(frozen_basis_id);
 
+        PACE_DEBUG_PRINTF("chose %u with score %f\n", best, best_score);
         return best;
     }
 
