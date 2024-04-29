@@ -35,6 +35,9 @@ struct highs_lp_info {
 
     double t_simplex{0.};
     double objective_value{0.};
+
+    double min_viol_score{0.};
+    double max_viol_score{0.};
 };
 
 struct branch_and_cut_info {
