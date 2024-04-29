@@ -139,8 +139,8 @@ class highs_lp : public highs_base {
         return success;
     }
 
-    inline void set_simplex_iteration_limit(const int32_t limit_simplex_it) {
-        status = solver.setOptionValue("simplex_iteration_limit", limit_simplex_it);
+    inline void set_simplex_iteration_limit(const int32_t max_simplex_iter) {
+        status = solver.setOptionValue("simplex_iteration_limit", max_simplex_iter);
         assert(status == HighsStatus::kOk);
     }
 
@@ -155,10 +155,10 @@ class highs_lp : public highs_base {
     /**
      * @brief for reliability branching; no bookkeeping
      *
-     * @param limit_simplex_it max simplex iterations
+     * @param max_simplex_iter max simplex iterations
      */
-    void run(const int32_t limit_simplex_it) {
-        set_simplex_iteration_limit(limit_simplex_it);
+    void run(const int32_t max_simplex_iter) {
+        set_simplex_iteration_limit(max_simplex_iter);
         solver.run();
         set_simplex_iteration_limit(std::numeric_limits<int32_t>::max());
     }
