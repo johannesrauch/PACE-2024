@@ -111,9 +111,9 @@ class highs_lp : public highs_base {
         values.reserve(3 * params.max_new_rows);
 
         info.n_cols = get_n_cols();
-        // PACE_DEBUG_PRINTF("start add_initial_rows\n");
-        // add_initial_rows();
-        // PACE_DEBUG_PRINTF("end   add_initial_rows\n");
+        PACE_DEBUG_PRINTF("start add_initial_rows\n");
+        add_initial_rows();
+        PACE_DEBUG_PRINTF("end   add_initial_rows\n");
     }
 
     highs_lp(const highs_lp &rhs) = delete;
@@ -199,7 +199,6 @@ class highs_lp : public highs_base {
                 ++it->second.n_spared;
                 ++info.n_delete_rows_spared;
             }
-            info.n_deleted_rows_slack += remove;
         }
 
         info.n_deleted_rows = rows_to_delete.size();
@@ -574,7 +573,6 @@ class highs_lp : public highs_base {
     inline void reset_delete_count_info() {
         info.n_deleted_rows = 0;
         info.n_delete_rows_spared = 0;
-        info.n_deleted_rows_slack = 0;
     }
 
     inline void update_3cycle_iteration_info() {
