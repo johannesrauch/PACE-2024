@@ -1,9 +1,18 @@
 #ifndef PACE_LOG_BRANCH_AND_CUT_INFO_HPP
 #define PACE_LOG_BRANCH_AND_CUT_INFO_HPP
 
+#include <chrono>
+
 #include "types/types.hpp"
 
 namespace pace {
+
+const std::chrono::time_point<std::chrono::system_clock> t0{std::chrono::system_clock::now()};
+
+double elapsed_walltime_in_s() {
+    const std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
+    return std::chrono::duration<double>(now - t0).count();
+}
 
 struct highs_lp_info {
     const vertex_t &u_old;
@@ -14,16 +23,14 @@ struct highs_lp_info {
     std::size_t n_rows{0};
     std::size_t n_runs{0};
 
-    std::size_t n_deleted_rows{0};
-    std::size_t n_deleted_rows_slack{0};
-    std::size_t n_delete_rows_spared{0};
-    
+    std::size_t n_bucket_entries{0};
     std::size_t n_added_rows{0};
-    
+    std::size_t n_deleted_rows{0};
+    std::size_t n_delete_rows_spared{0};
+
     std::size_t n_iterations_simplex{0};
     double n_iterations_simplex_avg{0.};
     std::size_t n_iterations_3cycles{0};
-    std::size_t n_bucket_entries{0};
     std::size_t n_init_rows_candidates{0};
 
     double t_simplex{0.};
@@ -41,6 +48,6 @@ struct branch_and_cut_info {
     crossing_number_t n_crossings_h{0};
 };
 
-};
+};  // namespace pace
 
 #endif
