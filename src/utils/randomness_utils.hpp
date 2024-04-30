@@ -6,6 +6,7 @@
 #endif
 
 #include <random>
+#include "utils/vector_utils.hpp"
 
 namespace pace {
 
@@ -49,6 +50,8 @@ void shuffle(std::vector<T, A>& vec) {
         vec[i] = vec[j];
         vec[j] = tmp;
     }
+
+    assert(test::is_permutation(vec));
 }
 
 };
