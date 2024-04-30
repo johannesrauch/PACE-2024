@@ -10,7 +10,7 @@ namespace pace {
 struct relax_heuristic_params {
     const bool do_shift{true};
     const uint8_t n_lookahead{16};
-}
+};
 
 class relax_heuristic : public instance_view {
     relax_heuristic_params params;
@@ -21,7 +21,7 @@ class relax_heuristic : public instance_view {
 
    public:
     relax_heuristic(instance &instance_, relax_heuristic_params params = relax_heuristic_params())
-        : instance_view(instance_), params(params) {}
+        : instance_view(instance_), params(params), shift_h(instance_) {}
 
     crossing_number_t operator()(const std::vector<double> &column_values, std::vector<vertex_t> &ordering) {
         n_restr_graphs_generated = 0;
