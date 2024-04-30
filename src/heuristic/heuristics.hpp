@@ -3,30 +3,33 @@
 
 #include "heuristic/barycenter_heuristic.hpp"
 #include "heuristic/median_heuristic.hpp"
+#include "heuristic/round_heuristic.hpp"
+#include "heuristic/sort_heuristic.hpp"
 
 namespace pace {
 
-crossing_number_t heuristics(pace::instance &instance, std::vector<vertex_t> &ordering) {
-    PACE_DEBUG_PRINTF("start heuristic\n");
+class heuristics : public instance_view {
+    std::vector<vertex_t> another_ordering;
+    barycenter_heuristic barycenter_h;
+    probmedian_heuristic probmedian_h;
 
-    const crossing_number_t &lb = instance.get_lower_bound();
-    crossing_number_t ub = barycenter_heuristic{instance}(ordering);
-    assert(lb <= ub);
-    if (lb == ub) return ub;
+   public:
+    heuristics(instance &instance_)
+        : instance_view(instance_), another_ordering(n_free), barycenter_h(instance_), probmedian_h(instance_) {}
 
-    std::vector<vertex_t> ordering_(ordering.size());
-    crossing_number_t ub_ = median_heuristic{instance}(ordering_);
-    if (ub_ < ub) {
-        ub = ub_;
-        std::swap(ordering, ordering_);
+    crossing_number_t uninformed(std::vector<vertex_t> &ordering) {
+        PACE_DEBUG_PRINTF("start uninformed heuristics\n");
+        crossing_number_t n_cr = barycenter_h(ordering);
+        if (n_cr <= lower_bound()) return n_cr;
+        const crossing_number_t n_cr_p = probmedian_h(another_ordering);
+        if (n_cr_p < n_cr) {
+            n_cr = n_cr_p;
+            std::swap(another_ordering, ordering);
+        }
+        PACE_DEBUG_PRINTF("end   uninformed heuristics\n");
+        return n_cr;
     }
-    assert(lb <= ub);
-    if (lb == ub) return ub;
-
-    ub = probmedian_heuristic{instance}(ordering, ub);
-    PACE_DEBUG_PRINTF("end   heuristic\n");
-    return ub;
-}
+};
 
 };  // namespace pace
 
