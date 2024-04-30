@@ -14,6 +14,11 @@ class sort_heuristic : public instance_view {
    public:
     sort_heuristic(instance &instance_, highs_lp &lp) : instance_view(instance_), lp(lp), shift_h(instance_) {}
 
+    sort_heuristic(const sort_heuristic &other) = delete;
+    sort_heuristic(sort_heuristic &&other) = delete;
+    sort_heuristic &operator=(const sort_heuristic &other) = delete;
+    sort_heuristic &operator=(sort_heuristic &&other) = delete;
+
     crossing_number_t operator()(std::vector<vertex_t> &ordering) {
         std::vector<double> precedence(n_free);
         for (vertex_t u = 0; u < n_free; ++u) {
