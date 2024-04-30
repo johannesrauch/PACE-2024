@@ -93,6 +93,8 @@ class highs_base : public instance_view {
     inline void add_3cycle_row_to_aux_vectors(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
         // at least two must be in the lp as variables since we compute transitive hull in oracle
         assert(get_n_vars_in_lp(u, v, w) >= 2);
+        assert(u < v);
+        assert(v < w);
 
         const auto [uv, vw, uw] = flat_indices(n_free, n_free_2, u, v, w);
         const double bound_offset = get_3cycle_bound_offset(uv, vw, uw);
