@@ -14,7 +14,7 @@
 #endif
 
 #ifndef PACE_CONST_N_MAX_INIT_ROWS
-#define PACE_CONST_N_MAX_INIT_ROWS 16384u
+#define PACE_CONST_N_MAX_INIT_ROWS 40000u
 #endif
 
 #ifndef PACE_CONST_N_BUCKETS
@@ -33,7 +33,7 @@ namespace pace {
 
 struct highs_lp_params {
     uint16_t max_new_rows{PACE_CONST_N_MAX_NEW_ROWS};             ///< maximum number of new rows per check_3cycles call
-    const uint8_t max_new_rows_doubling{3};                       ///< maximum number of times max_new_rows is doubled
+    const uint8_t max_new_rows_doubling{2};                       ///< maximum number of times max_new_rows is doubled
     const uint16_t max_initial_rows{PACE_CONST_N_MAX_INIT_ROWS};  ///< maximum number of initial rows
     const uint8_t max_delete_rows_3cycle_iterations{64};  ///< maximum number of 3-cycle iterations with row deletion
 
@@ -339,12 +339,17 @@ class highs_lp : public highs_base {
     //
     // 3-cycle methods
     //
-    inline void add_3cycle_row_to_internal_rows(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
+    inline bool add_3cycle_row_to_internal_rows(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
+        assert(u < v);
+        assert(v < w);
         rows.emplace_back(u, v, w);
         const triple uvw(u, v, w);
         auto it = rows_info.find(uvw);
         if (it == rows_info.end()) {
             rows_info.emplace(uvw, row_info());
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -377,14 +382,11 @@ class highs_lp : public highs_base {
             set.erase(v);
             for (const vertex_t &w : set) {
                 if (w < u) {
-                    add_3cycle_row_to_aux_vectors(w, u, v);
-                    add_3cycle_row_to_internal_rows(w, u, v);
+                    if (add_3cycle_row_to_internal_rows(w, u, v)) add_3cycle_row_to_aux_vectors(w, u, v);
                 } else if (w < v) {
-                    add_3cycle_row_to_aux_vectors(u, w, v);
-                    add_3cycle_row_to_internal_rows(u, w, v);
+                    if (add_3cycle_row_to_internal_rows(u, w, v)) add_3cycle_row_to_aux_vectors(u, w, v);
                 } else {
-                    add_3cycle_row_to_aux_vectors(u, v, w);
-                    add_3cycle_row_to_internal_rows(u, v, w);
+                    if (add_3cycle_row_to_internal_rows(u, v, w)) add_3cycle_row_to_aux_vectors(u, v, w);
                 }
             }
         }
