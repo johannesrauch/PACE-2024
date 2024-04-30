@@ -372,7 +372,7 @@ class highs_lp : public highs_base {
         const std::size_t n_unnatural = unnatural.size();
         const std::size_t n_rows_pre_unnatural = (params.max_initial_rows + n_unnatural - 1) / n_unnatural;
         std::uniform_int_distribution<vertex_t> distribution(0, n_free - 1);
-        
+
         for (const auto &[u, v] : unnatural) {
             std::unordered_set<vertex_t> set;
             for (std::size_t i = 0; i < n_rows_pre_unnatural; ++i) {
@@ -382,11 +382,14 @@ class highs_lp : public highs_base {
             set.erase(v);
             for (const vertex_t &w : set) {
                 if (w < u) {
-                    if (add_3cycle_row_to_internal_rows(w, u, v)) add_3cycle_row_to_aux_vectors(w, u, v);
+                    if (get_n_vars_in_lp(w, u, v) >= 2 && add_3cycle_row_to_internal_rows(w, u, v))
+                        add_3cycle_row_to_aux_vectors(w, u, v);
                 } else if (w < v) {
-                    if (add_3cycle_row_to_internal_rows(u, w, v)) add_3cycle_row_to_aux_vectors(u, w, v);
+                    if (get_n_vars_in_lp(u, w, v) >= 2 && add_3cycle_row_to_internal_rows(u, w, v))
+                        add_3cycle_row_to_aux_vectors(u, w, v);
                 } else {
-                    if (add_3cycle_row_to_internal_rows(u, v, w)) add_3cycle_row_to_aux_vectors(u, v, w);
+                    if (get_n_vars_in_lp(u, v, w) >= 2 && add_3cycle_row_to_internal_rows(u, v, w))
+                        add_3cycle_row_to_aux_vectors(u, v, w);
                 }
             }
         }
