@@ -8,18 +8,17 @@
 namespace pace {
 
 class sort_heuristic : public instance_view {
-    highs_lp &lp;
     shift_heuristic shift_h;
 
    public:
-    sort_heuristic(instance &instance_, highs_lp &lp) : instance_view(instance_), lp(lp), shift_h(instance_) {}
+    sort_heuristic(instance &instance_) : instance_view(instance_), shift_h(instance_) {}
 
     sort_heuristic(const sort_heuristic &other) = delete;
     sort_heuristic(sort_heuristic &&other) = delete;
     sort_heuristic &operator=(const sort_heuristic &other) = delete;
     sort_heuristic &operator=(sort_heuristic &&other) = delete;
 
-    crossing_number_t operator()(std::vector<vertex_t> &ordering) {
+    crossing_number_t operator()(highs_lp &lp, std::vector<vertex_t> &ordering) {
         std::vector<double> precedence(n_free);
         for (vertex_t u = 0; u < n_free; ++u) {
             for (vertex_t v = 0; v < u; ++v)
