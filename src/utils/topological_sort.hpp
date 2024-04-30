@@ -29,17 +29,19 @@ std::size_t topological_sort_dfs(const general_digraph<T>& graph, std::vector<T,
                                  std::vector<uint8_t>& visited,                                 //
                                  T v) {
     visited[v] = 1;
-    auto& neighbors = graph.get_neighbors(v);
+    const auto& neighbors = graph.get_neighbors(v);
     std::size_t n_cycles = 0;
     for (const T& u : neighbors) {
         std::size_t n_cycles_ = 0;
-        if (visited[u] == 0)
-            n_cycles_ = topological_sort_dfs(graph, ordering, visited, u);
-        else if (visited[u] == 1)
+        if (visited[u] == 0) {
+            n_cycles_ = topological_sort_dfs<RETURN_IF_CYCLIC, T, A>(graph, ordering, visited, u);
+        } else if (visited[u] == 1) {
             n_cycles_ = 1;
+        }
         n_cycles += n_cycles_;
-        if constexpr (RETURN_IF_CYCLIC)
-            if (n_cycles_ > 0) return 1;
+        if (RETURN_IF_CYCLIC && n_cycles > 0) {
+            return 1;
+        }
     }
     visited[v] = 2;
     ordering.emplace_back(v);
@@ -74,7 +76,7 @@ bool topological_sort(const general_digraph<T>& graph, std::vector<T, A>& orderi
     }
 
     std::reverse(ordering.begin(), ordering.end());
-    assert(graph.get_n() == ordering.size());
+    assert(n == ordering.size());
     return true;
 }
 
@@ -95,7 +97,7 @@ std::size_t topological_sort_rd(const general_digraph<T>& graph, std::vector<T, 
     ordering.reserve(n);
     std::vector<uint8_t> visited(n, 0);
     std::vector<T> vertices(n);
-    pace::test::shuffle(vertices);  // if graph has cycle (see relax_heuristic), this may be meaningful
+    pace::test::shuffle(vertices);  // if graph has cycle (see round_heuristic), this may be useful
 
     std::size_t n_cycles = 0;
     for (const T& v : vertices) {
@@ -105,7 +107,7 @@ std::size_t topological_sort_rd(const general_digraph<T>& graph, std::vector<T, 
     }
 
     std::reverse(ordering.begin(), ordering.end());
-    assert(graph.get_n() == ordering.size());
+    assert(n == ordering.size());
     return n_cycles;
 }
 
