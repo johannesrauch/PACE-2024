@@ -32,6 +32,7 @@ struct highs_lp_info {
     double n_iterations_simplex_avg{0.};
     std::size_t n_iterations_3cycles{0};
     std::size_t n_init_rows_candidates{0};
+    bool new_3cycle_iter{false};
 
     double t_simplex{0.};
     double objective_value{0.};
@@ -47,8 +48,11 @@ struct branch_and_cut_info {
     std::size_t n_iterations{0};
     std::size_t n_branch_nodes{0};
     std::size_t n_rows{0};
+    std::size_t n_iter_3cycle_current_node{0};
 
     crossing_number_t n_crossings_h{0};
+
+    double relax_h_confidence{-1.};
 };
 
 };  // namespace pace
