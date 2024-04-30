@@ -21,6 +21,7 @@ namespace pace {
 struct branch_and_cut_params {
     bool delete_rows{true};
     std::size_t max_iter_3cycle_until_branch{4};
+    std::size_t mask_delete_rows{0b11};
 };
 
 class branch_and_cut : public instance_view {
@@ -50,13 +51,20 @@ class branch_and_cut : public instance_view {
     branch_and_cut_params params;
 
     shift_heuristic shift_h;
+    heuristics heuristic;
+    std::vector<vertex_t> another_ordering;
 
    public:
     /**
      * @brief constructs and initializes the branch and cut solver
      */
     branch_and_cut(instance &instance_, branch_and_cut_params params = branch_and_cut_params())
-        : instance_view(instance_), info{lower_bound(), upper_bound}, params(params), shift_h(instance_) {
+        : instance_view(instance_),
+          info{lower_bound(), upper_bound},
+          params(params),
+          shift_h(instance_),
+          heuristic(instance_),
+          another_ordering(n_free) {
         assert(n_free > 0);
     }
 
@@ -195,18 +203,18 @@ class branch_and_cut : public instance_view {
         }
 
         // test if we are worse than our current solution
-        const double value = lp_solver_ptr->get_objective_value();
-        if (static_cast<double>(upper_bound) <= value) {
+        if (lp_solver_ptr->get_rounded_objective_value() >= upper_bound) {
             return backtrack();
         }
 
         // try to generate cutting planes
         bool cut_generated = true;
-        if (info.n_iter_3cycle_current_node <= params.max_iter_3cycle_until_branch) {
+        if (lp_solver_ptr->is_integral() || info.n_iter_3cycle_current_node <= params.max_iter_3cycle_until_branch) {
             cut_generated = lp_solver_ptr->cut();
             params.delete_rows &= cut_generated;
             if (cut_generated) {
-                if (params.delete_rows) lp_solver_ptr->delete_positive_slack_rows();
+                const bool delete_rows = params.delete_rows && (info.n_iterations & params.mask_delete_rows) == 0;
+                if (delete_rows) lp_solver_ptr->delete_positive_slack_rows();
                 return false;
             }
         }
@@ -221,7 +229,9 @@ class branch_and_cut : public instance_view {
             return backtrack();
         }
 
-        
+        const crossing_number_t ub_old = upper_bound;
+        if (heuristic.informed(*lp_solver_ptr, another_ordering) < ub_old) std::swap(ordering, another_ordering);
+        info.relax_h_confidence = heuristic.get_confidence();
 
         // branch by fixing a column
         branch();
@@ -234,7 +244,7 @@ class branch_and_cut : public instance_view {
      */
     uint32_t operator()(std::vector<vertex_t> &ordering) {
         PACE_DEBUG_PRINTF("\n");
-        info.n_crossings_h = heuristics(instance_, ordering);
+        info.n_crossings_h = heuristic.uninformed(ordering);
         if (lower_bound() >= upper_bound) return upper_bound;
 
         if (!lp_solver_ptr) lp_solver_ptr = std::make_unique<highs_lp>(instance_);
