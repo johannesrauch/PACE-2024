@@ -18,9 +18,9 @@ class sort_heuristic : public instance_view {
         std::vector<double> precedence(n_free);
         for (vertex_t u = 0; u < n_free; ++u) {
             for (vertex_t v = 0; v < u; ++v)
-                precedence[u] += lp_solver_ptr->get_variable_value(flat_index(n_free, n_free_2, v, u));
+                precedence[u] += lp.get_variable_value(flat_index(n_free, n_free_2, v, u));
             for (vertex_t v = u + 1u; v < n_free; ++v)
-                precedence[u] += 1. - lp_solver_ptr->get_variable_value(flat_index(n_free, n_free_2, u, v));
+                precedence[u] += 1. - lp.get_variable_value(flat_index(n_free, n_free_2, u, v));
         }
         identity(n_free, ordering);
         std::sort(ordering.begin(), ordering.end(),
