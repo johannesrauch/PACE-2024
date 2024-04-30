@@ -147,6 +147,10 @@ class instance {
         update_ordering(another_ordering, number_of_crossings(graph, another_ordering));
     }
 
+    void update_lower_bound(const crossing_number_t lb) {
+        lower_bound = std::max(lower_bound, lb);
+    }
+
     // void update_upper_bound(crossing_number_t ub) { upper_bound = std::min(upper_bound, ub); }
 
     //
@@ -378,6 +382,10 @@ struct instance_view {
 
     void update_ordering(const std::vector<vertex_t> &another_ordering, const crossing_number_t n_crossings) {
         instance_.update_ordering(another_ordering, n_crossings);
+    }
+
+    void update_lower_bound(const crossing_number_t lb) {
+        instance_.update_lower_bound(lb);
     }
 
     // void update_upper_bound(crossing_number_t ub) { instance_.update_upper_bound(ub); }
