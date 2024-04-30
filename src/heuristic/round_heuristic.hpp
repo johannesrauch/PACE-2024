@@ -27,7 +27,8 @@ class round_heuristic : public instance_view {
     round_heuristic &operator=(const round_heuristic &other) = delete;
     round_heuristic &operator=(round_heuristic &&other) = delete;
 
-    crossing_number_t operator()(const std::vector<double> &column_values, std::vector<vertex_t> &ordering) {
+    crossing_number_t operator()(highs_lp &lp, std::vector<vertex_t> &ordering) {
+        const std::vector<double> &column_values = lp.get_column_values();
         n_restr_graphs_generated = 0;
         n_cycles = 0;
         crossing_number_t n_crossings = generate_ordering(column_values, ordering);
