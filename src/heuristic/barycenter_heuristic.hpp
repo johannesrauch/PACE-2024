@@ -14,7 +14,6 @@ class barycenter_heuristic : public instance_view {
      */
     std::vector<double> barycenters;
     shift_heuristic shift_h;
-    const bool do_shift;
 
    public:
     /**
@@ -23,8 +22,8 @@ class barycenter_heuristic : public instance_view {
      * @param graph input instance of one-sided crossing minimization
      * @param ordering in-out parameter, in which the computed ordering is stored
      */
-    barycenter_heuristic(instance &instance_, const bool do_shift = true)
-        : instance_view(instance_), barycenters(n_free), shift_h(instance_), do_shift(do_shift) {
+    barycenter_heuristic(instance &instance_)
+        : instance_view(instance_), barycenters(n_free), shift_h(instance_) {
         fill_barycenters();
     }
 
@@ -41,15 +40,7 @@ class barycenter_heuristic : public instance_view {
         identity(n_free, ordering);
         std::sort(ordering.begin(), ordering.end(),
                   [=](const vertex_t &a, const vertex_t &b) -> bool { return this->compare(a, b); });
-
-        const crossing_number_t n_crossings = number_of_crossings(graph, ordering);
-        assert(lower_bound() <= n_crossings);
-        if (lower_bound() >= n_crossings || !do_shift) {
-            update_ordering(ordering, n_crossings);
-            return n_crossings;
-        } else {
-            return shift_h(ordering, n_crossings);
-        }
+        return shift_h(ordering);
     }
 
     bool compare(const vertex_t &a, const vertex_t &b) {

@@ -12,7 +12,6 @@
 namespace pace {
 
 struct median_heuristic_params {
-    const bool do_shift{true};
     const uint8_t n_lookahead{PACE_CONST_PROBMEDIAN_LOOKAHEAD};
 };
 
@@ -23,14 +22,13 @@ struct median_heuristic_params {
 class median_heuristic : public instance_view {
     std::vector<vertex_t> medians;
     shift_heuristic shift_h;
-    const bool do_shift;
 
    public:
     /**
      * @brief initializes median heuristic for `instance`
      */
-    median_heuristic(instance& instance_, const bool do_shift = true)
-        : instance_view(instance_), medians(n_free), shift_h(instance_), do_shift(do_shift) {
+    median_heuristic(instance& instance_)
+        : instance_view(instance_), medians(n_free), shift_h(instance_) {
         fill_medians();
     }
 
@@ -50,15 +48,7 @@ class median_heuristic : public instance_view {
         identity(n_free, ordering);
         sort(ordering.begin(), ordering.end(),
              [=](const vertex_t& a, const vertex_t& b) -> bool { return this->compare(a, b); });
-
-        const crossing_number_t n_crossings = number_of_crossings(graph, ordering);
-        assert(lower_bound() <= n_crossings);
-        if (lower_bound() >= n_crossings || !do_shift) {
-            update_ordering(ordering, n_crossings);
-            return n_crossings;
-        } else {
-            return shift_h(ordering, n_crossings);
-        }
+        return shift_h(ordering);
     }
 
     shift_heuristic& get_shift_heuristic() { return shift_h; }

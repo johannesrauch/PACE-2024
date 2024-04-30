@@ -66,8 +66,7 @@ class shift_heuristic : public instance_view {
         std::copy(ordering.begin(), ordering.end(), ordering_.begin());
         bool go_on = true;
 
-        std::size_t iteration;
-        for (iteration = 0; iteration < params.n_iterations && go_on; ++iteration) {
+        for (std::size_t i = 0; i < params.n_iterations && go_on; ++i) {
             go_on = false;
             for (typename std::list<vertex_t>::iterator it = ordering_.begin(); it != ordering_.end();) {
                 const auto [go_on_, it_] = improve(it, n_crossings);

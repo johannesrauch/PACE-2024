@@ -8,7 +8,6 @@
 namespace pace {
 
 struct relax_heuristic_params {
-    const bool do_shift{true};
     const uint8_t n_lookahead{16};
 };
 
@@ -57,10 +56,7 @@ class round_heuristic : public instance_view {
         build_restr_graph(column_values, unsettled_pairs(), restriction_graph());
         n_cycles += topological_sort_rd(restriction_graph(), ordering);
         ++n_restr_graphs_generated;
-        if (params.do_shift)
-            return shift_h(ordering);
-        else
-            return number_of_crossings(graph, ordering);
+        return shift_h(ordering);
     }
 };
 
