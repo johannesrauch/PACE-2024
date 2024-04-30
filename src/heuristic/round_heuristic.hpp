@@ -1,5 +1,5 @@
-#ifndef PACE_HEURISTIC_RELAX_HEURISTIC_HPP
-#define PACE_HEURISTIC_RELAX_HEURISTIC_HPP
+#ifndef PACE_HEURISTIC_ROUND_HEURISTIC_HPP
+#define PACE_HEURISTIC_ROUND_HEURISTIC_HPP
 
 #include "heuristic/shift_heuristic.hpp"
 #include "utils/crossings_utils.hpp"
@@ -12,7 +12,7 @@ struct relax_heuristic_params {
     const uint8_t n_lookahead{16};
 };
 
-class relax_heuristic : public instance_view {
+class round_heuristic : public instance_view {
     relax_heuristic_params params;
     std::size_t n_restr_graphs_generated{0};
     std::size_t n_cycles{0};
@@ -20,8 +20,13 @@ class relax_heuristic : public instance_view {
     shift_heuristic shift_h;
 
    public:
-    relax_heuristic(instance &instance_, relax_heuristic_params params = relax_heuristic_params())
+    round_heuristic(instance &instance_, relax_heuristic_params params = relax_heuristic_params())
         : instance_view(instance_), params(params), shift_h(instance_) {}
+
+    round_heuristic(const round_heuristic &other) = delete;
+    round_heuristic(round_heuristic &&other) = delete;
+    round_heuristic &operator=(const round_heuristic &other) = delete;
+    round_heuristic &operator=(round_heuristic &&other) = delete;
 
     crossing_number_t operator()(const std::vector<double> &column_values, std::vector<vertex_t> &ordering) {
         n_restr_graphs_generated = 0;
