@@ -511,7 +511,7 @@ class highs_lp : public highs_base {
                     assert(u < v);
                     assert(v < w);
                     check_3cycle(u, v, w);
-                    stop = is_last_bucket_full();
+                    stop = is_last_bucket_full() || is_n_bucket_entries_large();
                     if (stop) goto check_3cycles_after_for;
                 }
             }
@@ -526,7 +526,7 @@ class highs_lp : public highs_base {
                     assert(u < v);
                     assert(v < w);
                     check_3cycle(u, v, w);
-                    stop = is_last_bucket_full();
+                    stop = is_last_bucket_full() || is_n_bucket_entries_large();
                     if (stop) goto check_3cycles_after_for;
                 }
             }
@@ -625,6 +625,8 @@ class highs_lp : public highs_base {
      * @return false otherwise
      */
     inline bool is_last_bucket_full() { return (*buckets.rbegin()).size() >= params.max_new_rows; }
+
+    inline bool is_n_bucket_entries_large() { return get_n_bucket_entries() >= 4 * params.max_new_rows; }
 
     //
     // hot start methods
