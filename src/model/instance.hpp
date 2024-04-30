@@ -128,7 +128,9 @@ class instance {
         return lower_bound;
     }
 
-    const crossing_number_t &get_upper_bound() { return upper_bound; }
+    const crossing_number_t &get_upper_bound() const { return upper_bound; }
+
+    const std::vector<vertex_t> &get_ordering() const { return ordering; }
 
     //
     // setter
@@ -367,6 +369,8 @@ struct instance_view {
     const std::vector<magic_t> &magic() { return instance_.get_magic(); }
 
     const crossing_number_t &objective_offset() { return instance_.get_objective_offset(); }
+
+    const std::vector<vertex_t> &get_ordering() const { return instance_.get_ordering(); }
 
     void update_ordering(const std::vector<vertex_t> &another_ordering) {
         instance_.update_ordering(another_ordering);
