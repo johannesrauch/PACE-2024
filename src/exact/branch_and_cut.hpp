@@ -188,9 +188,7 @@ class branch_and_cut : public instance_view {
      * @return true optimal solution found
      * @return false otherwise
      */
-    inline bool branch_and_bound_and_cut(const highs_lp_info &info_lp, std::vector<vertex_t> &ordering) {
-        info.n_iter_3cycle_current_node += info_lp.new_3cycle_iter;
-
+    inline bool branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
         // test if the lp is optimal
         if (!lp_solver_ptr->is_optimal()) {
             return backtrack();
@@ -252,9 +250,10 @@ class branch_and_cut : public instance_view {
         // driver loop for branch and cut
         do {
             lp_solver_ptr->run();
+            info.n_iter_3cycle_current_node += info_lp.new_3cycle_iter;
             PACE_DEBUG_PRINTF_INFO(info, info_lp);
             ++info.n_iterations;
-        } while (!branch_and_bound_and_cut(info_lp, ordering));
+        } while (!branch_and_bound_and_cut(ordering));
         PACE_DEBUG_PRINTF("end   branch and cut\n");
 
         return upper_bound;
