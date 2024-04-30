@@ -18,6 +18,11 @@
 
 namespace pace {
 
+struct branch_and_cut_params {
+    bool delete_rows{true};
+    std::size_t max_iter_3cycle_until_branch{4};
+};
+
 class branch_and_cut : public instance_view {
     /**
      * @brief relevant information of pre-branching situation
@@ -42,6 +47,7 @@ class branch_and_cut : public instance_view {
     std::unique_ptr<reliability_branching> reli_branch_ptr;
 
     branch_and_cut_info info;
+    branch_and_cut_params params;
 
     shift_heuristic shift_h;
 
@@ -49,8 +55,8 @@ class branch_and_cut : public instance_view {
     /**
      * @brief constructs and initializes the branch and cut solver
      */
-    branch_and_cut(instance &instance_)
-        : instance_view(instance_), info{lower_bound(), upper_bound}, shift_h(instance_) {
+    branch_and_cut(instance &instance_, branch_and_cut_params params = branch_and_cut_params())
+        : instance_view(instance_), info{lower_bound(), upper_bound}, params(params), shift_h(instance_) {
         assert(n_free > 0);
     }
 
@@ -136,6 +142,7 @@ class branch_and_cut : public instance_view {
      * @return false otherwise
      */
     bool backtrack() {
+        info.n_iter_3cycle_current_node = 0;
         while (!stack.empty()) {
             branch_node &node = stack.top();
             if (node.fix_opposite) {
@@ -158,6 +165,8 @@ class branch_and_cut : public instance_view {
      * @brief branches by fixing a column
      */
     void branch() {
+        info.n_iter_3cycle_current_node = 0;
+
         // gather branch node info
         const double obj_val_old = lp_solver_ptr->get_objective_value();
         const std::size_t j = reli_branch_ptr->get_branching_column();
@@ -179,7 +188,9 @@ class branch_and_cut : public instance_view {
      * @return true optimal solution found
      * @return false otherwise
      */
-    inline bool branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
+    inline bool branch_and_bound_and_cut(const highs_lp_info &info_lp, std::vector<vertex_t> &ordering) {
+        info.n_iter_3cycle_current_node += info_lp.new_3cycle_iter;
+
         // test if the lp is optimal
         if (!lp_solver_ptr->is_optimal()) {
             return backtrack();
@@ -192,23 +203,27 @@ class branch_and_cut : public instance_view {
         }
 
         // try to generate cutting planes
-        bool successful = lp_solver_ptr->cut();
-        if (successful) {
-            if (stack.empty()) lp_solver_ptr->delete_positive_slack_rows();
-            return false;
+        bool cut_generated = true;
+        if (info.n_iter_3cycle_current_node <= params.max_iter_3cycle_until_branch) {
+            cut_generated = lp_solver_ptr->cut();
+            params.delete_rows &= cut_generated;
+            if (cut_generated) {
+                if (params.delete_rows) lp_solver_ptr->delete_positive_slack_rows();
+                return false;
+            }
         }
 
         // at this point, we have an optimal solution to the ilp relaxation
         update_costs();
 
         // test if solution is integral, then we found a better solution
-        if (lp_solver_ptr->is_integral()) {
+        if (lp_solver_ptr->is_integral() && !cut_generated) {
             build_ordering(ordering);
             lp_solver_ptr->fix_columns();
             return backtrack();
         }
 
-        // todo: heuristic?
+        
 
         // branch by fixing a column
         branch();
@@ -228,7 +243,6 @@ class branch_and_cut : public instance_view {
         if (!reli_branch_ptr) reli_branch_ptr = std::make_unique<reliability_branching>(*lp_solver_ptr);
 
         const highs_lp_info &info_lp = lp_solver_ptr->get_info();
-        (void)info_lp;
         PACE_DEBUG_PRINTF("start branch and cut\n");
         PACE_DEBUG_PRINTF("%11s=%11u, %11s=%11u, %11s=%11u\n",  //
                           "n cols", info_lp.n_cols,             //
@@ -240,7 +254,7 @@ class branch_and_cut : public instance_view {
             lp_solver_ptr->run();
             PACE_DEBUG_PRINTF_INFO(info, info_lp);
             ++info.n_iterations;
-        } while (!branch_and_bound_and_cut(ordering));
+        } while (!branch_and_bound_and_cut(info_lp, ordering));
         PACE_DEBUG_PRINTF("end   branch and cut\n");
 
         return upper_bound;

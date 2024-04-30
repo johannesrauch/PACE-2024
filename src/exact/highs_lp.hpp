@@ -2,6 +2,7 @@
 #define PACE_EXACT_LP_WRAPPER_HPP
 
 #include <unordered_map>
+#include <unordered_set>
 
 #include "exact/highs_base.hpp"
 #include "exact/info_structs.hpp"
@@ -13,7 +14,7 @@
 #endif
 
 #ifndef PACE_CONST_N_MAX_INIT_ROWS
-#define PACE_CONST_N_MAX_INIT_ROWS 8192
+#define PACE_CONST_N_MAX_INIT_ROWS 16384u
 #endif
 
 #ifndef PACE_CONST_N_BUCKETS
@@ -112,7 +113,7 @@ class highs_lp : public highs_base {
 
         info.n_cols = get_n_cols();
         PACE_DEBUG_PRINTF("start add_initial_rows\n");
-        add_initial_rows();
+        add_initial_rows_from_ordering();
         PACE_DEBUG_PRINTF("end   add_initial_rows\n");
     }
 
@@ -338,6 +339,60 @@ class highs_lp : public highs_base {
     //
     // 3-cycle methods
     //
+    inline void add_3cycle_row_to_internal_rows(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
+        rows.emplace_back(u, v, w);
+        const triple uvw(u, v, w);
+        auto it = rows_info.find(uvw);
+        if (it == rows_info.end()) {
+            rows_info.emplace(uvw, row_info());
+        }
+    }
+
+    inline void add_initial_rows_from_ordering() {
+        clear_aux_vectors();
+        const std::vector<vertex_t> &ordering = get_ordering();
+        std::vector<vertex_t> positions(ordering.size());
+        inverse(ordering, positions);
+        const crossing_matrix &cr = cr_matrix();
+
+        std::vector<std::pair<vertex_t, vertex_t>> unnatural;
+        for (const auto &[u, v] : unsettled_pairs()) {
+            const crossing_number_t &c_uv = cr(u, v);
+            const crossing_number_t &c_vu = cr(v, u);
+            if (c_uv < c_vu && positions[u] > positions[v] || c_uv > c_vu && positions[u] < positions[v]) {
+                unnatural.emplace_back(u, v);
+            }
+        }
+
+        const std::size_t n_unnatural = unnatural.size();
+        const std::size_t n_rows_pre_unnatural = (params.max_initial_rows + n_unnatural - 1) / n_unnatural;
+        std::uniform_int_distribution<vertex_t> distribution(0, n_free - 1);
+        
+        for (const auto &[u, v] : unnatural) {
+            std::unordered_set<vertex_t> set;
+            for (std::size_t i = 0; i < n_rows_pre_unnatural; ++i) {
+                set.insert(distribution(rd_generator));
+            }
+            set.erase(u);
+            set.erase(v);
+            for (const vertex_t &w : set) {
+                if (w < u) {
+                    add_3cycle_row_to_aux_vectors(w, u, v);
+                    add_3cycle_row_to_internal_rows(w, u, v);
+                } else if (w < v) {
+                    add_3cycle_row_to_aux_vectors(u, w, v);
+                    add_3cycle_row_to_internal_rows(u, w, v);
+                } else {
+                    add_3cycle_row_to_aux_vectors(u, v, w);
+                    add_3cycle_row_to_internal_rows(u, v, w);
+                }
+            }
+        }
+
+        solver.addRows(lower_bounds.size(), &lower_bounds[0], &upper_bounds[0],  //
+                       indices.size(), &starts[0], &indices[0], &values[0]);
+        info.n_rows = get_n_rows();
+    }
 
     /**
      * @brief adds at most params.max_initial_rows "interesting" rows to the lp
@@ -367,18 +422,8 @@ class highs_lp : public highs_base {
 
         solver.addRows(lower_bounds.size(), &lower_bounds[0], &upper_bounds[0],  //
                        indices.size(), &starts[0], &indices[0], &values[0]);
-
         info.n_init_rows_candidates = candidates.size();
         info.n_rows = get_n_rows();
-    }
-
-    inline void add_3cycle_row_to_internal_rows(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
-        rows.emplace_back(u, v, w);
-        const triple uvw(u, v, w);
-        auto it = rows_info.find(uvw);
-        if (it == rows_info.end()) {
-            rows_info.emplace(uvw, row_info());
-        }
     }
 
     /**
@@ -449,6 +494,7 @@ class highs_lp : public highs_base {
     bool check_3cycles() {
         clear_buckets();
         bool stop = false;
+        info.new_3cycle_iter = false;
         // yes, I use the dark forces here, because it speeds things up and is imo cleaner
         vertex_t u = u_old, v = v_old, w = w_old;
         goto check_3cycles_in_for;
@@ -552,8 +598,7 @@ class highs_lp : public highs_base {
         info.max_viol_score = std::max(score, info.max_viol_score);
         const double interval = info.max_viol_score - info.min_viol_score;
         double val = 0.99;
-        if (interval >= 0.1) 
-            val -= (score - info.min_viol_score) / interval;
+        if (interval >= 0.1) val -= (score - info.min_viol_score) / interval;
         val = std::max(0., val);
         return get_bucket(val);
     }
@@ -605,6 +650,7 @@ class highs_lp : public highs_base {
             params.max_new_rows *= 2;
         }
         ++info.n_iterations_3cycles;
+        info.new_3cycle_iter = true;
     }
 
     inline void update_simplex_info() {
