@@ -14,7 +14,7 @@
 #endif
 
 #ifndef PACE_CONST_N_MAX_INIT_ROWS
-#define PACE_CONST_N_MAX_INIT_ROWS 40000u
+#define PACE_CONST_N_MAX_INIT_ROWS 8192u
 #endif
 
 #ifndef PACE_CONST_N_BUCKETS
@@ -370,6 +370,7 @@ class highs_lp : public highs_base {
         }
 
         const std::size_t n_unnatural = unnatural.size();
+        if (n_unnatural == 0) return;
         const std::size_t n_rows_pre_unnatural = (params.max_initial_rows + n_unnatural - 1) / n_unnatural;
         std::uniform_int_distribution<vertex_t> distribution(0, n_free - 1);
 
