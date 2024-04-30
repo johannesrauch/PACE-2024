@@ -160,12 +160,12 @@ class highs_base : public instance_view {
     /**
      * @brief returns the objective value of the lp
      */
-    double get_objective_value() { return solver.getInfo().objective_function_value; }
+    double get_objective_value() const { return solver.getInfo().objective_function_value; }
 
     /**
      * @brief returns the objective value of the lp rounded to the next integer
      */
-    crossing_number_t get_rounded_objective_value() {
+    crossing_number_t get_rounded_objective_value() const {
         const double value = get_objective_value();
         assert(value >= 0);
         return static_cast<crossing_number_t>(lround(value));
