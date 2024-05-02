@@ -10,7 +10,7 @@
 #include "utils/randomness_utils.hpp"
 
 #ifndef PACE_CONST_N_MAX_NEW_ROWS
-#define PACE_CONST_N_MAX_NEW_ROWS 64u
+#define PACE_CONST_N_MAX_NEW_ROWS 128u
 #endif
 
 #ifndef PACE_CONST_N_MAX_INIT_ROWS
@@ -33,7 +33,7 @@ namespace pace {
 
 struct highs_lp_params {
     uint16_t max_new_rows{PACE_CONST_N_MAX_NEW_ROWS};             ///< maximum number of new rows per check_3cycles call
-    const uint8_t max_new_rows_doubling{4};                       ///< maximum number of times max_new_rows is doubled
+    const uint8_t max_new_rows_doubling{3};                       ///< maximum number of times max_new_rows is doubled
     const uint16_t max_initial_rows{PACE_CONST_N_MAX_INIT_ROWS};  ///< maximum number of initial rows
     const uint8_t max_delete_rows_3cycle_iterations{64};  ///< maximum number of 3-cycle iterations with row deletion
 
@@ -96,8 +96,6 @@ class highs_lp : public highs_base {
 
     std::list<triple> rows;
 
-    HighsBasis current_basis;
-
    public:
     highs_lp(instance &instance_, highs_lp_params params = highs_lp_params())
         : highs_base(instance_), info{u_old, v_old, w_old}, params(params) {
@@ -151,7 +149,6 @@ class highs_lp : public highs_base {
     void run() {
         solver.run();
         update_simplex_info();
-        current_basis = solver.getBasis();
     }
 
     /**
