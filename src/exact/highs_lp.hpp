@@ -170,9 +170,10 @@ class highs_lp : public highs_base {
      * @brief delete rows with positive slack from the lp
      */
     void delete_positive_slack_rows() {
-        reset_delete_count_info();
         if (info.n_iterations_3cycles > params.max_delete_rows_3cycle_iterations) return;
-        
+        if (!info.was_warmstart) return;
+        if ((info.n_iter_simplex_coldstart >> 2) >= info.n_iterations_simplex) return;
+
         // gather rows to delete
         rows_to_delete.clear();
         auto it_rows = rows.begin();
@@ -624,7 +625,7 @@ class highs_lp : public highs_base {
      */
     inline bool is_last_bucket_full() { return (*buckets.rbegin()).size() >= params.max_new_rows; }
 
-    inline bool is_n_bucket_entries_large() { return get_n_bucket_entries() >= 4 * params.max_new_rows; }
+    inline bool is_n_bucket_entries_large() { return get_n_bucket_entries() >= 8 * params.max_new_rows; }
 
     //
     // hot start methods
@@ -646,11 +647,6 @@ class highs_lp : public highs_base {
     // bookkeeping methods
     //
    private:
-    inline void reset_delete_count_info() {
-        info.n_deleted_rows = 0;
-        info.n_delete_rows_spared = 0;
-    }
-
     inline void update_3cycle_iteration_info() {
         if (info.n_iterations_3cycles < params.max_new_rows_doubling) {
             params.max_new_rows *= 2;
@@ -660,15 +656,24 @@ class highs_lp : public highs_base {
     }
 
     inline void update_simplex_info() {
-        info.n_rows = get_n_rows();
         info.n_iterations_simplex = solver.getSimplexIterationCount();
+        if (info.n_iter_simplex_coldstart == 0 || info.n_deleted_rows > 0) {
+            info.n_iter_simplex_coldstart = info.n_iterations_simplex;
+        }
+        info.was_warmstart = info.n_deleted_rows == 0;
         info.n_iterations_simplex_avg =
             (info.n_iterations_simplex_avg * info.n_runs + info.n_iterations_simplex) / (info.n_runs + 1);
 
-        info.t_simplex = solver.getRunTime();
-
-        info.objective_value = get_objective_value();
+        info.n_rows = get_n_rows();
         ++info.n_runs;
+
+        info.t_simplex = solver.getRunTime();
+        info.objective_value = get_objective_value();
+
+        info.n_bucket_entries = 0;
+        info.n_added_rows = 0;
+        info.n_deleted_rows = 0;
+        info.n_delete_rows_spared = 0;
     }
 };
 

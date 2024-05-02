@@ -21,7 +21,6 @@ namespace pace {
 struct branch_and_cut_params {
     bool delete_rows{true};
     std::size_t max_iter_3cycle_until_branch{4};
-    std::size_t mask_delete_rows{0b111};
 };
 
 class branch_and_cut : public instance_view {
@@ -213,8 +212,7 @@ class branch_and_cut : public instance_view {
             cut_generated = lp_solver_ptr->cut();
             params.delete_rows &= cut_generated;
             if (cut_generated) {
-                const bool delete_rows = params.delete_rows && (info.n_iterations & params.mask_delete_rows) == 0;
-                if (delete_rows) lp_solver_ptr->delete_positive_slack_rows();
+                if (params.delete_rows) lp_solver_ptr->delete_positive_slack_rows();
                 return false;
             }
         }
@@ -243,7 +241,7 @@ class branch_and_cut : public instance_view {
      * @brief solves the given instance exactly with a branch and cut algorithm
      */
     uint32_t operator()(std::vector<vertex_t> &ordering) {
-        PACE_DEBUG_PRINTF("\n");
+        PACE_DEBUG_PRINTF("\nstart branch and cut\n");
         info.n_crossings_h = heuristic.uninformed(ordering);
         if (lower_bound() >= upper_bound) return upper_bound;
 
@@ -258,14 +256,15 @@ class branch_and_cut : public instance_view {
                           "n cand", info_lp.n_init_rows_candidates);
 
         // driver loop for branch and cut
-        do {
+        for (;;) {
             lp_solver_ptr->run();
             info.n_iter_3cycle_current_node += info_lp.new_3cycle_iter;
+            if (branch_and_bound_and_cut(ordering)) break;
             PACE_DEBUG_PRINTF_INFO(info, info_lp);
             ++info.n_iterations;
-        } while (!branch_and_bound_and_cut(ordering));
-        PACE_DEBUG_PRINTF("end   branch and cut\n");
+        }
 
+        PACE_DEBUG_PRINTF("end   branch and cut\n");
         return upper_bound;
     }
 

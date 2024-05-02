@@ -29,6 +29,7 @@ struct highs_lp_info {
     std::size_t n_delete_rows_spared{0};
 
     std::size_t n_iterations_simplex{0};
+    std::size_t n_iter_simplex_coldstart{0};
     double n_iterations_simplex_avg{0.};
     std::size_t n_iterations_3cycles{0};
     std::size_t n_init_rows_candidates{0};
@@ -36,6 +37,7 @@ struct highs_lp_info {
 
     double t_simplex{0.};
     double objective_value{0.};
+    bool was_warmstart{false};
 
     double min_viol_score{0.};
     double max_viol_score{0.};
