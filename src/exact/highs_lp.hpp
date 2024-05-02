@@ -10,7 +10,7 @@
 #include "utils/randomness_utils.hpp"
 
 #ifndef PACE_CONST_N_MAX_NEW_ROWS
-#define PACE_CONST_N_MAX_NEW_ROWS 256u
+#define PACE_CONST_N_MAX_NEW_ROWS 64u
 #endif
 
 #ifndef PACE_CONST_N_MAX_INIT_ROWS
@@ -33,7 +33,7 @@ namespace pace {
 
 struct highs_lp_params {
     uint16_t max_new_rows{PACE_CONST_N_MAX_NEW_ROWS};             ///< maximum number of new rows per check_3cycles call
-    const uint8_t max_new_rows_doubling{2};                       ///< maximum number of times max_new_rows is doubled
+    const uint8_t max_new_rows_doubling{4};                       ///< maximum number of times max_new_rows is doubled
     const uint16_t max_initial_rows{PACE_CONST_N_MAX_INIT_ROWS};  ///< maximum number of initial rows
     const uint8_t max_delete_rows_3cycle_iterations{64};  ///< maximum number of 3-cycle iterations with row deletion
 
@@ -54,11 +54,6 @@ class highs_lp : public highs_base {
      * @brief number of rows before cut() added new rows
      */
     std::size_t n_old_rows{0};
-
-    /**
-     * @brief the first n_fix_rows are not subject to deletion
-     */
-    std::size_t n_fix_rows{0};
 
     /**
      * @brief stores indices of the to deleted rows in delete_positive_slack_rows()
@@ -101,6 +96,8 @@ class highs_lp : public highs_base {
 
     std::list<triple> rows;
 
+    HighsBasis current_basis;
+
    public:
     highs_lp(instance &instance_, highs_lp_params params = highs_lp_params())
         : highs_base(instance_), info{u_old, v_old, w_old}, params(params) {
@@ -136,6 +133,9 @@ class highs_lp : public highs_base {
      */
     bool cut() {
         n_old_rows = get_n_rows();
+        info.n_deleted_rows = 0;
+        info.n_delete_rows_spared = 0;
+
         bool success = check_3cycles();
         return success;
     }
@@ -151,6 +151,7 @@ class highs_lp : public highs_base {
     void run() {
         solver.run();
         update_simplex_info();
+        current_basis = solver.getBasis();
     }
 
     /**
@@ -174,11 +175,11 @@ class highs_lp : public highs_base {
     void delete_positive_slack_rows() {
         reset_delete_count_info();
         if (info.n_iterations_3cycles > params.max_delete_rows_3cycle_iterations) return;
-
+        
         // gather rows to delete
         rows_to_delete.clear();
         auto it_rows = rows.begin();
-        for (std::size_t i = n_fix_rows; i < n_old_rows; ++i) {
+        for (std::size_t i = 0; i < n_old_rows; ++i) {
             assert(it_rows != rows.end());
             auto it = rows_info.find(*it_rows);
             assert(it != rows_info.end());
