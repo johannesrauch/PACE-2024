@@ -159,7 +159,7 @@ class branch_and_cut : public instance_view {
                 return false;
             } else {
                 lp_solver_ptr->unfix_column(node.j);
-                PACE_DEBUG_PRINTF("unfixed variable %5d\n(backtrack)\n", node.j);
+                PACE_DEBUG_PRINTF("(backtrack)\n");
                 stack.pop();
             }
         }
