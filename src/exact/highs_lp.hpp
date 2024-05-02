@@ -625,7 +625,7 @@ class highs_lp : public highs_base {
      */
     inline bool is_last_bucket_full() { return (*buckets.rbegin()).size() >= params.max_new_rows; }
 
-    inline bool is_n_bucket_entries_large() { return get_n_bucket_entries() >= 8 * params.max_new_rows; }
+    inline bool is_n_bucket_entries_large() { return get_n_bucket_entries() >= 10 * params.max_new_rows; }
 
     //
     // hot start methods
