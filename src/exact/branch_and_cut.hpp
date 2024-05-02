@@ -21,7 +21,7 @@ namespace pace {
 struct branch_and_cut_params {
     bool delete_rows{true};
     std::size_t max_iter_3cycle_until_branch{4};
-    std::size_t mask_delete_rows{0b11};
+    std::size_t mask_delete_rows{0b111};
 };
 
 class branch_and_cut : public instance_view {
