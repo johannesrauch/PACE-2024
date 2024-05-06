@@ -51,6 +51,7 @@ struct branch_and_cut_info {
     std::size_t n_branch_nodes{0};
     std::size_t n_rows{0};
     std::size_t n_iter_3cycle_current_node{0};
+    std::size_t depth;
 
     crossing_number_t n_crossings_h{0};
 
