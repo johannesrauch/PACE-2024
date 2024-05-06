@@ -20,7 +20,7 @@ find_package(HIGHS REQUIRED)
 find_package(Threads REQUIRED)
 
 add_executable(weberknecht src/weberknecht.cpp)
-target_link_libraries(weberknecht highs::highs)
+target_link_libraries(weberknecht highs::highs m)
 
 if(PACE_DEBUG_PRINT)
     add_compile_definitions(PACE_DEBUG_PRINT)
