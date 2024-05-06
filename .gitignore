@@ -47,3 +47,4 @@ highs/*
 *.log
 build/
 test/big_test_set
+sub.tar.gz
