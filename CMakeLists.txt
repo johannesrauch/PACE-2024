@@ -15,7 +15,7 @@ endif()
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
 #add_subdirectory(highs)
-set(HIGHS_DIR highs/lib/cmake/highs)
+#set(HIGHS_DIR highs/lib/cmake/highs)
 find_package(HIGHS REQUIRED)
 find_package(Threads REQUIRED)
 
