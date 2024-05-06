@@ -1,8 +1,6 @@
 #ifndef PACE_EXACT_BRANCH_AND_CUT_HPP
 #define PACE_EXACT_BRANCH_AND_CUT_HPP
 
-#include <cfloat>
-#include <cmath>
 #include <functional>
 #include <stack>
 #include <unordered_map>
