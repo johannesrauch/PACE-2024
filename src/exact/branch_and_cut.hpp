@@ -20,7 +20,7 @@ namespace pace {
 
 struct branch_and_cut_params {
     bool delete_rows{true};
-    std::size_t max_iter_3cycle_until_branch{4};
+    std::size_t max_iter_3cycle_until_branch{1000};
 };
 
 class branch_and_cut : public instance_view {
@@ -246,6 +246,10 @@ class branch_and_cut : public instance_view {
         if (lower_bound() >= upper_bound) return upper_bound;
 
         if (!lp_solver_ptr) lp_solver_ptr = std::make_unique<highs_lp>(instance_);
+        if (unsettled_pairs().size() == 0) {
+            build_ordering(ordering);
+            return upper_bound;
+        }
         if (!reli_branch_ptr) reli_branch_ptr = std::make_unique<reliability_branching>(*lp_solver_ptr);
 
         const highs_lp_info &info_lp = lp_solver_ptr->get_info();
@@ -260,6 +264,7 @@ class branch_and_cut : public instance_view {
             lp_solver_ptr->run();
             info.n_iter_3cycle_current_node += info_lp.new_3cycle_iter;
             if (branch_and_bound_and_cut(ordering)) break;
+            info.depth = stack.size();
             PACE_DEBUG_PRINTF_INFO(info, info_lp);
             ++info.n_iterations;
         }
