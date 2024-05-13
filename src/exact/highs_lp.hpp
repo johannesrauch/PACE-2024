@@ -35,7 +35,6 @@ struct highs_lp_params {
     uint16_t max_new_rows{PACE_CONST_N_MAX_NEW_ROWS};             ///< maximum number of new rows per check_3cycles call
     const uint8_t max_new_rows_doubling{3};                       ///< maximum number of times max_new_rows is doubled
     const uint16_t max_initial_rows{PACE_CONST_N_MAX_INIT_ROWS};  ///< maximum number of initial rows
-    const uint8_t max_delete_rows_3cycle_iterations{64};  ///< maximum number of 3-cycle iterations with row deletion
     const int32_t max_resolve_iters{10000};
 
     const uint8_t n_buckets{PACE_CONST_N_BUCKETS};
@@ -197,7 +196,6 @@ class highs_lp : public highs_base {
      * @brief delete rows with positive slack from the lp
      */
     void delete_positive_slack_rows() {
-        if (info.n_iterations_3cycles > params.max_delete_rows_3cycle_iterations) return;
         if (!info.was_warmstart) return;
         if ((info.n_iter_simplex_coldstart >> 2) >= info.n_iterations_simplex) return;
 
