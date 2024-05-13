@@ -14,7 +14,7 @@
 #endif
 
 #ifndef PACE_CONST_N_MAX_INIT_ROWS
-#define PACE_CONST_N_MAX_INIT_ROWS 8192u
+#define PACE_CONST_N_MAX_INIT_ROWS 16384u
 #endif
 
 #ifndef PACE_CONST_N_BUCKETS
@@ -165,24 +165,32 @@ class highs_lp : public highs_base {
     }
 
     void initial_solve() {
+        info.n_iters_solve = 0;
         PACE_DEBUG_PRINTF_LPINFO_LINE();
 
         // few 3-cycle iterations, solved to optimality, to sieve for "important" 3-cycle ieqs
         bool cut_generated{true};
-        while (cut_generated && info.n_iterations_3cycles <= 8) {
+        while (cut_generated && info.n_iterations_3cycles < 1) {
             delete_positive_slack_rows();
             run();
             PACE_DEBUG_PRINTF_LPINFO(info);
+            ++info.n_iters_solve;
+            reset_row_info();
             if (get_rounded_objective_value() >= upper_bound) return;
             cut_generated = cut();
         }
     }
 
-    void resolve(bool cut_generated = true) {
+    void resolve() {
+        info.n_iters_solve = 0;
         PACE_DEBUG_PRINTF_LPINFO_LINE();
+
+        bool cut_generated = true;
         while (cut_generated) {
             run(params.max_resolve_iters, true);
             PACE_DEBUG_PRINTF_LPINFO(info);
+            ++info.n_iters_solve;
+            reset_row_info();
             if (get_rounded_objective_value() >= upper_bound) return;
             cut_generated = cut();
         }
@@ -498,7 +506,7 @@ class highs_lp : public highs_base {
     inline bool check_3cycle(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
         const auto [uv, vw, uw] = flat_indices(n_free, n_free_2, u, v, w);
         const double x = get_3cycle_value(uv, vw, uw);
-        const double interval_width = 1. + 2. * params.tol_feasibility;
+        const double interval_width = 1. + 3. * params.tol_feasibility;
         if (is_3cycle_lb_violated(x)) {
             const double x_normalized = -x / interval_width;
             get_bucket(x_normalized).emplace_back(u, v, w);
@@ -694,7 +702,9 @@ class highs_lp : public highs_base {
 
         info.t_simplex = solver.getRunTime();
         info.objective_value = get_objective_value();
+    }
 
+    inline void reset_row_info() {
         info.n_bucket_entries = 0;
         info.n_added_rows = 0;
         info.n_deleted_rows = 0;

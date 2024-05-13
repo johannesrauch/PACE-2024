@@ -35,21 +35,24 @@ void printf_info(const branch_and_cut_info& info_br, const highs_lp_info& info_l
         info_br.relax_h_confidence);
 }
 
-void printf_lpinfo_line() {
-    fmt::printf("%11s|%11s%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%11s%11s\n",  //
-                "walltime",                                                   //
-                "n iters", "obj val", "n rows", "n splx",                     //
-                "n bucket", "n added", "n delete", "n spared",                //
+inline void printf_lpinfo_line() {
+    fmt::printf("%11s|%11s%11s%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%11s%11s\n",  //
+                "walltime",                                                       //
+                "n iters", "obj val", "n rows", "n splx", "n splx avg",           //
+                "n bucket", "n added", "n delete", "n spared",                    //
                 "uvw iter", "u", "v", "w");
+    std::cout << std::flush;
 }
 
-void printf_lpinfo(const highs_lp_info& info) {
-    fmt::printf("%11.1f%11u%11u|%11u%11.1f%11.1f%11u%11u|%11u%11u%11u%11u|%11u%11u%11u%11u",       //
-                elapsed_walltime_in_s(),                                                           //
-                info.n_iters_solve, info.objective_value, info.n_rows, info.n_iterations_simplex,  //
+inline void printf_lpinfo(const highs_lp_info& info) {
+    fmt::printf("%11.1f|%11u%11.1f%11u%11u%11.1f|%11u%11u%11u%11u|%11u%11u%11u%11u\n",  //
+                elapsed_walltime_in_s(),                                                //
+                info.n_iters_solve, info.objective_value, info.n_rows, info.n_iterations_simplex,
+                info.n_iterations_simplex_avg,  //
                 info.n_bucket_entries, info.n_added_rows, info.n_deleted_rows,
                 info.n_delete_rows_spared,  //
                 info.n_iterations_3cycles, info.u_old, info.v_old, info.w_old);
+    std::cout << std::flush;
 }
 
 };  // namespace test
