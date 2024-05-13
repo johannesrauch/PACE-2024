@@ -35,6 +35,23 @@ void printf_info(const branch_and_cut_info& info_br, const highs_lp_info& info_l
         info_br.relax_h_confidence);
 }
 
+void printf_lpinfo_line() {
+    fmt::printf("%11s|%11s%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%11s%11s\n",  //
+                "walltime",                                                   //
+                "n iters", "obj val", "n rows", "n splx",                     //
+                "n bucket", "n added", "n delete", "n spared",                //
+                "uvw iter", "u", "v", "w");
+}
+
+void printf_lpinfo(const highs_lp_info& info) {
+    fmt::printf("%11.1f%11u%11u|%11u%11.1f%11.1f%11u%11u|%11u%11u%11u%11u|%11u%11u%11u%11u",       //
+                elapsed_walltime_in_s(),                                                           //
+                info.n_iters_solve, info.objective_value, info.n_rows, info.n_iterations_simplex,  //
+                info.n_bucket_entries, info.n_added_rows, info.n_deleted_rows,
+                info.n_delete_rows_spared,  //
+                info.n_iterations_3cycles, info.u_old, info.v_old, info.w_old);
+}
+
 };  // namespace test
 
 };  // namespace pace
@@ -60,6 +77,28 @@ void printf_info(const branch_and_cut_info& info_br, const highs_lp_info& info_l
 #else
 #define PACE_DEBUG_PRINTF_INFO(...) \
     do {                            \
+    } while (false)
+#endif
+
+#ifdef PACE_DEBUG_PRINT
+#define PACE_DEBUG_PRINTF_LPINFO_LINE()   \
+    do {                                  \
+        pace::test::printf_lpinfo_line(); \
+    } while (false)
+#else
+#define PACE_DEBUG_PRINTF_LPINFO_LINE() \
+    do {                                \
+    } while (false)
+#endif
+
+#ifdef PACE_DEBUG_PRINT
+#define PACE_DEBUG_PRINTF_LPINFO(info)   \
+    do {                                 \
+        pace::test::printf_lpinfo(info); \
+    } while (false)
+#else
+#define PACE_DEBUG_PRINTF_LPINFO(...) \
+    do {                              \
     } while (false)
 #endif
 

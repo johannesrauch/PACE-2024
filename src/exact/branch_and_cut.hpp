@@ -194,42 +194,36 @@ class branch_and_cut : public instance_view {
      * @return false otherwise
      */
     inline bool branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
-        // test if the lp is optimal
-        if (!lp_solver_ptr->is_optimal()) {
+        lp_solver_ptr->resolve();
+
+        if (lp_solver_ptr->is_infeasible()) {
             return backtrack();
         }
 
-        // test if we are worse than our current solution
         if (lp_solver_ptr->get_rounded_objective_value() >= upper_bound) {
+            update_costs();
             return backtrack();
         }
 
-        // try to generate cutting planes
-        bool cut_generated = true;
-        if (lp_solver_ptr->is_integral() || info.n_iter_3cycle_current_node <= params.max_iter_3cycle_until_branch) {
-            cut_generated = lp_solver_ptr->cut();
-            params.delete_rows &= cut_generated;
-            if (cut_generated) {
-                if (params.delete_rows) lp_solver_ptr->delete_positive_slack_rows();
+        if (lp_solver_ptr->cut()) {
+            return false;
+        }
+
+        if (lp_solver_ptr->is_integral()) {
+            if (!lp_solver_ptr->is_optimal()) {
                 return false;
+            } else {
+                build_ordering(ordering);
+                lp_solver_ptr->fix_columns();
+                update_costs();
+                return backtrack();
             }
-        }
-
-        // at this point, we have an optimal solution to the ilp relaxation
-        update_costs();
-
-        // test if solution is integral, then we found a better solution
-        if (lp_solver_ptr->is_integral() && !cut_generated) {
-            build_ordering(ordering);
-            lp_solver_ptr->fix_columns();
-            return backtrack();
         }
 
         const crossing_number_t ub_old = upper_bound;
         if (heuristic.informed(*lp_solver_ptr, another_ordering) < ub_old) std::swap(ordering, another_ordering);
         info.relax_h_confidence = heuristic.get_confidence();
 
-        // branch by fixing a column
         branch();
         return false;
     }
@@ -240,9 +234,12 @@ class branch_and_cut : public instance_view {
      */
     uint32_t operator()(std::vector<vertex_t> &ordering) {
         PACE_DEBUG_PRINTF("\nstart branch and cut\n");
+
+        // heuristics
         info.n_crossings_h = heuristic.uninformed(ordering);
         if (lower_bound() >= upper_bound) return upper_bound;
 
+        // lp
         if (!lp_solver_ptr) lp_solver_ptr = std::make_unique<highs_lp>(instance_);
         if (unsettled_pairs().size() == 0) {
             build_ordering(ordering);
@@ -251,21 +248,16 @@ class branch_and_cut : public instance_view {
         if (!reli_branch_ptr) reli_branch_ptr = std::make_unique<reliability_branching>(*lp_solver_ptr);
 
         const highs_lp_info &info_lp = lp_solver_ptr->get_info();
-        PACE_DEBUG_PRINTF("start branch and cut\n");
         PACE_DEBUG_PRINTF("%11s=%11u, %11s=%11u, %11s=%11u\n",  //
                           "n cols", info_lp.n_cols,             //
                           "n initrows", info_lp.n_rows,         //
                           "n cand", info_lp.n_init_rows_candidates);
 
-        // driver loop for branch and cut
-        for (;;) {
-            lp_solver_ptr->run();
-            info.n_iter_3cycle_current_node += info_lp.new_3cycle_iter;
-            if (branch_and_bound_and_cut(ordering)) break;
-            info.depth = stack.size();
-            PACE_DEBUG_PRINTF_INFO(info, info_lp);
+        // driver
+        lp_solver_ptr->initial_solve();
+        while (!branch_and_bound_and_cut(ordering)) {
             ++info.n_iterations;
-        }
+        };
 
         PACE_DEBUG_PRINTF("end   branch and cut\n");
         return upper_bound;

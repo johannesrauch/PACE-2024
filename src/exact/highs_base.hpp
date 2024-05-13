@@ -248,6 +248,14 @@ class highs_base : public instance_view {
         const HighsModelStatus &model_status = solver.getModelStatus();
         return model_status != HighsModelStatus::kInfeasible;
     }
+
+    /**
+     * @brief returns true iff solutions is infeasible
+     */
+    bool is_infeasible() {
+        const HighsModelStatus &model_status = solver.getModelStatus();
+        return model_status == HighsModelStatus::kInfeasible;
+    }
 };
 
 };  // namespace pace

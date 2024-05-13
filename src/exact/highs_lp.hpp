@@ -36,6 +36,7 @@ struct highs_lp_params {
     const uint8_t max_new_rows_doubling{3};                       ///< maximum number of times max_new_rows is doubled
     const uint16_t max_initial_rows{PACE_CONST_N_MAX_INIT_ROWS};  ///< maximum number of initial rows
     const uint8_t max_delete_rows_3cycle_iterations{64};  ///< maximum number of 3-cycle iterations with row deletion
+    const int32_t max_resolve_iters{10000};
 
     const uint8_t n_buckets{PACE_CONST_N_BUCKETS};
 
@@ -152,14 +153,40 @@ class highs_lp : public highs_base {
     }
 
     /**
-     * @brief for reliability branching; no bookkeeping
+     * @brief solves the current version of the lp relaxation
+     * with an upper limit of the number of simplex iterations
      *
      * @param max_simplex_iter max simplex iterations
      */
-    void run(const int32_t max_simplex_iter) {
+    void run(const int32_t max_simplex_iter, const bool bookkeeping = false) {
         set_simplex_iteration_limit(max_simplex_iter);
         solver.run();
         set_simplex_iteration_limit(std::numeric_limits<int32_t>::max());
+        if (bookkeeping) update_simplex_info();
+    }
+
+    void initial_solve() {
+        PACE_DEBUG_PRINTF_LPINFO_LINE();
+
+        // few 3-cycle iterations, solved to optimality, to sieve for "important" 3-cycle ieqs
+        bool cut_generated{true};
+        while (cut_generated && info.n_iterations_3cycles <= 8) {
+            delete_positive_slack_rows();
+            run();
+            PACE_DEBUG_PRINTF_LPINFO(info);
+            if (get_rounded_objective_value() >= upper_bound) return;
+            cut_generated = cut();
+        }
+    }
+
+    void resolve(bool cut_generated = true) {
+        PACE_DEBUG_PRINTF_LPINFO_LINE();
+        while (cut_generated) {
+            run(params.max_resolve_iters, true);
+            PACE_DEBUG_PRINTF_LPINFO(info);
+            if (get_rounded_objective_value() >= upper_bound) return;
+            cut_generated = cut();
+        }
     }
 
     //
