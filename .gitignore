@@ -48,3 +48,4 @@ highs/*
 build/
 test/big_test_set
 sub.tar.gz
+test/param_set
