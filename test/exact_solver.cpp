@@ -21,10 +21,8 @@ void test_exact_solver(pace::input& input) {
 
     pace::exact_solver solver(input);
     std::vector<vertex_t> ordering;
-    std::clock_t start = std::clock();
+    const std::chrono::time_point<std::chrono::system_clock> t0 = std::chrono::system_clock::now();
     crossing_number_t test = solver(ordering);
-    std::clock_t end = std::clock();
-    const double t = pace::test::time_in_ms(start, end);
 
     PACE_DEBUG_PRINTF("TEST: %u\n", test);
     std::string warning;
@@ -39,14 +37,14 @@ void test_exact_solver(pace::input& input) {
         warning = e.what();
     }
 
-    fmt::printf("|%11.1f|%11s%11s\n", t, warning, test_ok ? "true" : "false");
+    fmt::printf("|%11.1f|%11s%11s\n", pace::elapsed_walltime_in_s(t0), warning, test_ok ? "true" : "false");
 }
 
 void test_exact_solver_with(const fs::path dirpath) {
     fmt::printf("%s\n\n", dirpath);
     fmt::printf("%11s%11s%11s%11s|%11s|%11s%11s\n",    //
                 "instance", "n fixed", "n free", "m",  //
-                "time in ms", "warning", "test ok");
+                "time in s", "warning", "test ok");
     pace::test::print_line(80);
     std::set<fs::path> testcases;
     for (const auto& file : fs::directory_iterator(dirpath)) {

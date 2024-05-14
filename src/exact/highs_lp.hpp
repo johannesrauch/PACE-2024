@@ -9,38 +9,19 @@
 #include "utils/index_utils.hpp"
 #include "utils/randomness_utils.hpp"
 
-#ifndef PACE_CONST_N_MAX_NEW_ROWS
-#define PACE_CONST_N_MAX_NEW_ROWS 128u
-#endif
-
-#ifndef PACE_CONST_N_MAX_INIT_ROWS
-#define PACE_CONST_N_MAX_INIT_ROWS 16384u
-#endif
-
-#ifndef PACE_CONST_N_BUCKETS
-#define PACE_CONST_N_BUCKETS 8u
-#endif
-
-#ifndef PACE_CONST_TOL_FEASIBILITY
-#define PACE_CONST_TOL_FEASIBILITY 1e-7
-#endif
-
-#ifndef PACE_CONST_TOL_INTEGER
-#define PACE_CONST_TOL_INTEGER 1e-6
-#endif
-
 namespace pace {
 
 struct highs_lp_params {
-    uint16_t max_new_rows{PACE_CONST_N_MAX_NEW_ROWS};             ///< maximum number of new rows per check_3cycles call
-    const uint8_t max_new_rows_doubling{3};                       ///< maximum number of times max_new_rows is doubled
-    const uint16_t max_initial_rows{PACE_CONST_N_MAX_INIT_ROWS};  ///< maximum number of initial rows
+    std::size_t max_new_rows{256};                        ///< maximum number of new rows per check_3cycles call
+    const uint8_t max_new_rows_doubling{3};               ///< maximum number of times max_new_rows is doubled
+    const uint16_t max_initial_rows{16384};               ///< maximum number of initial rows
+    const uint8_t max_delete_rows_3cycle_iterations{64};  ///< maximum number of 3-cycle iterations with row deletion
     const int32_t max_resolve_iters{10000};
 
-    const uint8_t n_buckets{PACE_CONST_N_BUCKETS};
+    const uint8_t n_buckets{8};
 
-    const double tol_feasibility{PACE_CONST_TOL_FEASIBILITY};
-    const double tol_integer{PACE_CONST_TOL_INTEGER};
+    const double tol_feasibility{1e-7};
+    const double tol_integer{1e-6};
 };
 
 /**
@@ -74,7 +55,7 @@ class highs_lp : public highs_base {
     /**
      * @brief buckets for bucket sorting violated 3-cycle inequalities
      */
-    std::vector<std::vector<triple>> buckets{PACE_CONST_N_BUCKETS};
+    std::vector<std::vector<triple>> buckets{params.n_buckets};
 
     //
     // for row management, todo: unify bucket_entry and triple
@@ -99,6 +80,8 @@ class highs_lp : public highs_base {
    public:
     highs_lp(instance &instance_, highs_lp_params params = highs_lp_params())
         : highs_base(instance_), info{u_old, v_old, w_old}, params(params) {
+        this->params.max_new_rows = std::max(static_cast<std::size_t>(0.2 * std::sqrt(n_free) * n_free), params.max_new_rows);
+
         rows_to_delete.reserve(params.max_new_rows);
         lower_bounds.reserve(params.max_new_rows);
         upper_bounds.reserve(params.max_new_rows);
@@ -109,6 +92,7 @@ class highs_lp : public highs_base {
         info.n_cols = get_n_cols();
         PACE_DEBUG_PRINTF("start add_initial_rows\n");
         add_initial_rows_from_ordering();
+        if (get_n_rows() == 0) this->params.max_new_rows *= 2;
         PACE_DEBUG_PRINTF("end   add_initial_rows\n");
     }
 
@@ -205,7 +189,7 @@ class highs_lp : public highs_base {
      */
     void delete_positive_slack_rows() {
         if (!info.was_warmstart) return;
-        if ((info.n_iter_simplex_coldstart >> 2) >= info.n_iterations_simplex) return;
+        if ((info.n_iter_simplex_coldstart / 2) >= info.n_iterations_simplex) return;
 
         // gather rows to delete
         rows_to_delete.clear();
@@ -450,7 +434,8 @@ class highs_lp : public highs_base {
             }
         }
 
-        const double p = static_cast<double>(params.max_initial_rows) / candidates.size();
+        const double p =
+            static_cast<double>(params.max_initial_rows) - static_cast<double>(get_n_rows()) / candidates.size();
         for (const auto &[u, v, w] : candidates) {
             if (coinflip(p)) {
                 add_3cycle_row_to_aux_vectors(u, v, w);

@@ -13,13 +13,17 @@ class exact_solver {
     exact_solver(input &in) : in(in) { in.try_split(); }
 
     crossing_number_t operator()(std::vector<vertex_t> &ordering) {
+        PACE_DEBUG_PRINTF("\n\nstart exact_solver, n_subgraphs=%u\n", in.get_n_subgraphs());
+        crossing_number_t n_cr;
         if (in.get_n_subgraphs() >= 2) {
-            return solve_if_split(ordering);
+            n_cr = solve_if_split(ordering);
         } else {
             instance instance_(in.get_graph());
             branch_and_cut solver(instance_);
-            return solver(ordering);
+            n_cr = solver(ordering);
         }
+        PACE_DEBUG_PRINTF("end   exact_solver");
+        return n_cr;
     }
 
    private:

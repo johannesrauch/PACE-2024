@@ -1,24 +1,16 @@
 #ifndef PACE_EXACT_RELIABILITY_BRANCHING_HPP
 #define PACE_EXACT_RELIABILITY_BRANCHING_HPP
 
-#ifndef PACE_CONST_RELIBRANCH_LOOKAHEAD
-#define PACE_CONST_RELIBRANCH_LOOKAHEAD 8
-#endif
-
-#ifndef PACE_CONST_RELIPARAM
-#define PACE_CONST_RELIPARAM 8
-#endif
-
 #include "exact/highs_lp.hpp"
 
 namespace pace {
 
 struct reliability_branching_params {
-    const int32_t min_simplex_it{4096};
-    const int32_t max_simplex_it{16384};
+    const int32_t min_simplex_it{5000};
+    const int32_t max_simplex_it{10000};
     const double max_simplex_it_factor{2};
-    const uint8_t max_lookaheads{PACE_CONST_RELIBRANCH_LOOKAHEAD};
-    const uint8_t limit_reliable{PACE_CONST_RELIPARAM};
+    const uint8_t max_lookaheads{8};
+    const uint8_t limit_reliable{8};
 };
 
 class reliability_branching {
