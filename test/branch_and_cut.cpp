@@ -43,7 +43,7 @@ void test_branch_and_cut(pace::input& input) {
 
     const pace::branch_and_cut_info& info = solver.get_info();
     fmt::printf("|%11.1f%11u%11u%11u|%11u%11u%11u|%11s%11s\n",                                         //
-                pace::elapsed_walltime_in_s(t0), info.n_rows, info.n_iterations, info.n_branch_nodes,  //
+                pace::elapsed_walltime_in_s(t0), info.n_rows, info.n_iters, info.n_branch_nodes,  //
                 info.lower_bound, info.n_crossings_h, info.upper_bound,                                //
                 warning, test_ok ? "true" : "false");
 }

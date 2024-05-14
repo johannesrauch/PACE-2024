@@ -148,7 +148,7 @@ class highs_lp : public highs_base {
 
         // few 3-cycle iterations, solved to optimality, to sieve for "important" 3-cycle ieqs
         bool cut_generated{true};
-        while (cut_generated && info.n_iterations_3cycles < 1) {
+        while (cut_generated && info.n_3cycle_iters < 1) {
             delete_positive_slack_rows();
             run(params.max_initial_solve_simplex_iters);
 
@@ -195,7 +195,7 @@ class highs_lp : public highs_base {
      */
     void delete_positive_slack_rows() {
         if (!info.was_warmstart) return;
-        if ((info.n_iter_simplex_coldstart / 2) >= info.n_iterations_simplex) return;
+        if ((info.n_simplex_coldstart_iters / 2) >= info.n_simplex_iters) return;
 
         // gather rows to delete
         rows_to_delete.clear();
@@ -673,21 +673,21 @@ class highs_lp : public highs_base {
     //
    private:
     inline void update_3cycle_iteration_info() {
-        if (info.n_iterations_3cycles < params.max_initial_solve_3cycle_iters) {
+        if (info.n_3cycle_iters < params.max_initial_solve_3cycle_iters) {
             params.max_new_rows *= 2;
         }
-        ++info.n_iterations_3cycles;
+        ++info.n_3cycle_iters;
         info.new_3cycle_iter = true;
     }
 
     inline void update_simplex_info() {
-        info.n_iterations_simplex = solver.getSimplexIterationCount();
-        if (info.n_iter_simplex_coldstart == 0 || info.n_deleted_rows > 0) {
-            info.n_iter_simplex_coldstart = info.n_iterations_simplex;
+        info.n_simplex_iters = solver.getSimplexIterationCount();
+        if (info.n_simplex_coldstart_iters == 0 || info.n_deleted_rows > 0) {
+            info.n_simplex_coldstart_iters = info.n_simplex_iters;
         }
         info.was_warmstart = info.n_deleted_rows == 0;
-        info.n_iterations_simplex_avg =
-            (info.n_iterations_simplex_avg * info.n_runs + info.n_iterations_simplex) / (info.n_runs + 1);
+        info.n_avg_simplex_iters =
+            (info.n_avg_simplex_iters * info.n_runs + info.n_simplex_iters) / (info.n_runs + 1);
 
         info.n_rows = get_n_rows();
         ++info.n_runs;

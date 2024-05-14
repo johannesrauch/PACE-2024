@@ -134,7 +134,7 @@ class reliability_branching {
         lp.copy_column_values(col_value);
         obj_val = lp.get_objective_value();
         const int32_t max_simplex_it_suggested =
-            lround(lp.get_info().n_iterations_simplex_avg * params.max_simplex_it_factor);
+            lround(lp.get_info().n_avg_simplex_iters * params.max_simplex_it_factor);
         limit_simplex_it = std::min(std::max(params.min_simplex_it, max_simplex_it_suggested), params.max_simplex_it);
 
         // collect nonintegral columns in candidates

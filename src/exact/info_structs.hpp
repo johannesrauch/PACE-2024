@@ -29,10 +29,10 @@ struct highs_lp_info {
     std::size_t n_delete_rows_spared{0};
 
     std::size_t n_solve_iters{0};
-    std::size_t n_iterations_simplex{0};
-    std::size_t n_iter_simplex_coldstart{0};
-    double n_iterations_simplex_avg{0.};
-    std::size_t n_iterations_3cycles{0};
+    std::size_t n_simplex_iters{0};
+    std::size_t n_simplex_coldstart_iters{0};
+    double n_avg_simplex_iters{0.};
+    std::size_t n_3cycle_iters{0};
     std::size_t n_init_rows_candidates{0};
     bool new_3cycle_iter{false};
 
@@ -48,7 +48,7 @@ struct branch_and_cut_info {
     const crossing_number_t &lower_bound;
     const crossing_number_t &upper_bound;
 
-    std::size_t n_iterations{0};
+    std::size_t n_iters{0};
     std::size_t n_branch_nodes{0};
     std::size_t n_rows{0};
     std::size_t n_iter_3cycle_current_node{0};

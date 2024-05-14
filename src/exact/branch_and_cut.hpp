@@ -256,7 +256,7 @@ class branch_and_cut : public instance_view {
         // driver
         lp_solver_ptr->initial_partial_solve();
         while (!branch_and_bound_and_cut(ordering)) {
-            ++info.n_iterations;
+            ++info.n_iters;
         };
 
         PACE_DEBUG_PRINTF("end   branch and cut\n");
