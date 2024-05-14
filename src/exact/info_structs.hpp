@@ -28,7 +28,7 @@ struct highs_lp_info {
     std::size_t n_deleted_rows{0};
     std::size_t n_delete_rows_spared{0};
 
-    std::size_t n_iters_solve{0};
+    std::size_t n_solve_iters{0};
     std::size_t n_iterations_simplex{0};
     std::size_t n_iter_simplex_coldstart{0};
     double n_iterations_simplex_avg{0.};

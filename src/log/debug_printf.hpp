@@ -47,7 +47,7 @@ inline void printf_lpinfo_line() {
 inline void printf_lpinfo(const highs_lp_info& info) {
     fmt::printf("%11.1f|%11u%11.1f%11u%11u%11.1f|%11u%11u%11u%11u|%11u%11u%11u%11u\n",  //
                 elapsed_walltime_in_s(),                                                //
-                info.n_iters_solve, info.objective_value, info.n_rows, info.n_iterations_simplex,
+                info.n_solve_iters, info.objective_value, info.n_rows, info.n_iterations_simplex,
                 info.n_iterations_simplex_avg,  //
                 info.n_bucket_entries, info.n_added_rows, info.n_deleted_rows,
                 info.n_delete_rows_spared,  //

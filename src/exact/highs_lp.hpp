@@ -12,11 +12,13 @@
 namespace pace {
 
 struct highs_lp_params {
-    std::size_t max_new_rows{256};                        ///< maximum number of new rows per check_3cycles call
-    const uint8_t max_new_rows_doubling{3};               ///< maximum number of times max_new_rows is doubled
-    const uint16_t max_initial_rows{16384};               ///< maximum number of initial rows
-    const uint8_t max_delete_rows_3cycle_iterations{64};  ///< maximum number of 3-cycle iterations with row deletion
-    const int32_t max_resolve_iters{10000};
+    std::size_t max_new_rows{256};           ///< maximum number of new rows per check_3cycles call
+    const uint16_t max_initial_rows{16384};  ///< maximum number of initial rows
+
+    const uint8_t max_delete_rows_3cycle_iters{64};  ///< maximum number of 3-cycle iterations with row deletion
+
+    const uint8_t max_initial_solve_3cycle_iters{3};  ///< maximum number of times max_new_rows is doubled
+    const int32_t max_initial_solve_simplex_iters{5000};
 
     const uint8_t n_buckets{8};
 
@@ -80,7 +82,8 @@ class highs_lp : public highs_base {
    public:
     highs_lp(instance &instance_, highs_lp_params params = highs_lp_params())
         : highs_base(instance_), info{u_old, v_old, w_old}, params(params) {
-        this->params.max_new_rows = std::max(static_cast<std::size_t>(0.2 * std::sqrt(n_free) * n_free), params.max_new_rows);
+        this->params.max_new_rows =
+            std::max(static_cast<std::size_t>(0.2 * std::sqrt(n_free) * n_free), params.max_new_rows);
 
         rows_to_delete.reserve(params.max_new_rows);
         lower_bounds.reserve(params.max_new_rows);
@@ -129,55 +132,58 @@ class highs_lp : public highs_base {
 
     /**
      * @brief solves the current version of the lp relaxation
-     */
-    void run() {
-        solver.run();
-        update_simplex_info();
-    }
-
-    /**
-     * @brief solves the current version of the lp relaxation
      * with an upper limit of the number of simplex iterations
      *
      * @param max_simplex_iter max simplex iterations
      */
-    void run(const int32_t max_simplex_iter, const bool bookkeeping = false) {
+    void run(const int32_t max_simplex_iter = std::numeric_limits<int32_t>::max(), const bool bookkeeping = true) {
         set_simplex_iteration_limit(max_simplex_iter);
         solver.run();
-        set_simplex_iteration_limit(std::numeric_limits<int32_t>::max());
         if (bookkeeping) update_simplex_info();
     }
 
-    void initial_solve() {
-        info.n_iters_solve = 0;
+    void initial_partial_solve() {
+        info.n_solve_iters = 0;
         PACE_DEBUG_PRINTF_LPINFO_LINE();
 
         // few 3-cycle iterations, solved to optimality, to sieve for "important" 3-cycle ieqs
         bool cut_generated{true};
         while (cut_generated && info.n_iterations_3cycles < 1) {
             delete_positive_slack_rows();
-            run();
+            run(params.max_initial_solve_simplex_iters);
+
             PACE_DEBUG_PRINTF_LPINFO(info);
-            ++info.n_iters_solve;
+            ++info.n_solve_iters;
             reset_row_info();
+            
             if (get_rounded_objective_value() >= upper_bound) return;
             cut_generated = cut();
         }
     }
 
     void resolve() {
-        info.n_iters_solve = 0;
+        info.n_solve_iters = 0;
         PACE_DEBUG_PRINTF_LPINFO_LINE();
 
         bool cut_generated = true;
         while (cut_generated) {
-            run(params.max_resolve_iters, true);
+            run();
             PACE_DEBUG_PRINTF_LPINFO(info);
-            ++info.n_iters_solve;
+            ++info.n_solve_iters;
             reset_row_info();
             if (get_rounded_objective_value() >= upper_bound) return;
             cut_generated = cut();
         }
+
+        PACE_DEBUG_PRINTF_LPINFO_LINE();
+        do {
+            run();
+            PACE_DEBUG_PRINTF_LPINFO(info);
+            ++info.n_solve_iters;
+            reset_row_info();
+            if (get_rounded_objective_value() >= upper_bound) return;
+            cut_generated = cut();
+        } while (cut_generated);
     }
 
     //
@@ -598,9 +604,10 @@ class highs_lp : public highs_base {
      * @param val in [0,1)
      * @return std::vector<triple>& the corresponding bucket
      */
-    inline std::vector<triple> &get_bucket(const double val) {
+    inline std::vector<triple> &get_bucket(double val) {
         assert(0 <= val);
-        assert(val < 1);
+        // assert(val < 1);
+        val = std::min(val, 0.99);
         const std::size_t i = static_cast<std::size_t>(val * params.n_buckets);
         assert(i < params.n_buckets);
         return buckets[i];
@@ -666,7 +673,7 @@ class highs_lp : public highs_base {
     //
    private:
     inline void update_3cycle_iteration_info() {
-        if (info.n_iterations_3cycles < params.max_new_rows_doubling) {
+        if (info.n_iterations_3cycles < params.max_initial_solve_3cycle_iters) {
             params.max_new_rows *= 2;
         }
         ++info.n_iterations_3cycles;

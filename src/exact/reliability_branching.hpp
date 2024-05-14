@@ -104,7 +104,7 @@ class reliability_branching {
         const double x_j = col_value[j];
 
         lp.fix_column(j, 1.);
-        lp.run(limit_simplex_it);
+        lp.run(limit_simplex_it, false);
         assert(lp.is_feasible());
         bool both_feasible = lp.is_feasible();
         double obj_val_new = lp.get_objective_value();
@@ -114,7 +114,7 @@ class reliability_branching {
         }
 
         lp.fix_column(j, 0.);
-        lp.run(limit_simplex_it);
+        lp.run(limit_simplex_it, false);
         both_feasible &= lp.is_feasible();
         obj_val_new = lp.get_objective_value();
         const double delta_down = obj_val_new - obj_val;

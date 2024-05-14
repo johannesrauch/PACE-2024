@@ -254,7 +254,7 @@ class branch_and_cut : public instance_view {
                           "n cand", info_lp.n_init_rows_candidates);
 
         // driver
-        lp_solver_ptr->initial_solve();
+        lp_solver_ptr->initial_partial_solve();
         while (!branch_and_bound_and_cut(ordering)) {
             ++info.n_iterations;
         };
