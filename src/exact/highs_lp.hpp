@@ -79,7 +79,7 @@ class highs_lp : public highs_base {
    public:
     highs_lp(instance &instance_, highs_lp_params params = highs_lp_params())
         : highs_base(instance_), info{u_old, v_old, w_old}, params(params) {
-        this->params.max_new_rows = std::max(n_free, params.max_new_rows);
+        this->params.max_new_rows = std::max(static_cast<std::size_t>(0.2 * std::sqrt(n_free) * n_free), params.max_new_rows);
 
         rows_to_delete.reserve(params.max_new_rows);
         lower_bounds.reserve(params.max_new_rows);
@@ -91,7 +91,7 @@ class highs_lp : public highs_base {
         info.n_cols = get_n_cols();
         PACE_DEBUG_PRINTF("start add_initial_rows\n");
         add_initial_rows_from_ordering();
-        if (get_n_rows() == 0) add_initial_rows();
+        if (get_n_rows() == 0) this->params.max_new_rows *= 2;
         PACE_DEBUG_PRINTF("end   add_initial_rows\n");
     }
 
@@ -155,7 +155,7 @@ class highs_lp : public highs_base {
     void delete_positive_slack_rows() {
         if (info.n_iterations_3cycles > params.max_delete_rows_3cycle_iterations) return;
         if (!info.was_warmstart) return;
-        if ((info.n_iter_simplex_coldstart >> 2) >= info.n_iterations_simplex) return;
+        if ((info.n_iter_simplex_coldstart / 2) >= info.n_iterations_simplex) return;
 
         // gather rows to delete
         rows_to_delete.clear();
