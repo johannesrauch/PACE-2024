@@ -12,13 +12,11 @@
 namespace pace {
 
 struct highs_lp_params {
-    std::size_t max_new_rows{256};           ///< maximum number of new rows per check_3cycles call
-    const uint16_t max_initial_rows{16384};  ///< maximum number of initial rows
-
-    const uint8_t max_delete_rows_3cycle_iters{64};  ///< maximum number of 3-cycle iterations with row deletion
-
-    const uint8_t max_initial_solve_3cycle_iters{3};  ///< maximum number of times max_new_rows is doubled
-    const int32_t max_initial_solve_simplex_iters{5000};
+    std::size_t max_new_rows{256};                    ///< maximum number of new rows per check_3cycles call
+    const uint16_t max_initial_rows{16384};           ///< maximum number of initial rows
+    const uint8_t max_delete_rows_3cycle_iters{64};   ///< maximum number of 3-cycle iterations with row deletion
+    const uint8_t max_initial_solve_3cycle_iters{4};  ///< maximum number of times max_new_rows is doubled
+    const int32_t max_initial_solve_simplex_iters{20000};
 
     const uint8_t n_buckets{8};
 
@@ -95,7 +93,7 @@ class highs_lp : public highs_base {
         info.n_cols = get_n_cols();
         PACE_DEBUG_PRINTF("start add_initial_rows\n");
         add_initial_rows_from_ordering();
-        if (get_n_rows() == 0) this->params.max_new_rows *= 2;
+        if (get_n_rows() == 0) add_initial_rows();
         PACE_DEBUG_PRINTF("end   add_initial_rows\n");
     }
 
@@ -148,14 +146,14 @@ class highs_lp : public highs_base {
 
         // few 3-cycle iterations, solved to optimality, to sieve for "important" 3-cycle ieqs
         bool cut_generated{true};
-        while (cut_generated && info.n_iterations_3cycles < 1) {
+        while (cut_generated && info.n_iterations_3cycles < params.max_initial_solve_3cycle_iters) {
             delete_positive_slack_rows();
             run(params.max_initial_solve_simplex_iters);
 
             PACE_DEBUG_PRINTF_LPINFO(info);
             ++info.n_solve_iters;
             reset_row_info();
-            
+
             if (get_rounded_objective_value() >= upper_bound) return;
             cut_generated = cut();
         }
@@ -163,27 +161,19 @@ class highs_lp : public highs_base {
 
     void resolve() {
         info.n_solve_iters = 0;
+        const std::size_t max_new_rows = params.max_new_rows;
+        params.max_new_rows = std::numeric_limits<std::size_t>::max();
         PACE_DEBUG_PRINTF_LPINFO_LINE();
 
-        bool cut_generated = true;
-        while (cut_generated) {
-            run();
-            PACE_DEBUG_PRINTF_LPINFO(info);
-            ++info.n_solve_iters;
-            reset_row_info();
-            if (get_rounded_objective_value() >= upper_bound) return;
-            cut_generated = cut();
-        }
-
-        PACE_DEBUG_PRINTF_LPINFO_LINE();
         do {
             run();
             PACE_DEBUG_PRINTF_LPINFO(info);
             ++info.n_solve_iters;
             reset_row_info();
             if (get_rounded_objective_value() >= upper_bound) return;
-            cut_generated = cut();
-        } while (cut_generated);
+        } while (cut());
+
+        params.max_new_rows = max_new_rows;
     }
 
     //
@@ -403,14 +393,18 @@ class highs_lp : public highs_base {
             }
             set.erase(u);
             set.erase(v);
+            assert(u < v);
             for (const vertex_t &w : set) {
                 if (w < u) {
+                    assert(w < v);
                     if (get_n_vars_in_lp(w, u, v) >= 2 && add_3cycle_row_to_internal_rows(w, u, v))
                         add_3cycle_row_to_aux_vectors(w, u, v);
                 } else if (w < v) {
+                    assert(u < w);
                     if (get_n_vars_in_lp(u, w, v) >= 2 && add_3cycle_row_to_internal_rows(u, w, v))
                         add_3cycle_row_to_aux_vectors(u, w, v);
                 } else {
+                    assert(v < w);
                     if (get_n_vars_in_lp(u, v, w) >= 2 && add_3cycle_row_to_internal_rows(u, v, w))
                         add_3cycle_row_to_aux_vectors(u, v, w);
                 }
