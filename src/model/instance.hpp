@@ -147,11 +147,40 @@ class instance {
         update_ordering(another_ordering, number_of_crossings(graph, another_ordering));
     }
 
-    void update_lower_bound(const crossing_number_t lb) {
-        lower_bound = std::max(lower_bound, lb);
-    }
+    void update_lower_bound(const crossing_number_t lb) { lower_bound = std::max(lower_bound, lb); }
 
     // void update_upper_bound(crossing_number_t ub) { upper_bound = std::min(upper_bound, ub); }
+
+    void update_kernel(const std::vector<double> &lp_sol) {
+        if (!restriction_graph_ptr) create_kernel();
+
+        std::vector<vertex_t> positions;
+        inverse(ordering, positions);
+
+        const double tol = 1e-6;
+        for (const auto &[u, v] : unsettled_pairs) {
+            const std::size_t i = flat_index(n_free, n_free_2, u, v);
+            if (positions[u] < positions[v] && lp_sol[i] >= 1. - tol) {
+                fix_u_before_v(u, v);
+            } else if (positions[v] < positions[u] && lp_sol[i] <= tol) {
+                fix_v_before_u(u, v);
+            }
+        }
+
+#ifndef NDEBUG
+        std::vector<vertex_t> ordering;
+        assert(topological_sort(*restriction_graph_ptr, ordering));
+#endif
+
+        compute_transitive_hull();
+
+        // restriction graph is finished
+        restriction_graph_ptr->set_rollback_point();
+        assert(topological_sort(*restriction_graph_ptr, ordering));
+
+        // magic and unsettled_pairs needs some last work
+        create_unsettled_pairs();
+    }
 
     //
     // private helper methods
@@ -175,15 +204,15 @@ class instance {
         // let's foresee if we can fix u < v or v < u
         for (vertex_t u = 0u; u + 1u < n_free; ++u) {
             for (vertex_t v = u + 1u; v < n_free; ++v) {
-                pattern p = foresee(u, v);
-                if (p == u_before_v) {
-                    restriction_graph_ptr->add_arc(u, v);
-                    magic[flat_index(n_free, n_free_2, u, v)] = -2;
-                    objective_offset += (*cr_matrix_ptr)(u, v);
-                } else if (p == v_before_u) {
-                    restriction_graph_ptr->add_arc(v, u);
-                    magic[flat_index(n_free, n_free_2, u, v)] = -1;
-                    objective_offset += (*cr_matrix_ptr)(v, u);
+                switch (foresee(u, v)) {
+                    case u_before_v:
+                        fix_u_before_v(u, v);
+                        break;
+                    case v_before_u:
+                        fix_v_before_u(u, v);
+                        break;
+                    case indeterminate:
+                        break;
                 }
             }
         }
@@ -193,22 +222,20 @@ class instance {
         assert(topological_sort(*restriction_graph_ptr, ordering));
 #endif
 
-        // transitive hull
-        std::vector<std::pair<vertex_t, vertex_t>> new_arcs;
-        pace::transitive_hull(*restriction_graph_ptr, new_arcs);
-        for (const auto &[u, v] : new_arcs) {
-            restriction_graph_ptr->add_arc(u, v);
-            if (u < v) {
-                magic[flat_index(n_free, n_free_2, u, v)] = -2;
-            } else {
-                magic[flat_index(n_free, n_free_2, v, u)] = -1;
-            }
-            objective_offset += (*cr_matrix_ptr)(u, v);
-        }
+        compute_transitive_hull();
 
-        // restriction graph is done, magic and unsettled_pairs needs some last work
+        // restriction graph is finished
         restriction_graph_ptr->set_rollback_point();
         assert(topological_sort(*restriction_graph_ptr, ordering));
+
+        // magic and unsettled_pairs needs some last work
+        create_unsettled_pairs();
+        PACE_DEBUG_PRINTF("end   create_kernel\n");
+    }
+
+    void create_unsettled_pairs() {
+        assert(magic.size() == n_free_2);
+        unsettled_pairs.clear();
         std::size_t i = 0, j = 0;
         for (vertex_t u = 0u; u + 1u < n_free; ++u) {
             for (vertex_t v = u + 1u; v < n_free; ++v) {
@@ -222,7 +249,32 @@ class instance {
             }
         }
         assert(i == n_free_2);
-        PACE_DEBUG_PRINTF("end   create_kernel\n");
+    }
+
+    inline void fix_u_before_v(const vertex_t &u, const vertex_t &v) {
+        restriction_graph_ptr->add_arc(u, v);
+        magic[flat_index(n_free, n_free_2, u, v)] = -2;
+        objective_offset += (*cr_matrix_ptr)(u, v);
+    }
+
+    inline void fix_v_before_u(const vertex_t &u, const vertex_t &v) {
+        restriction_graph_ptr->add_arc(v, u);
+        magic[flat_index(n_free, n_free_2, u, v)] = -1;
+        objective_offset += (*cr_matrix_ptr)(v, u);
+    }
+
+    void compute_transitive_hull() {
+        std::vector<std::pair<vertex_t, vertex_t>> new_arcs;
+        pace::transitive_hull(*restriction_graph_ptr, new_arcs);
+        for (const auto &[u, v] : new_arcs) {
+            restriction_graph_ptr->add_arc(u, v);
+            if (u < v) {
+                magic[flat_index(n_free, n_free_2, u, v)] = -2;
+            } else {
+                magic[flat_index(n_free, n_free_2, v, u)] = -1;
+            }
+            objective_offset += (*cr_matrix_ptr)(u, v);
+        }
     }
 
     //
@@ -376,17 +428,13 @@ struct instance_view {
 
     const std::vector<vertex_t> &get_ordering() const { return instance_.get_ordering(); }
 
-    void update_ordering(const std::vector<vertex_t> &another_ordering) {
-        instance_.update_ordering(another_ordering);
-    }
+    void update_ordering(const std::vector<vertex_t> &another_ordering) { instance_.update_ordering(another_ordering); }
 
     void update_ordering(const std::vector<vertex_t> &another_ordering, const crossing_number_t n_crossings) {
         instance_.update_ordering(another_ordering, n_crossings);
     }
 
-    void update_lower_bound(const crossing_number_t lb) {
-        instance_.update_lower_bound(lb);
-    }
+    void update_lower_bound(const crossing_number_t lb) { instance_.update_lower_bound(lb); }
 
     // void update_upper_bound(crossing_number_t ub) { instance_.update_upper_bound(ub); }
 };
