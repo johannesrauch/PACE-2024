@@ -10,12 +10,8 @@ namespace pace {
 static const std::chrono::time_point<std::chrono::system_clock> t0{
     std::chrono::system_clock::now()};
 
-static double elapsed_walltime_in_s(
-    const std::chrono::time_point<std::chrono::system_clock> &t0 = t0) {
-    const std::chrono::time_point<std::chrono::system_clock> now =
-        std::chrono::system_clock::now();
-    return std::chrono::duration<double>(now - t0).count();
-}
+double elapsed_walltime_in_s(
+    const std::chrono::time_point<std::chrono::system_clock> &t0 = t0);
 
 struct highs_lp_info {
     const vertex_t &u_old;
