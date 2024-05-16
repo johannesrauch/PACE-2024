@@ -39,11 +39,11 @@ void branch_and_cut::update_costs() {
 
 bool branch_and_cut::backtrack() {
     info.n_iter_3cycle_current_node = 0;
-    ++info.n_search_nodes;
 
     while (!stack.empty()) {
         branch_node &node = stack.top();
         if (node.fix_opposite) {
+            ++info.n_search_nodes;
             lp_solver_ptr->fix_column(
                 node.j,
                 lp_solver_ptr->get_column_value(node.j) > 0.5 ? 0. : 1.);
@@ -97,11 +97,8 @@ bool branch_and_cut::branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
         return backtrack();
     }
 
-    const crossing_number_t ub_old = upper_bound;
-    if (heuristic.informed(*lp_solver_ptr, another_ordering,
-                           stack.size() == 0) < ub_old) {
-        std::swap(ordering, another_ordering);
-    }
+    heuristic.informed(  //
+        *lp_solver_ptr, ordering, stack.size() == 0 && params.do_rins);
     info.relax_h_confidence = heuristic.get_confidence();
 
     return branch();
@@ -141,6 +138,7 @@ uint32_t branch_and_cut::operator()(std::vector<vertex_t> &ordering) {
     };
 
     PACE_DEBUG_PRINTF("end   branch and cut\n");
+    ordering = get_ordering();
     return upper_bound;
 }
 

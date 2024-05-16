@@ -18,6 +18,7 @@ namespace pace {
 
 struct branch_and_cut_params {
     std::size_t max_nodes{std::numeric_limits<std::size_t>::max()};
+    bool do_rins{true};
 };
 
 class branch_and_cut : public instance_view {
@@ -47,7 +48,6 @@ class branch_and_cut : public instance_view {
     branch_and_cut_params params;
 
     heuristics heuristic;
-    std::vector<vertex_t> another_ordering;
 
    public:
     /**
@@ -58,8 +58,7 @@ class branch_and_cut : public instance_view {
         : instance_view(instance_),
           info{lower_bound(), upper_bound},
           params(params),
-          heuristic(instance_),
-          another_ordering(n_free) {
+          heuristic(instance_) {
         assert(n_free > 0);
     }
 
