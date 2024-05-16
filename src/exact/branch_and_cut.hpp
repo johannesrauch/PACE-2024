@@ -46,7 +46,6 @@ class branch_and_cut : public instance_view {
     branch_and_cut_info info;
     branch_and_cut_params params;
 
-    shift_heuristic shift_h;
     heuristics heuristic;
     std::vector<vertex_t> another_ordering;
 
@@ -59,7 +58,6 @@ class branch_and_cut : public instance_view {
         : instance_view(instance_),
           info{lower_bound(), upper_bound},
           params(params),
-          shift_h(instance_),
           heuristic(instance_),
           another_ordering(n_free) {
         assert(n_free > 0);

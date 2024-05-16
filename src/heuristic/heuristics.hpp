@@ -14,6 +14,7 @@ class heuristics : public instance_view {
     probmedian_heuristic probmedian_h;
     round_heuristic round_h;
     sort_heuristic sort_h;
+    shift_heuristic shift_h;
 
    public:
     heuristics(instance &instance_)
@@ -22,32 +23,18 @@ class heuristics : public instance_view {
           barycenter_h(instance_),
           probmedian_h(instance_),
           round_h(instance_),
-          sort_h(instance_) {}
+          sort_h(instance_),
+          shift_h(instance_) {}
 
-    crossing_number_t uninformed(std::vector<vertex_t> &ordering) {
-        PACE_DEBUG_PRINTF("start uninformed heuristics\n");
-        crossing_number_t n_cr = barycenter_h(ordering);
-        if (n_cr <= lower_bound()) return n_cr;
-        const crossing_number_t n_cr_p = probmedian_h(another_ordering);
-        if (n_cr_p < n_cr) {
-            n_cr = n_cr_p;
-            std::swap(another_ordering, ordering);
-        }
-        PACE_DEBUG_PRINTF("end   uninformed heuristics\n");
-        return n_cr;
-    }
+    crossing_number_t uninformed(std::vector<vertex_t> &ordering);
 
-    crossing_number_t informed(highs_lp &lp, std::vector<vertex_t> &ordering) {
-        PACE_DEBUG_PRINTF("start informed heuristics\n");
-        crossing_number_t n_cr = sort_h(lp, ordering);
-        if (n_cr <= lower_bound()) return n_cr;
-        const crossing_number_t n_cr_r = round_h(lp, another_ordering);
-        if (n_cr_r < n_cr) {
-            n_cr = n_cr_r;
-            std::swap(another_ordering, ordering);
-        }
-        PACE_DEBUG_PRINTF("end   informed heuristics, ub=%s\n", upper_bound);
-        return n_cr;
+    crossing_number_t informed(highs_lp &lp, std::vector<vertex_t> &ordering);
+
+    crossing_number_t shift(std::vector<vertex_t> &ordering,
+                            const crossing_number_t n_cr);
+
+    crossing_number_t shift(std::vector<vertex_t> &ordering) {
+        return shift(ordering, number_of_crossings(graph, ordering));
     }
 
     double get_confidence() const { return round_h.get_confidence(); }

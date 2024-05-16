@@ -22,7 +22,7 @@ void branch_and_cut::build_ordering(std::vector<vertex_t> &ordering) {
     assert(n_crossings == number_of_crossings(graph, ordering));
 
     // try to improve new solution
-    n_crossings = shift_h(ordering, n_crossings);
+    n_crossings = heuristic.shift(ordering, n_crossings);
     update_ordering(ordering, n_crossings);
 }
 
