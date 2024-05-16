@@ -32,6 +32,8 @@ class instance {
     const std::size_t n_fixed;
 
    private:
+    // todo: move cr_matrix to input for subinstance
+
     /**
      * @brief the crossing number matrix (on demand)
      */
