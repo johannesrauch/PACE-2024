@@ -1,10 +1,12 @@
 #include "io/input.hpp"
 
+namespace pace {
+
 //
 // public methods
 //
 
-void pace::input::lift_ordering(const std::size_t i,
+void input::lift_ordering(const std::size_t i,
                                 const std::vector<vertex_t> &subordering,
                                 std::vector<vertex_t> &ordering) {
     assert(tried_split);
@@ -20,7 +22,7 @@ void pace::input::lift_ordering(const std::size_t i,
     }
 }
 
-bool pace::input::try_split() {
+bool input::try_split() {
     if (tried_split) return get_n_subgraphs() >= 2;
     tried_split = true;
     if (graph.get_m() == 0 || graph.get_n_free() == 0) {
@@ -71,7 +73,7 @@ bool pace::input::try_split() {
     return true;
 }
 
-bool pace::input::compare(const vertex_t &u, const vertex_t &v) const {
+bool input::compare(const vertex_t &u, const vertex_t &v) const {
     const bool deg_u_0 = graph.get_degree(u) == 0;
     const bool deg_v_0 = graph.get_degree(v) == 0;
     if (deg_u_0 && deg_v_0) return u < v;
@@ -90,7 +92,7 @@ bool pace::input::compare(const vertex_t &u, const vertex_t &v) const {
 // private methods
 //
 
-inline void pace::input::add_subgraph(  //
+inline void input::add_subgraph(  //
     const std::size_t begin, const std::size_t end) {
     assert(tried_split);
     assert(begin < end);
@@ -139,7 +141,7 @@ inline void pace::input::add_subgraph(  //
     assert(map_fixed.size() == subgraph_ptr->get_n_fixed());
 }
 
-inline void pace::input::sort_free_layer() {
+inline void input::sort_free_layer() {
     const std::size_t n_free = graph.get_n_free();
     free_layer.resize(n_free);
     for (vertex_t v = 0; v < n_free; ++v) free_layer[v] = v;
@@ -148,3 +150,5 @@ inline void pace::input::sort_free_layer() {
                   return this->compare(u, v);
               });
 }
+
+};  // namespace pace
