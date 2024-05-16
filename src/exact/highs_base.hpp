@@ -92,7 +92,6 @@ class highs_base : public instance_view {
      */
     inline void add_3cycle_row_to_aux_vectors(const vertex_t &u, const vertex_t &v, const vertex_t &w) {
         // at least two must be in the lp as variables since we compute transitive hull in oracle
-        assert(get_n_vars_in_lp(u, v, w) >= 2);
         assert(u < v);
         assert(v < w);
 

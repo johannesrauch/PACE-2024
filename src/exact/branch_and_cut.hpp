@@ -205,19 +205,11 @@ class branch_and_cut : public instance_view {
             return backtrack();
         }
 
-        if (lp_solver_ptr->cut()) {
-            return false;
-        }
-
         if (lp_solver_ptr->is_integral()) {
-            if (!lp_solver_ptr->is_optimal()) {
-                return false;
-            } else {
-                build_ordering(ordering);
-                lp_solver_ptr->fix_columns();
-                update_costs();
-                return backtrack();
-            }
+            build_ordering(ordering);
+            lp_solver_ptr->fix_columns();
+            update_costs();
+            return backtrack();
         }
 
         const crossing_number_t ub_old = upper_bound;
