@@ -9,8 +9,8 @@ struct reliability_branching_params {
     const int32_t min_simplex_it{5000};
     const int32_t max_simplex_it{10000};
     const double max_simplex_it_factor{2};
-    const uint8_t max_lookaheads{8};
-    const uint8_t limit_reliable{8};
+    const uint8_t max_lookaheads{4};
+    const uint8_t limit_reliable{4};
 };
 
 class reliability_branching {
