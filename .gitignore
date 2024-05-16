@@ -47,5 +47,5 @@ highs/*
 *.log
 build/
 test/big_test_set
-sub.tar.gz
+weberknecht.tgz
 test/param_set
