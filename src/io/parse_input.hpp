@@ -60,8 +60,7 @@ void parse_input(std::basic_istream<CharT, Traits> &input, general_bipartite_gra
                 std::getline(input, line);
                 std::istringstream stream(line);
                 stream >> problem_descriptor >> n_fixed >> n_free >> m;
-                if (stream) {
-                    stream >> cw;
+                if (stream >> cw) {
                     param_track = true;
                 }
                 break;
