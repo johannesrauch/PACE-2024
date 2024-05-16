@@ -7,20 +7,21 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 #set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 if (PACE_VERBOSE)
     add_compile_definitions(PACE_DEBUG_PRINT)
 endif()
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
+file(GLOB PACE_SOURCES ${CMAKE_SOURCE_DIR}/src/*/*.cpp)
 
 #add_subdirectory(highs)
 #set(HIGHS_DIR highs/lib/cmake/highs)
 find_package(HIGHS REQUIRED)
 find_package(Threads REQUIRED)
 
-add_executable(weberknecht src/weberknecht.cpp)
-target_link_libraries(weberknecht highs::highs m)
+add_executable(weberknecht ${CMAKE_SOURCE_DIR}/src/weberknecht.cpp ${PACE_SOURCES})
+target_link_libraries(weberknecht highs::highs)
 
 if(PACE_DEBUG_PRINT)
     add_compile_definitions(PACE_DEBUG_PRINT)
