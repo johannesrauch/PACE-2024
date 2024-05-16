@@ -20,10 +20,10 @@ highs_lp::highs_lp(instance &instance_, highs_lp_params params)
     values.reserve(3 * params.max_new_rows);
 
     info.n_cols = get_n_cols();
-    PACE_DEBUG_PRINTF("start add_initial_rows\n");
-    add_initial_rows_from_ordering();
-    if (get_n_rows() == 0) add_initial_rows_from_interesting();
-    PACE_DEBUG_PRINTF("end   add_initial_rows\n");
+    // PACE_DEBUG_PRINTF("start add_initial_rows\n");
+    // add_initial_rows_from_ordering();
+    // if (get_n_rows() == 0) add_initial_rows_from_interesting();
+    // PACE_DEBUG_PRINTF("end   add_initial_rows\n");
 }
 
 //
