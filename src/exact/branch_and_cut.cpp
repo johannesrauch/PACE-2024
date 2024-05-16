@@ -97,9 +97,11 @@ bool branch_and_cut::branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
         return backtrack();
     }
 
+    const crossing_number_t ub_old = upper_bound;
     heuristic.informed(  //
         *lp_solver_ptr, ordering, stack.size() == 0 && params.do_rins);
     info.relax_h_confidence = heuristic.get_confidence();
+    if (upper_bound < ub_old) lp_solver_ptr->fix_columns();
 
     return branch();
 }
