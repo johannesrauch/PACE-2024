@@ -17,7 +17,7 @@
 namespace pace {
 
 struct branch_and_cut_params {
-    std::size_t max_iter_3cycle_until_branch{1000};
+    std::size_t max_nodes{std::numeric_limits<std::size_t>::max()};    
 };
 
 class branch_and_cut : public instance_view {
