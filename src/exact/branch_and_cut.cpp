@@ -66,7 +66,7 @@ void branch_and_cut::branch() {
     const double x_j_old = reli_branch_ptr->get_column_value(j);
 
     // branch
-    ++info.n_branch_nodes;
+    ++info.n_search_nodes;
     lp_solver_ptr->fix_column(
         j, reli_branch_ptr->get_up_cost(j) > reli_branch_ptr->get_down_cost(j));
     PACE_DEBUG_PRINTF("(branch)\n");

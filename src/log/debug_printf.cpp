@@ -28,7 +28,7 @@ void printf_info(const branch_and_cut_info& info_br,
         info_lp.objective_value,                      //
         info_lp.t_simplex,                            //
         info_lp.n_rows,                               //
-        info_br.n_branch_nodes,                       //
+        info_br.n_search_nodes,                       //
         info_br.depth,                                //
         info_lp.n_simplex_iters,                      //
         info_lp.n_avg_simplex_iters,                  //

@@ -48,7 +48,7 @@ struct branch_and_cut_info {
     const crossing_number_t &upper_bound;
 
     std::size_t n_iters{0};
-    std::size_t n_branch_nodes{0};
+    std::size_t n_search_nodes{0};
     std::size_t n_rows{0};
     std::size_t n_iter_3cycle_current_node{0};
     std::size_t depth;
