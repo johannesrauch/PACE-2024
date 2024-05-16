@@ -10,9 +10,7 @@ class rins_heuristic : public instance_view {
    public:
     rins_heuristic(instance &instance_) : instance_view(instance_) {}
 
-    crossing_number_t operator()(const highs_lp &lp, std::vector<vertex_t> &ordering) {
-        
-    }
+    crossing_number_t operator()(const highs_lp &lp, std::vector<vertex_t> &ordering);
 };
 
 };  // namespace pace
