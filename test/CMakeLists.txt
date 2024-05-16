@@ -17,7 +17,7 @@ transitive_hull
 foreach(PACE_TEST IN LISTS PACE_ALL_TESTS)
     message(STATUS "add_executable(${PACE_TEST} ${PACE_TEST}.cpp)")
     add_executable(${PACE_TEST} ${PACE_TEST}.cpp)
-    target_link_libraries(${PACE_TEST} highs::highs)
+    target_link_libraries(${PACE_TEST} oscm)
 endforeach()
 
 enable_testing()
