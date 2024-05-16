@@ -17,6 +17,8 @@ namespace pace {
 
 enum pattern { indeterminate = 0, u_before_v, v_before_u };
 
+class highs_lp;
+
 /**
  * @brief class that comprises all relevant data for solving the instance
  */
@@ -32,12 +34,11 @@ class instance {
     const std::size_t n_fixed;
 
    private:
-    // todo: move cr_matrix to input for subinstance
-
     /**
      * @brief the crossing number matrix (on demand)
      */
-    std::unique_ptr<crossing_matrix> cr_matrix_ptr;
+    std::unique_ptr<crossing_matrix> cr_matrix_unique_ptr;
+    crossing_matrix *cr_matrix_ptr{nullptr};  // for subinstances
 
     /**
      * @brief arc u->v in restriction_graph implies u before v (on demand)
@@ -164,16 +165,22 @@ class instance {
     void update_kernel(const std::vector<double> &lp_sol);
 
     //
+    // subinstance
+    //
+
+    //
     // private helper methods
     //
 
    private:
     void create_cr_matrix() {
-        cr_matrix_ptr = std::make_unique<crossing_matrix>(graph.get_n_free());
+        cr_matrix_unique_ptr =
+            std::make_unique<crossing_matrix>(graph.get_n_free());
+        cr_matrix_ptr = cr_matrix_unique_ptr.get();
         lower_bound = fill_crossing_matrix(graph, *cr_matrix_ptr);
     }
 
-    void create_kernel();
+    void create_kernel(highs_lp *lp = nullptr);
 
     void create_unsettled_pairs();
 
@@ -198,7 +205,12 @@ class instance {
     /**
      * @brief tells if we are able to fix u < v or v < u
      */
-    pattern foresee(const vertex_t &u, const vertex_t &v);
+    pattern foresee(const vertex_t &u, const vertex_t &v, highs_lp *lp,
+                    const std::vector<vertex_t> &positions);
+
+    pattern based_on_relaxation(const vertex_t &u, const vertex_t &v,
+                                highs_lp &lp,
+                                const std::vector<vertex_t> &positions);
 
    public:
     /**

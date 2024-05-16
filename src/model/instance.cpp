@@ -1,5 +1,8 @@
 #include "model/instance.hpp"
 
+#include "exact/highs_lp.hpp"
+#include "utils/index_utils.hpp"
+
 namespace pace {
 
 //
@@ -41,7 +44,7 @@ void instance::update_kernel(const std::vector<double> &lp_sol) {
 // private methods
 //
 
-void pace::instance::create_kernel() {
+void pace::instance::create_kernel(highs_lp *lp) {
     if (restriction_graph_ptr) return;
 
     PACE_DEBUG_PRINTF("start create_kernel\n");
@@ -49,11 +52,13 @@ void pace::instance::create_kernel() {
     const std::size_t n_free = graph.get_n_free();
     restriction_graph_ptr = std::make_unique<digraph>(graph.get_n_free());
     magic.resize(n_free_2);
+    std::vector<vertex_t> positions;
+    if (lp != nullptr) inverse(ordering, positions);
 
     // let's foresee if we can fix u < v or v < u
     for (vertex_t u = 0u; u + 1u < n_free; ++u) {
         for (vertex_t v = u + 1u; v < n_free; ++v) {
-            switch (foresee(u, v)) {
+            switch (foresee(u, v, lp, positions)) {
                 case u_before_v:
                     fix_u_before_v(u, v);
                     break;
@@ -114,10 +119,17 @@ void instance::compute_transitive_hull() {
     }
 }
 
-pattern instance::foresee(const vertex_t &u, const vertex_t &v) {
+pattern instance::foresee(const vertex_t &u, const vertex_t &v, highs_lp *lp,
+                          const std::vector<vertex_t> &positions) {
     assert(u < v);
 
-    pattern p = based_on_degree(u, v);
+    pattern p = indeterminate;
+    if (lp != nullptr) {
+        p = based_on_relaxation(u, v, *lp, positions);
+        if (p != indeterminate) return p;
+    }
+
+    p = based_on_degree(u, v);
     if (p != indeterminate) return p;
 
     const crossing_number_t &c_uv = (*cr_matrix_ptr)(u, v);
@@ -133,6 +145,21 @@ pattern instance::foresee(const vertex_t &u, const vertex_t &v) {
 
     p = based_on_pattern(u, v, c_uv, c_vu);
     return p;
+}
+
+pattern instance::based_on_relaxation(const vertex_t &u, const vertex_t &v,
+                                      highs_lp &lp,
+                                      const std::vector<vertex_t> &positions) {
+    const std::size_t uv = flat_index(n_free, n_free_2, u, v);
+    if (!lp.is_variable_integral(uv)) return indeterminate;
+    const double x = lp.get_variable_value(uv);
+    if (positions[u] < positions[v] && x > 0.5) {
+        return u_before_v;
+    } else if (positions[v] < positions[u] & x <= 0.5) {
+        return v_before_u;
+    } else {
+        return indeterminate;
+    }
 }
 
 pattern instance::based_on_pattern(const vertex_t &u,              //
