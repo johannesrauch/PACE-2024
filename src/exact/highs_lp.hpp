@@ -206,6 +206,13 @@ class highs_lp : public highs_base {
         return true;
     }
 
+    inline bool is_variable_integral(const std::size_t uv) {
+        assert(uv < n_free_2);
+        const magic_t j = magic()[uv];
+        if (j < 0) return true;
+        return is_column_integral(j);
+    }
+
     /**
      * @brief returns true iff current solution is integral
      */
