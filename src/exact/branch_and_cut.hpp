@@ -17,7 +17,7 @@
 namespace pace {
 
 struct branch_and_cut_params {
-    std::size_t max_nodes{std::numeric_limits<std::size_t>::max()};    
+    std::size_t max_nodes{std::numeric_limits<std::size_t>::max()};
 };
 
 class branch_and_cut : public instance_view {
@@ -100,7 +100,7 @@ class branch_and_cut : public instance_view {
     /**
      * @brief branches by fixing a column
      */
-    void branch();
+    bool branch();
 
     /**
      * @brief given the optimal value of the current lp,

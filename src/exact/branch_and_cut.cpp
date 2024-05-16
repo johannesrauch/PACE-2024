@@ -39,6 +39,8 @@ void branch_and_cut::update_costs() {
 
 bool branch_and_cut::backtrack() {
     info.n_iter_3cycle_current_node = 0;
+    ++info.n_search_nodes;
+
     while (!stack.empty()) {
         branch_node &node = stack.top();
         if (node.fix_opposite) {
@@ -47,17 +49,18 @@ bool branch_and_cut::backtrack() {
                 lp_solver_ptr->get_column_value(node.j) > 0.5 ? 0. : 1.);
             PACE_DEBUG_PRINTF("(backtrack)\n");
             node.fix_opposite = false;
-            return false;
+            return info.n_search_nodes > params.max_nodes;
         } else {
             lp_solver_ptr->unfix_column(node.j);
             PACE_DEBUG_PRINTF("(backtrack)\n");
             stack.pop();
         }
     }
+
     return true;
 }
 
-void branch_and_cut::branch() {
+bool branch_and_cut::branch() {
     info.n_iter_3cycle_current_node = 0;
 
     // gather branch node info
@@ -71,6 +74,8 @@ void branch_and_cut::branch() {
         j, reli_branch_ptr->get_up_cost(j) > reli_branch_ptr->get_down_cost(j));
     PACE_DEBUG_PRINTF("(branch)\n");
     stack.emplace(branch_node{j, obj_val_old, x_j_old, true});
+
+    return info.n_search_nodes > params.max_nodes;
 }
 
 bool branch_and_cut::branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
@@ -93,12 +98,13 @@ bool branch_and_cut::branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
     }
 
     const crossing_number_t ub_old = upper_bound;
-    if (heuristic.informed(*lp_solver_ptr, another_ordering) < ub_old)
+    if (heuristic.informed(*lp_solver_ptr, another_ordering,
+                           stack.size() == 0) < ub_old) {
         std::swap(ordering, another_ordering);
+    }
     info.relax_h_confidence = heuristic.get_confidence();
 
-    branch();
-    return false;
+    return branch();
 }
 
 //

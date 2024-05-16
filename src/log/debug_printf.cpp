@@ -5,7 +5,7 @@ namespace pace {
 namespace test {
 
 void printf_info(const branch_and_cut_info& info_br,
-                        const highs_lp_info& info_lp) {
+                 const highs_lp_info& info_lp) {
     if (info_br.n_iters % 50 == 0) {
         fmt::printf(
             "%11s%11s%11s|%11s%11s%11s%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%"
@@ -48,17 +48,19 @@ void printf_info(const branch_and_cut_info& info_br,
 
 void printf_lpinfo_line() {
     fmt::printf(
-        "%11s|%11s%11s%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%11s%11s\n",  //
-        "walltime",                                                       //
-        "n iters", "obj val", "n rows", "n splx", "n splx avg",           //
-        "n bucket", "n added", "n delete", "n spared",                    //
+        "%11s|%11s%11s%11s%11s%11s%11s|%11s%11s%11s%11s|%11s%11s%11s%"
+        "11s\n",                                                 //
+        "walltime",                                              //
+        "n iters", "obj val", "n rows", "n splx", "n splx avg",  //
+        "%% int",                                                //
+        "n bucket", "n added", "n delete", "n spared",           //
         "uvw iter", "u", "v", "w");
     std::cout << std::flush;
 }
 
 void printf_lpinfo(const highs_lp_info& info) {
     fmt::printf(
-        "%11.1f|%11u%11.1f%11u%11u%11.1f|%11u%11u%11u%11u|%11u%11u%11u%"
+        "%11.1f|%11u%11.1f%11u%11u%11.1f%11.1f|%11u%11u%11u%11u|%11u%11u%11u%"
         "11u\n",                    //
         elapsed_walltime_in_s(),    //
         info.n_solve_iters,         //
@@ -66,6 +68,7 @@ void printf_lpinfo(const highs_lp_info& info) {
         info.n_rows,                //
         info.n_simplex_iters,       //
         info.n_avg_simplex_iters,   //
+        info.percent_integral,      //
         info.n_bucket_entries,      //
         info.n_added_rows,          //
         info.n_deleted_rows,        //

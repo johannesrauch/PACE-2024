@@ -37,6 +37,7 @@ struct highs_lp_info {
 
     double t_simplex{0.};
     double objective_value{0.};
+    double percent_integral{0.};
     bool was_warmstart{false};
 
     double min_viol_score{0.};

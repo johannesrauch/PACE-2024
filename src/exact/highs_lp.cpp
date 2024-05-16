@@ -411,6 +411,10 @@ void highs_lp::update_simplex_info() {
 
     info.t_simplex = solver.getRunTime();
     info.objective_value = get_objective_value();
+    info.percent_integral = 0.;
+    for (std::size_t j = 0; j < get_n_cols(); ++j)
+        info.percent_integral += is_column_integral(j);
+    info.percent_integral /= get_n_cols();
 }
 
 }  // namespace pace
