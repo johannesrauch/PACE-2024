@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_BUILD_TYPE Release)
-if (PACE_VERBOSE)
+if(PACE_DEBUG_PRINT)
     add_compile_definitions(PACE_DEBUG_PRINT)
 endif()
 
@@ -24,9 +24,6 @@ add_subdirectory(src)
 add_executable(weberknecht ${CMAKE_SOURCE_DIR}/src/weberknecht.cpp)
 target_link_libraries(weberknecht oscm)
 
-if(PACE_DEBUG_PRINT)
-    add_compile_definitions(PACE_DEBUG_PRINT)
-endif()
 if(PACE_BUILD_TESTS)
     add_subdirectory(test)
 endif()
