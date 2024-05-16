@@ -18,7 +18,9 @@ namespace pace {
 
 struct branch_and_cut_params {
     std::size_t max_nodes{std::numeric_limits<std::size_t>::max()};
+    std::size_t n_nodes_until_rins{25};
     bool do_rins{true};
+    bool do_uninformed_h{true};
 };
 
 class branch_and_cut : public instance_view {

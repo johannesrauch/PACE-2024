@@ -98,8 +98,9 @@ bool branch_and_cut::branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
     }
 
     const crossing_number_t ub_old = upper_bound;
-    heuristic.informed(  //
-        *lp_solver_ptr, ordering, stack.size() == 0 && params.do_rins);
+    const bool do_rins =
+        params.do_rins && info.n_search_nodes % params.n_nodes_until_rins == 0;
+    heuristic.informed(*lp_solver_ptr, ordering, do_rins);
     info.relax_h_confidence = heuristic.get_confidence();
     if (upper_bound < ub_old) lp_solver_ptr->fix_columns();
 
@@ -114,7 +115,9 @@ uint32_t branch_and_cut::operator()(std::vector<vertex_t> &ordering) {
     PACE_DEBUG_PRINTF("\nstart branch and cut\n");
 
     // heuristics
-    info.n_crossings_h = heuristic.uninformed(ordering);
+    if (params.do_uninformed_h) {
+        info.n_crossings_h = heuristic.uninformed(ordering);
+    }
     if (lower_bound() >= upper_bound) return upper_bound;
 
     // lp

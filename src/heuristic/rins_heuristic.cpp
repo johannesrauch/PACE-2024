@@ -9,8 +9,9 @@ crossing_number_t rins_heuristic::operator()(  //
     PACE_DEBUG_PRINTF("start rins\n");
     std::unique_ptr<instance> subinstance_ptr(instance_.new_rins_instance(lp));
     branch_and_cut_params params;
-    params.max_nodes = 100;
+    params.max_nodes = 50;
     params.do_rins = false;
+    params.do_uninformed_h = false;
     branch_and_cut solver(*subinstance_ptr, params);
     const crossing_number_t n_cr = solver(ordering);
     PACE_DEBUG_PRINTF("end   rins\n");
