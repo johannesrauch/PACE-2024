@@ -17,7 +17,7 @@ crossing_number_t exact_solver::operator()(std::vector<vertex_t> &ordering) {
         branch_and_cut solver(instance_);
         n_cr = solver(ordering);
     }
-    PACE_DEBUG_PRINTF("end   exact_solver");
+    PACE_DEBUG_PRINTF("end   exact_solver\n\n");
     return n_cr;
 }
 
