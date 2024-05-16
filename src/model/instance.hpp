@@ -81,14 +81,17 @@ class instance {
     std::vector<vertex_t> ordering;
 
    public:
-    instance(const bipartite_graph &graph)
+    instance(const bipartite_graph &graph,
+             const bool initialize_ordering = true)
         : graph(graph),
           n_free(graph.get_n_free()),
           n_free_2(n_free * (n_free - 1) / 2),
           n_fixed(graph.get_n_fixed()),
           ordering(n_free) {
-        identity(n_free, ordering);
-        upper_bound = number_of_crossings(graph, ordering);
+        if (initialize_ordering) {
+            identity(n_free, ordering);
+            upper_bound = number_of_crossings(graph, ordering);
+        }
         assert(n_free > 0);
     }
 
@@ -168,6 +171,8 @@ class instance {
     // subinstance
     //
 
+    instance *new_rins_instance(highs_lp &lp);
+
     //
     // private helper methods
     //
@@ -208,6 +213,10 @@ class instance {
     pattern foresee(const vertex_t &u, const vertex_t &v, highs_lp *lp,
                     const std::vector<vertex_t> &positions);
 
+    /**
+     * @brief if we construct the kernel for a rins instance, we fix were the
+     * relaxation agrees with our current best solution
+     */
     pattern based_on_relaxation(const vertex_t &u, const vertex_t &v,
                                 highs_lp &lp,
                                 const std::vector<vertex_t> &positions);
@@ -217,39 +226,22 @@ class instance {
      * @brief if one of the degrees is zero, we may impose an arbitrary (but
      * fixed) order
      */
-    inline pattern based_on_degree(const vertex_t &u, const vertex_t &v) {
-        if (graph.get_degree(u) == 0)
-            return pattern::u_before_v;
-        else if (graph.get_degree(v) == 0)
-            return pattern::v_before_u;
-        else
-            return pattern::indeterminate;
-    }
+    pattern based_on_degree(const vertex_t &u, const vertex_t &v);
 
     /**
      * @brief assumption: c_uv != c_vu.
      * - if c_uv == 0, we can fix u < v, and
      * - if c_vu == 0, we can fix v < u.
      */
-    inline pattern based_on_crossing_numbers(const crossing_number_t &c_uv,
-                                             const crossing_number_t &c_vu) {
-        assert(c_uv != c_vu);
-        if (c_uv == 0) return pattern::u_before_v;
-        if (c_vu == 0) return pattern::v_before_u;
-        return pattern::indeterminate;
-    }
+    pattern based_on_crossing_numbers(const crossing_number_t &c_uv,
+                                      const crossing_number_t &c_vu);
 
     /**
      * @brief if it were the other way around, we already would have more than
      * upper_bound crossings
      */
-    inline pattern based_on_bounds(const crossing_number_t &c_uv,
-                                   const crossing_number_t &c_vu) {
-        const crossing_number_t diff = upper_bound - lower_bound;
-        if (c_uv > c_vu && c_uv - c_vu > diff) return pattern::v_before_u;
-        if (c_vu > c_uv && c_vu - c_uv > diff) return pattern::u_before_v;
-        return pattern::indeterminate;
-    }
+    pattern based_on_bounds(const crossing_number_t &c_uv,
+                            const crossing_number_t &c_vu);
 
     /**
      * @brief based on an idea of Dujmovic et al, see

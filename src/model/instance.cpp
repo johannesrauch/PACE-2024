@@ -40,6 +40,18 @@ void instance::update_kernel(const std::vector<double> &lp_sol) {
     create_unsettled_pairs();
 }
 
+instance *instance::new_rins_instance(highs_lp &lp) {
+    instance *subinstance = new instance(graph);
+    subinstance->cr_matrix_ptr =
+        const_cast<crossing_matrix *>(&get_cr_matrix());
+    subinstance->lower_bound = get_lower_bound();
+    subinstance->upper_bound = get_upper_bound();
+    subinstance->ordering = get_ordering();
+    assert(!subinstance->restriction_graph_ptr);
+    subinstance->create_kernel(&lp);
+    return subinstance;
+}
+
 //
 // private methods
 //
@@ -160,6 +172,31 @@ pattern instance::based_on_relaxation(const vertex_t &u, const vertex_t &v,
     } else {
         return indeterminate;
     }
+}
+
+pattern instance::based_on_degree(const vertex_t &u, const vertex_t &v) {
+    if (graph.get_degree(u) == 0)
+        return pattern::u_before_v;
+    else if (graph.get_degree(v) == 0)
+        return pattern::v_before_u;
+    else
+        return pattern::indeterminate;
+}
+
+pattern instance::based_on_crossing_numbers(const crossing_number_t &c_uv,
+                                            const crossing_number_t &c_vu) {
+    assert(c_uv != c_vu);
+    if (c_uv == 0) return pattern::u_before_v;
+    if (c_vu == 0) return pattern::v_before_u;
+    return pattern::indeterminate;
+}
+
+pattern instance::based_on_bounds(const crossing_number_t &c_uv,
+                                  const crossing_number_t &c_vu) {
+    const crossing_number_t diff = upper_bound - lower_bound;
+    if (c_uv > c_vu && c_uv - c_vu > diff) return pattern::v_before_u;
+    if (c_vu > c_uv && c_vu - c_uv > diff) return pattern::u_before_v;
+    return pattern::indeterminate;
 }
 
 pattern instance::based_on_pattern(const vertex_t &u,              //
