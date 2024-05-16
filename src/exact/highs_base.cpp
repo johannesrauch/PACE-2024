@@ -53,9 +53,8 @@ void highs_base::add_columns() {
 // row methods
 //
 
-void highs_base::add_3cycle_row_to_aux_vectors(const vertex_t &u,
-                                               const vertex_t &v,
-                                               const vertex_t &w) {
+void highs_base::add_3cycle_row_to_aux_vectors(  //
+    const vertex_t &u, const vertex_t &v, const vertex_t &w) {
     // at least two must be in the lp as variables since we compute transitive
     // hull in oracle
     assert(u < v);
