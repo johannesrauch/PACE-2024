@@ -22,7 +22,7 @@ struct branch_and_cut_params {
     bool do_rins{true};
     bool do_uninformed_h{true};
     bool do_uninformed_rins{false};
-    bool do_lsearch{true};
+    bool do_lsearch{false};
 };
 
 class branch_and_cut : public instance_view {
