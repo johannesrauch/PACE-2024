@@ -11,6 +11,7 @@ highs_lp::highs_lp(instance &instance_, highs_lp_params params)
     this->params.max_new_rows =
         std::max(static_cast<std::size_t>(0.2 * std::sqrt(n_free) * n_free),
                  params.max_new_rows);
+    // this->params.max_new_rows = std::numeric_limits<std::size_t>::max();
 
     rows_to_delete.reserve(params.max_new_rows);
     lower_bounds.reserve(params.max_new_rows);
@@ -36,10 +37,9 @@ highs_lp::highs_lp(instance &instance_, highs_lp_params params)
 
 bool highs_lp::cut() {
     n_old_rows = get_n_rows();
-    info.n_deleted_rows = 0;
-    info.n_delete_rows_spared = 0;
 
     bool success = check_3cycles();
+    at_sol &= !success;
     return success;
 }
 
@@ -49,23 +49,44 @@ void highs_lp::run(const int32_t max_simplex_iter, const bool bookkeeping) {
     if (bookkeeping) update_simplex_info();
 }
 
+void highs_lp::initial_solve() {
+    if (at_sol) return;
+
+    info.n_solve_iters = 0;
+    const std::size_t max_new_rows = params.max_new_rows;
+    params.max_new_rows = std::numeric_limits<std::size_t>::max();
+    PACE_DEBUG_PRINTF_LPINFO_LINE();
+
+    do {
+        delete_positive_slack_rows();
+        run();
+        PACE_DEBUG_PRINTF_LPINFO(info);
+        ++info.n_solve_iters;
+        reset_row_info();
+        if (get_rounded_objective_value() >= upper_bound) return;
+    } while (cut());
+
+    params.max_new_rows = max_new_rows;
+    at_sol = true;
+}
+
 void highs_lp::initial_partial_solve() {
+    if (at_sol) return;
+
     info.n_solve_iters = 0;
     info.n_3cycle_iters = 0;
     PACE_DEBUG_PRINTF_LPINFO_LINE();
 
-    run();
-    const std::size_t max_new_rows = params.max_new_rows;
-    params.max_new_rows = std::numeric_limits<std::size_t>::max();
-    bool cut_generated = cut();
-    params.max_new_rows = max_new_rows;
-
     // few 3-cycle iterations, solved to optimality, to sieve for "important"
     // 3-cycle ieqs
+    bool cut_generated{true};
     while (cut_generated &&
            info.n_3cycle_iters < params.max_initial_solve_3cycle_iters &&
            info.n_solve_iters < params.max_initial_solve_iters) {
-        delete_positive_slack_rows();
+        if (info.was_warmstart &&
+            info.n_simplex_iters > info.n_simplex_coldstart_iters / 2) {
+            delete_positive_slack_rows();
+        }
         run(params.max_initial_solve_simplex_iters);
 
         PACE_DEBUG_PRINTF_LPINFO(info);
@@ -78,6 +99,8 @@ void highs_lp::initial_partial_solve() {
 }
 
 void highs_lp::resolve() {
+    if (at_sol) return;
+
     info.n_solve_iters = 0;
     const std::size_t max_new_rows = params.max_new_rows;
     params.max_new_rows = std::numeric_limits<std::size_t>::max();
@@ -92,6 +115,7 @@ void highs_lp::resolve() {
     } while (cut());
 
     params.max_new_rows = max_new_rows;
+    at_sol = true;
 }
 
 //
@@ -99,8 +123,6 @@ void highs_lp::resolve() {
 //
 
 void highs_lp::delete_positive_slack_rows() {
-    if (!info.was_warmstart) return;
-    if ((info.n_simplex_coldstart_iters / 2) >= info.n_simplex_iters) return;
     info.tried_deleting_rows = true;
 
     // gather rows to delete
@@ -132,6 +154,7 @@ void highs_lp::delete_positive_slack_rows() {
 
     info.n_deleted_rows = rows_to_delete.size();
     if (info.n_deleted_rows > 0) {
+        at_sol = false;
         solver.deleteRows(info.n_deleted_rows, &rows_to_delete[0]);
     }
 }
@@ -457,6 +480,14 @@ void highs_lp::update_simplex_info() {
     for (std::size_t j = 0; j < get_n_cols(); ++j)
         info.percent_integral += is_column_integral(j);
     info.percent_integral /= get_n_cols();
+}
+
+void highs_lp::reset_row_info() {
+    info.n_bucket_entries = 0;
+    info.n_added_rows = 0;
+    info.n_deleted_rows = 0;
+    info.n_delete_rows_spared = 0;
+    info.tried_deleting_rows = false;
 }
 
 }  // namespace pace

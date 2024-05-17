@@ -146,7 +146,7 @@ uint32_t branch_and_cut::operator()(std::vector<vertex_t> &ordering) {
                       "n cand", info_lp.n_init_rows_candidates);
 
     // driver
-    lp_solver_ptr->initial_partial_solve();
+    lp_solver_ptr->initial_solve();
     while (!branch_and_bound_and_cut(ordering)) {
         ++info.n_iters;
         PACE_DEBUG_PRINTF_BOUNDS(lower_bound(), upper_bound);

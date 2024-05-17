@@ -19,7 +19,7 @@ struct highs_lp_params {
         64};  ///< maximum number of 3-cycle iterations with row deletion
     const uint16_t max_initial_solve_iters{200};
     const uint8_t max_initial_solve_3cycle_iters{
-        2};  ///< maximum number of times max_new_rows is doubled
+        4};  ///< maximum number of times max_new_rows is doubled
     const int32_t max_initial_solve_simplex_iters{30000};
 
     const uint8_t n_buckets{8};
@@ -84,6 +84,8 @@ class highs_lp : public highs_base {
 
     std::list<triple> rows;
 
+    bool at_sol{false};
+
    public:
     highs_lp(instance &instance_, highs_lp_params params = highs_lp_params());
 
@@ -119,6 +121,8 @@ class highs_lp : public highs_base {
     void run(
         const int32_t max_simplex_iter = std::numeric_limits<int32_t>::max(),
         const bool bookkeeping = true);
+
+    void initial_solve();
 
     void initial_partial_solve();
 
@@ -403,13 +407,7 @@ class highs_lp : public highs_base {
 
     void update_simplex_info();
 
-    inline void reset_row_info() {
-        info.n_bucket_entries = 0;
-        info.n_added_rows = 0;
-        info.n_deleted_rows = 0;
-        info.n_delete_rows_spared = 0;
-        info.tried_deleting_rows = false;
-    }
+    void reset_row_info();
 };
 
 };  // namespace pace
