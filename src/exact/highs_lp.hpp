@@ -147,6 +147,7 @@ class highs_lp : public highs_base {
     inline void change_column_bounds(const std::size_t j, const double lb,
                                      const double ub) {
         assert(j < get_n_cols());
+        at_sol = false;
         status = solver.changeColBounds(j, lb, ub);
         assert(status == HighsStatus::kOk);
     }

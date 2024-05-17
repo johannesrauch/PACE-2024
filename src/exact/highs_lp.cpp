@@ -164,6 +164,7 @@ void highs_lp::delete_positive_slack_rows() {
 //
 
 void highs_lp::fix_columns() {
+    at_sol = false;
     for (std::size_t j = 0; j < get_n_cols(); ++j) {
         const crossing_number_t diff = upper_bound - lower_bound();
         const double coeff = get_objective_coefficient(j);
