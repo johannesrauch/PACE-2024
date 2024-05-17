@@ -21,6 +21,7 @@ void test_exact_solver(pace::input& input) {
 
     pace::exact_solver solver(input);
     std::vector<vertex_t> ordering;
+    pace::reset_t0();
     crossing_number_t test = solver(ordering);
 
     PACE_DEBUG_PRINTF("TEST: %u\n", test);
