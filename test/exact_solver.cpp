@@ -21,7 +21,6 @@ void test_exact_solver(pace::input& input) {
 
     pace::exact_solver solver(input);
     std::vector<vertex_t> ordering;
-    const std::chrono::time_point<std::chrono::system_clock> t0 = std::chrono::system_clock::now();
     crossing_number_t test = solver(ordering);
 
     PACE_DEBUG_PRINTF("TEST: %u\n", test);
@@ -37,7 +36,9 @@ void test_exact_solver(pace::input& input) {
         warning = e.what();
     }
 
-    fmt::printf("|%11.1f|%11s%11s\n", pace::elapsed_walltime_in_s(t0), warning, test_ok ? "true" : "false");
+    fmt::printf("|%11.1f|%11s%11s\n",
+                pace::elapsed_walltime_in_s(pace::now()), warning,
+                test_ok ? "true" : "false");
 }
 
 void test_exact_solver_with(const fs::path dirpath) {
