@@ -1,9 +1,10 @@
 import subprocess
 import time
 import os
+import sys
 
 timeout = 1800
-testdir = "test/exact/"
+testdir = "test/" + sys.argv[1] + "/"
 instdir = testdir + "instances/"
 outpdir = testdir + "output/"
 weberk = "build/weberknecht"
@@ -20,12 +21,13 @@ if __name__ == "__main__":
         with open(instdir + filename) as i, open(outpdir + filename[:-2] + "log", "w") as o:
             try:
                 subprocess.call([weberk], stdin=i, stdout=o, timeout=timeout)
+                succeded.append(filename)
             except subprocess.TimeoutExpired:
                 failed.append(filename)
     
     output = f"number of instances: {n}\n"
-    output +=f"succeded {len(succeded) / n * 100 : 3.1f}: {succeded}\n"
-    output += f"failed {len(failed) / n * 100 : 3.1f}: {failed}\n"
+    output += f"succeded {len(succeded) / n * 100 : 3.1f}%:\n{succeded}\n"
+    output += f"failed   {len(failed) / n * 100 : 3.1f}%:\n{failed}\n"
     with open(outpdir + "run.log", "w") as o:
         o.write(output)
     print(output)
