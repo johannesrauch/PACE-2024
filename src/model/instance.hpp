@@ -119,6 +119,13 @@ class instance {
         return *cr_matrix_ptr;
     }
 
+    std::pair<crossing_number_t, crossing_number_t> get_cr_numbers(const vertex_t u, const vertex_t v) {
+        if (cr_matrix_ptr) {
+            return std::make_pair((*cr_matrix_ptr)(u, v), (*cr_matrix_ptr)(v, u));
+        }
+        return crossing_numbers_of(graph, u, v);
+    }
+
     digraph &get_restriction_graph() {
         if (!restriction_graph_ptr) create_kernel();
         return *restriction_graph_ptr;
@@ -140,7 +147,9 @@ class instance {
     }
 
     const crossing_number_t &get_lower_bound() {
-        if (!cr_matrix_ptr) create_cr_matrix();
+        if (lower_bound == 0) {
+            lower_bound = lower_bound_of(graph);
+        }
         return lower_bound;
     }
 
@@ -293,6 +302,10 @@ struct instance_view {
           upper_bound(instance_.get_upper_bound()) {}
 
     const crossing_matrix &cr_matrix() { return instance_.get_cr_matrix(); }
+
+    std::pair<crossing_number_t, crossing_number_t> cr_numbers(const vertex_t u, const vertex_t v) {
+        return instance_.get_cr_numbers(u, v);
+    }
 
     const crossing_number_t &lower_bound() {
         return instance_.get_lower_bound();

@@ -32,7 +32,8 @@ class shift_heuristic : public instance_view {
     /**
      * @brief initializes shift heuristic for `instance`
      */
-    shift_heuristic(instance &instance_, shift_heuristic_params params = shift_heuristic_params())
+    shift_heuristic(instance &instance_,
+                    shift_heuristic_params params = shift_heuristic_params())
         : instance_view(instance_),  //
           ordering_(graph.get_n_free()),
           params(params) {}
@@ -42,7 +43,9 @@ class shift_heuristic : public instance_view {
      *
      * @param ordering in-out parameter
      */
-    crossing_number_t operator()(std::vector<vertex_t> &ordering) { return (*this)(ordering, number_of_crossings(graph, ordering)); }
+    crossing_number_t operator()(std::vector<vertex_t> &ordering) {
+        return (*this)(ordering, number_of_crossings(graph, ordering));
+    }
 
     /**
      * @brief runs the shift heuristic
@@ -50,7 +53,8 @@ class shift_heuristic : public instance_view {
      * @param n_crossings number of crossings of 'ordering'
      * @param ordering in-out parameter
      */
-    crossing_number_t operator()(std::vector<vertex_t> &ordering, crossing_number_t n_crossings) {
+    crossing_number_t operator()(std::vector<vertex_t> &ordering,
+                                 crossing_number_t n_crossings) {
         assert(ordering.size() == n_free);
         if (lower_bound() >= n_crossings) return n_crossings;
 
@@ -58,9 +62,12 @@ class shift_heuristic : public instance_view {
         std::copy(ordering.begin(), ordering.end(), ordering_.begin());
         bool go_on = true;
 
-        for (std::size_t i = 0; i < params.n_iterations && go_on; ++i) {
+        for (std::size_t i = 0;
+             i < params.n_iterations && lower_bound() < n_crossings && go_on;
+             ++i) {
             go_on = false;
-            for (typename std::list<vertex_t>::iterator it = ordering_.begin(); it != ordering_.end();) {
+            for (typename std::list<vertex_t>::iterator it = ordering_.begin();
+                 it != ordering_.end();) {
                 const auto [go_on_, it_] = improve(it, n_crossings);
                 go_on |= go_on_;
                 it = it_;
@@ -79,8 +86,8 @@ class shift_heuristic : public instance_view {
     /**
      * @brief tries to improve the current solution by shifts of element at i
      *
-     * @return std::pair<bool, typename std::list<vertex_t>::iterator> first: true iff improvement found,
-     * second: iterator the next element to consider
+     * @return std::pair<bool, typename std::list<vertex_t>::iterator> first:
+     * true iff improvement found, second: iterator the next element to consider
      */
     inline std::pair<bool, typename std::list<vertex_t>::iterator>  //
     improve(typename std::list<vertex_t>::iterator i, uint32_t &n_crossings) {
@@ -91,8 +98,9 @@ class shift_heuristic : public instance_view {
             if (k == ordering_.begin()) break;
             --k;
 
-            c_old += cr_matrix()(*k, *i);
-            c_new += cr_matrix()(*i, *k);
+            const auto [c1, c2] = cr_numbers(*k, *i);
+            c_old += c1;
+            c_new += c2;
 
             if (c_new < c_old && c_old - c_new > improvement) {
                 improvement = c_old - c_new;
@@ -109,8 +117,9 @@ class shift_heuristic : public instance_view {
             ++k;
             if (k == ordering_.end()) break;
 
-            c_old += cr_matrix()(*i, *k);
-            c_new += cr_matrix()(*k, *i);
+            const auto [c1, c2] = cr_numbers(*i, *k);
+            c_old += c1;
+            c_new += c2;
 
             if (c_new < c_old && c_old - c_new > improvement) {
                 improvement = c_old - c_new;
@@ -129,7 +138,9 @@ class shift_heuristic : public instance_view {
         assert(ordering_.size() == graph.get_n_free());
         assert(n_crossings >= improvement);
         n_crossings -= improvement;
-        assert(number_of_crossings(graph, std::vector<vertex_t>{ordering_.begin(), ordering_.end()}) == n_crossings);
+        assert(number_of_crossings(graph, std::vector<vertex_t>{
+                                              ordering_.begin(),
+                                              ordering_.end()}) == n_crossings);
 
         return std::make_pair(true, it);
     }

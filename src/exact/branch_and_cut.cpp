@@ -117,6 +117,7 @@ bool branch_and_cut::branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
 uint32_t branch_and_cut::operator()(std::vector<vertex_t> &ordering) {
     PACE_DEBUG_PRINTF("start branch and cut\n");
     info.t_start = now();
+    cr_matrix(); // initialize
 
     // uninformed heuristics
     if (params.do_uninformed_h) {
