@@ -59,9 +59,8 @@ instance *instance::new_subinstance() {
     instance *subinstance = new instance(graph);
     subinstance->cr_matrix_ptr =
         const_cast<crossing_matrix *>(&get_cr_matrix());
-    subinstance->lower_bound = get_lower_bound();
-    subinstance->upper_bound = get_upper_bound();
-    subinstance->ordering = get_ordering();
+    subinstance->update_lower_bound(get_lower_bound());
+    subinstance->update_ordering(ordering, upper_bound);
     return subinstance;
 }
 
@@ -97,15 +96,15 @@ void pace::instance::create_kernel(highs_lp *lp, const uint16_t lsearch_width) {
     }
 
 #ifndef NDEBUG
-    std::vector<vertex_t> ordering;
-    assert(topological_sort(*restriction_graph_ptr, ordering));
+    std::vector<vertex_t> test_ordering;
+    assert(topological_sort(*restriction_graph_ptr, test_ordering));
 #endif
 
     compute_transitive_hull();
 
     // restriction graph is finished
     restriction_graph_ptr->set_rollback_point();
-    assert(topological_sort(*restriction_graph_ptr, ordering));
+    assert(topological_sort(*restriction_graph_ptr, test_ordering));
 
     // magic and unsettled_pairs needs some last work
     create_unsettled_pairs();
