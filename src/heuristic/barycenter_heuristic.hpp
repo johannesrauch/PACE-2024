@@ -43,7 +43,7 @@ class barycenter_heuristic : public instance_view {
         return shift_h(ordering);
     }
 
-    bool compare(const vertex_t &a, const vertex_t &b) {
+    inline bool compare(const vertex_t &a, const vertex_t &b) {
         if (barycenters[a] < barycenters[b])
             return true;
         else if (barycenters[a] > barycenters[b])
