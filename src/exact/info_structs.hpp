@@ -7,11 +7,16 @@
 
 namespace pace {
 
-static const std::chrono::time_point<std::chrono::system_clock> t0{
+static std::chrono::time_point<std::chrono::system_clock> t0{
     std::chrono::system_clock::now()};
 
+void reset_t0();
+
+std::chrono::time_point<std::chrono::system_clock> now();
+
 double elapsed_walltime_in_s(
-    const std::chrono::time_point<std::chrono::system_clock> &t0 = t0);
+    const std::chrono::time_point<std::chrono::system_clock> t1 = now(),
+    const std::chrono::time_point<std::chrono::system_clock> t0 = t0);
 
 struct highs_lp_info {
     const vertex_t &u_old;
@@ -60,7 +65,9 @@ struct branch_and_cut_info {
 
     double relax_h_confidence{-1.};
 
+    std::chrono::time_point<std::chrono::system_clock> t_start;
     std::chrono::time_point<std::chrono::system_clock> t_end;
+    std::chrono::time_point<std::chrono::system_clock> t_sol;
 };
 
 };  // namespace pace

@@ -17,7 +17,10 @@ void printf_lpinfo(const highs_lp_info& info);
 
 void printf_bounds(const crossing_number_t& lb, const crossing_number_t& ub);
 
-void printf_graph(const std::size_t n0, const std::size_t n1, const std::size_t m);
+void printf_graph(  //
+    const std::size_t n0, const std::size_t n1, const std::size_t m);
+
+void printf_summary(const branch_and_cut_info &info);
 
 };  // namespace test
 
@@ -82,12 +85,23 @@ void printf_graph(const std::size_t n0, const std::size_t n1, const std::size_t 
 
 #ifdef PACE_DEBUG_PRINT
 #define PACE_DEBUG_PRINTF_GRAPH(n0, n1, m)   \
-    do {                                   \
+    do {                                     \
         pace::test::printf_graph(n0, n1, m); \
     } while (false)
 #else
 #define PACE_DEBUG_PRINTF_GRAPH(...) \
-    do {                              \
+    do {                             \
+    } while (false)
+#endif
+
+#ifdef PACE_DEBUG_PRINT
+#define PACE_DEBUG_PRINTF_SUMMARY(info)   \
+    do {                                  \
+        pace::test::printf_summary(info); \
+    } while (false)
+#else
+#define PACE_DEBUG_PRINTF_SUMMARY(...) \
+    do {                               \
     } while (false)
 #endif
 

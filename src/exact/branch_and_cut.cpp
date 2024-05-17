@@ -112,15 +112,17 @@ bool branch_and_cut::branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
 //
 
 uint32_t branch_and_cut::operator()(std::vector<vertex_t> &ordering) {
-    PACE_DEBUG_PRINTF("\nstart branch and cut\n");
+    PACE_DEBUG_PRINTF("start branch and cut\n");
+    info.t_start = now();
 
-    // heuristics
+    // uninformed heuristics
     if (params.do_uninformed_h) {
-        info.n_crossings_h = heuristic.uninformed(ordering);
+        info.n_crossings_h = heuristic.uninformed(ordering, params.do_lsearch);
     }
+    PACE_DEBUG_PRINTF_BOUNDS(lower_bound(), upper_bound);
     if (lower_bound() >= upper_bound) return upper_bound;
 
-    // lp
+    // create lp
     if (!lp_solver_ptr) lp_solver_ptr = std::make_unique<highs_lp>(instance_);
     if (unsettled_pairs().size() == 0) {
         build_ordering(ordering);
@@ -130,10 +132,12 @@ uint32_t branch_and_cut::operator()(std::vector<vertex_t> &ordering) {
         reli_branch_ptr =
             std::make_unique<reliability_branching>(*lp_solver_ptr);
 
+    // uninformed rins heuristics
     if (params.do_uninformed_rins) {
         lp_solver_ptr->run();
         heuristic.rins(*lp_solver_ptr, ordering);
     }
+    if (lower_bound() >= upper_bound) return upper_bound;
 
     const highs_lp_info &info_lp = lp_solver_ptr->get_info();
     PACE_DEBUG_PRINTF("%11s=%11u, %11s=%11u, %11s=%11u\n",  //
@@ -145,11 +149,16 @@ uint32_t branch_and_cut::operator()(std::vector<vertex_t> &ordering) {
     lp_solver_ptr->initial_partial_solve();
     while (!branch_and_bound_and_cut(ordering)) {
         ++info.n_iters;
+        PACE_DEBUG_PRINTF_BOUNDS(lower_bound(), upper_bound);
     };
 
     PACE_DEBUG_PRINTF("end   branch and cut\n");
     info.n_rows = lp_solver_ptr->get_n_rows();
-    info.t_end = std::chrono::system_clock::now();
+    info.t_end = now();
+    info.t_sol = instance_.get_t_sol();
+    PACE_DEBUG_PRINTF_BOUNDS(lower_bound(), upper_bound);
+    PACE_DEBUG_PRINTF_SUMMARY(info);
+
     ordering = get_ordering();
     return upper_bound;
 }

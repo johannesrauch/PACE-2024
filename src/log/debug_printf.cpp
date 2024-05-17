@@ -91,9 +91,16 @@ void printf_bounds(const crossing_number_t& lb, const crossing_number_t& ub) {
 void printf_graph(const std::size_t n0, const std::size_t n1,
                   const std::size_t m) {
     fmt::printf("%11s=%11u, %11s=%11u, %11s=%11u\n",  //
-                "n fixed", n0,             //
-                "n free", n1,              //
+                "n fixed", n0,                        //
+                "n free", n1,                         //
                 "m", m);
+    std::cout << std::flush;
+}
+
+void printf_summary(const branch_and_cut_info& info) {
+    fmt::printf("%11s=%11.1f, %11s=%11.1f\n",                                //
+                "t total", elapsed_walltime_in_s(info.t_end, info.t_start),  //
+                "t opt sol", elapsed_walltime_in_s(info.t_sol, info.t_start));
     std::cout << std::flush;
 }
 
