@@ -3,7 +3,7 @@ import time
 import os
 
 timeout = 1800
-testdir = "test/param_set/"
+testdir = "test/big_test_set_easy/"
 instdir = testdir + "instances/"
 outpdir = testdir + "output/"
 weberk = "build/weberknecht"
@@ -22,6 +22,11 @@ if __name__ == "__main__":
                 subprocess.call([weberk], stdin=i, stdout=o, timeout=timeout)
             except subprocess.TimeoutExpired:
                 failed.append(filename)
-    print(f"number of instances: {n}")
-    print(f"succeded {len(succeded) / n * 100 : 3.1f}: {succeded}")
-    print(f"failed {len(failed) / n * 100 : 3.1f}: {failed}")
+    
+    output = f"number of instances: {n}\n"
+    output +=f"succeded {len(succeded) / n * 100 : 3.1f}: {succeded}\n"
+    output += f"failed {len(failed) / n * 100 : 3.1f}: {failed}\n"
+    with open(outpdir + "run.log", "w") as o:
+        o.write(output)
+    print(output)
+    
