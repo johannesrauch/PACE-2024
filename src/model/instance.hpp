@@ -148,6 +148,10 @@ class instance {
 
     const std::vector<vertex_t> &get_ordering() const { return ordering; }
 
+    const std::chrono::time_point<std::chrono::system_clock> &get_t_sol() {
+        return t_sol;
+    }
+
     //
     // setter
     //
