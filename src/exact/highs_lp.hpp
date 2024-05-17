@@ -20,7 +20,7 @@ struct highs_lp_params {
     const uint16_t max_initial_solve_iters{200};
     const uint8_t max_initial_solve_3cycle_iters{
         2};  ///< maximum number of times max_new_rows is doubled
-    const int32_t max_initial_solve_simplex_iters{10000};
+    const int32_t max_initial_solve_simplex_iters{30000};
 
     const uint8_t n_buckets{8};
 
