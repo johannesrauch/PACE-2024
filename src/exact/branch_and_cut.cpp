@@ -79,7 +79,10 @@ bool branch_and_cut::branch() {
 }
 
 bool branch_and_cut::branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
-    lp_solver_ptr->resolve();
+    if (stack.empty())
+        lp_solver_ptr->initial_solve();
+    else
+        lp_solver_ptr->resolve();
 
     if (lp_solver_ptr->is_infeasible()) {
         return backtrack();
@@ -146,7 +149,11 @@ uint32_t branch_and_cut::operator()(std::vector<vertex_t> &ordering) {
                       "n cand", info_lp.n_init_rows_candidates);
 
     // driver
-    lp_solver_ptr->initial_solve();
+    if (params.do_initial_partial_solve) {
+        PACE_DEBUG_PRINTF("start initial partial solve\n");
+        lp_solver_ptr->initial_partial_solve();
+        PACE_DEBUG_PRINTF("end   initial partial solve\n");
+    }
     while (!branch_and_bound_and_cut(ordering)) {
         ++info.n_iters;
         PACE_DEBUG_PRINTF_BOUNDS(lower_bound(), upper_bound);

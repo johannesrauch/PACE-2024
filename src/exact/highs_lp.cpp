@@ -39,7 +39,6 @@ bool highs_lp::cut() {
     n_old_rows = get_n_rows();
 
     bool success = check_3cycles();
-    at_sol &= !success;
     return success;
 }
 
@@ -50,8 +49,6 @@ void highs_lp::run(const int32_t max_simplex_iter, const bool bookkeeping) {
 }
 
 void highs_lp::initial_solve() {
-    if (at_sol) return;
-
     info.n_solve_iters = 0;
     const std::size_t max_new_rows = params.max_new_rows;
     params.max_new_rows = std::numeric_limits<std::size_t>::max();
@@ -67,12 +64,9 @@ void highs_lp::initial_solve() {
     } while (cut());
 
     params.max_new_rows = max_new_rows;
-    at_sol = true;
 }
 
 void highs_lp::initial_partial_solve() {
-    if (at_sol) return;
-
     info.n_solve_iters = 0;
     info.n_3cycle_iters = 0;
     PACE_DEBUG_PRINTF_LPINFO_LINE();
@@ -99,8 +93,6 @@ void highs_lp::initial_partial_solve() {
 }
 
 void highs_lp::resolve() {
-    if (at_sol) return;
-
     info.n_solve_iters = 0;
     const std::size_t max_new_rows = params.max_new_rows;
     params.max_new_rows = std::numeric_limits<std::size_t>::max();
@@ -115,7 +107,6 @@ void highs_lp::resolve() {
     } while (cut());
 
     params.max_new_rows = max_new_rows;
-    at_sol = true;
 }
 
 //
@@ -154,7 +145,6 @@ void highs_lp::delete_positive_slack_rows() {
 
     info.n_deleted_rows = rows_to_delete.size();
     if (info.n_deleted_rows > 0) {
-        at_sol = false;
         solver.deleteRows(info.n_deleted_rows, &rows_to_delete[0]);
     }
 }
@@ -164,7 +154,6 @@ void highs_lp::delete_positive_slack_rows() {
 //
 
 void highs_lp::fix_columns() {
-    at_sol = false;
     for (std::size_t j = 0; j < get_n_cols(); ++j) {
         const crossing_number_t diff = upper_bound - lower_bound();
         const double coeff = get_objective_coefficient(j);
