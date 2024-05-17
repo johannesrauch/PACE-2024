@@ -40,6 +40,10 @@ class heuristics : public instance_view {
         return shift(ordering, number_of_crossings(graph, ordering));
     }
 
+    crossing_number_t rins(highs_lp &lp, std::vector<vertex_t> &ordering) {
+        return rins_h(lp, ordering);
+    }
+
     double get_confidence() const { return round_h.get_confidence(); }
 };
 
