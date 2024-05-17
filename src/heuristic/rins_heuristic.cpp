@@ -13,6 +13,7 @@ crossing_number_t rins_heuristic::operator()(  //
     params.do_rins = false;
     params.do_uninformed_h = false;
     params.do_uninformed_rins = false;
+    params.do_lsearch = false;
     branch_and_cut solver(*subinstance_ptr, params);
     crossing_number_t n_cr = solver(ordering);
     n_cr = shift_h(ordering, n_cr);
