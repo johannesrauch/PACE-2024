@@ -147,14 +147,34 @@ uint32_t number_of_crossings(const folded_matrix<R>& cr_matrix,
  *
  * @tparam R crossing number type
  * @param cr_matrix crossing number matrix
- * @return uint32_t lower bound for the instance
+ * @return crossing_number_t lower bound for the instance
  */
 template <typename R>
-uint32_t get_lower_bound(const folded_matrix<R>& cr_matrix) {
+crossing_number_t lower_bound_of(const folded_matrix<R>& cr_matrix) {
     const std::size_t n2 = cr_matrix.get_n2();
-    uint32_t lb = 0;
+    crossing_number_t lb = 0;
     for (std::size_t i = 0; i < n2; i += 2) {
         lb += std::min(cr_matrix.get_element(i), cr_matrix.get_element(i + 1));
+    }
+    return lb;
+}
+
+/**
+ * @brief returns sum min(c_uv, c_vu), which is a lower bound for the instance
+ *
+ * @tparam T vertex type
+ * @param cr_matrix crossing number matrix
+ * @return uint32_t lower bound for the instance
+ */
+template <typename T>
+crossing_number_t lower_bound_of(const general_bipartite_graph<T>& graph) {
+    const std::size_t n_free = graph.get_n_free();
+    crossing_number_t lb = 0;
+    for (T u = 0; u + 1u < n_free; ++u) {
+        for (T v = u + 1u; v < n_free; ++v) {
+            const auto [c_uv, c_vu] = crossing_numbers_of(graph, u, v);
+            lb += std::min(c_uv, c_vu);
+        }
     }
     return lb;
 }
