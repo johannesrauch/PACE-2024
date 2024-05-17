@@ -318,6 +318,8 @@ std::size_t highs_lp::add_3cycle_rows() {
 
 bool highs_lp::check_3cycle(const vertex_t &u, const vertex_t &v,
                             const vertex_t &w) {
+    assert(u < v);
+    assert(v < w);
     const auto [uv, vw, uw] = flat_indices(n_free, n_free_2, u, v, w);
     const double x = get_3cycle_value(uv, vw, uw);
     const double interval_width = 1. + 3. * params.tol_feasibility;
@@ -349,8 +351,6 @@ bool highs_lp::check_3cycles() {
         for (v = u + 1; v + 1u < n_free; ++v) {
             for (w = v + 1; w < n_free; ++w) {
             check_3cycles_in_for:  // to pick off where we left
-                assert(u < v);
-                assert(v < w);
                 check_3cycle(u, v, w);
                 stop = is_last_bucket_full() || is_n_bucket_entries_large();
                 if (stop) goto check_3cycles_after_for;
@@ -365,8 +365,6 @@ bool highs_lp::check_3cycles() {
             for (w = v + 1; w < n_free; ++w) {
                 if (u_eq_old && v_eq_old && w == w_old)
                     goto check_3cycles_after_for;
-                assert(u < v);
-                assert(v < w);
                 check_3cycle(u, v, w);
                 stop = is_last_bucket_full() || is_n_bucket_entries_large();
                 if (stop) goto check_3cycles_after_for;
@@ -377,6 +375,42 @@ bool highs_lp::check_3cycles() {
 check_3cycles_after_for:
     info.n_bucket_entries = get_n_bucket_entries();
     u_old = u, v_old = v, w_old = w;
+    return add_3cycle_rows() > 0;
+}
+
+bool highs_lp::check_3cycles_depr() {
+    clear_buckets();
+    const std::vector<std::pair<vertex_t, vertex_t>> unsettled =
+        unsettled_pairs();
+
+    auto end = unsettled.end();
+    bool stop = false;
+    for (auto it1 = unsettled.begin(); it1 + 1 != end; ++it1) {
+        const auto &[u, v] = *it1;
+        for (auto it2 = it1 + 1; it2 != end; ++it2) {
+            const auto &[x, y] = *it2;
+            if (u == x) {
+                check_3cycle(u, v, y);
+                stop = is_last_bucket_full() || is_n_bucket_entries_large();
+                if (stop) goto check_3cycles_fast_after_for;
+            } else
+                break;
+        }
+
+        for (auto it2 = std::lower_bound(it1, end, std::make_pair(v, 0u));
+             it2 != end; ++it2) {
+            const auto &[x, y] = *it2;
+            if (v == x) {
+                check_3cycle(u, v, y);
+                stop = is_last_bucket_full() || is_n_bucket_entries_large();
+                if (stop) goto check_3cycles_fast_after_for;
+            } else
+                break;
+        }
+    }
+
+check_3cycles_fast_after_for:
+    info.n_bucket_entries = get_n_bucket_entries();
     return add_3cycle_rows() > 0;
 }
 

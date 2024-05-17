@@ -277,6 +277,7 @@ class highs_lp : public highs_base {
      * @return false otherwise
      */
     bool check_3cycles();
+    bool check_3cycles_depr();
 
     /**
      * @brief clears auxiliary vectors for adding rows
