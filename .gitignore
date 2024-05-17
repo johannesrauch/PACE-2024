@@ -48,4 +48,5 @@ highs/*
 build/
 test/big_test_set
 weberknecht.tgz
+weberknecht_h.tgz
 test/param_set
