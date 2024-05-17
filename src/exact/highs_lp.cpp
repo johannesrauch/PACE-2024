@@ -95,6 +95,7 @@ void highs_lp::resolve() {
 void highs_lp::delete_positive_slack_rows() {
     if (!info.was_warmstart) return;
     if ((info.n_simplex_coldstart_iters / 2) >= info.n_simplex_iters) return;
+    info.tried_deleting_rows = true;
 
     // gather rows to delete
     rows_to_delete.clear();

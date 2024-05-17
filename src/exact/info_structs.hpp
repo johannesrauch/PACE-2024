@@ -26,6 +26,7 @@ struct highs_lp_info {
     std::size_t n_added_rows{0};
     std::size_t n_deleted_rows{0};
     std::size_t n_delete_rows_spared{0};
+    bool tried_deleting_rows{false};
 
     std::size_t n_solve_iters{0};
     std::size_t n_simplex_iters{0};

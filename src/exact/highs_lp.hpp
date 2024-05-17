@@ -408,6 +408,7 @@ class highs_lp : public highs_base {
         info.n_added_rows = 0;
         info.n_deleted_rows = 0;
         info.n_delete_rows_spared = 0;
+        info.tried_deleting_rows = false;
     }
 };
 
