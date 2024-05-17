@@ -1,14 +1,6 @@
 #ifndef PACE_HEURISTIC_SHIFT_HEURISTIC_HPP
 #define PACE_HEURISTIC_SHIFT_HEURISTIC_HPP
 
-#ifndef PACE_CONST_SHIFT_LENGTH
-#define PACE_CONST_SHIFT_LENGTH 512
-#endif
-
-#ifndef PACE_CONST_N_SHIFT_ITERATIONS
-#define PACE_CONST_N_SHIFT_ITERATIONS 4096
-#endif
-
 #include <list>
 
 #include "log/debug_printf.hpp"
@@ -18,8 +10,8 @@
 namespace pace {
 
 struct shift_heuristic_params {
-    const std::size_t n_iterations{PACE_CONST_N_SHIFT_ITERATIONS};
-    const std::size_t shift_length{PACE_CONST_SHIFT_LENGTH};
+    const std::size_t n_iterations{4096};
+    const std::size_t shift_length{512};
 };
 
 /**
@@ -95,7 +87,7 @@ class shift_heuristic : public instance_view {
         // try left shifts
         uint32_t c_old{0}, c_new{0}, improvement = 0;
         typename std::list<vertex_t>::iterator k = i, l = i;
-        for (std::size_t j = 1; j <= PACE_CONST_SHIFT_LENGTH; ++j) {
+        for (std::size_t j = 1; j <= params.shift_length; ++j) {
             if (k == ordering_.begin()) break;
             --k;
 
@@ -113,7 +105,7 @@ class shift_heuristic : public instance_view {
         c_new = 0;
         k = i;
         bool right_shift = false;
-        for (std::size_t j = 1; j <= PACE_CONST_SHIFT_LENGTH; ++j) {
+        for (std::size_t j = 1; j <= params.shift_length; ++j) {
             ++k;
             if (k == ordering_.end()) break;
 

@@ -1,10 +1,6 @@
 #ifndef PACE_HEURISTICS_MEDIAN_HEURISTIC_HPP
 #define PACE_HEURISTICS_MEDIAN_HEURISTIC_HPP
 
-#ifndef PACE_CONST_PROBMEDIAN_LOOKAHEAD
-#define PACE_CONST_PROBMEDIAN_LOOKAHEAD 16
-#endif
-
 #include "heuristic/shift_heuristic.hpp"
 #include "utils/randomness_utils.hpp"
 #include "utils/vector_utils.hpp"
@@ -12,7 +8,13 @@
 namespace pace {
 
 struct median_heuristic_params {
-    const uint8_t n_lookahead{PACE_CONST_PROBMEDIAN_LOOKAHEAD};
+    const uint8_t n_lookahead{
+#ifndef NDEBUG
+        16
+#else
+        64
+#endif
+    };
 };
 
 /**
@@ -47,7 +49,9 @@ class median_heuristic : public instance_view {
     crossing_number_t operator()(std::vector<vertex_t>& ordering) {
         identity(n_free, ordering);
         sort(ordering.begin(), ordering.end(),
-             [=](const vertex_t& a, const vertex_t& b) -> bool { return this->compare(a, b); });
+             [=](const vertex_t& a, const vertex_t& b) -> bool {
+                 return this->compare(a, b);
+             });
         return shift_h(ordering);
     }
 
@@ -94,7 +98,8 @@ class probmedian_heuristic : public instance_view {
     std::vector<vertex_t> another_ordering;
     std::vector<vertex_t> medians;
     std::vector<vertex_t> randomized_medians;
-    std::uniform_real_distribution<> distribution{0.0957, 0.9043};  // from Nagamochi's paper
+    std::uniform_real_distribution<> distribution{
+        0.0957, 0.9043};  // from Nagamochi's paper
     median_heuristic median_h;
     shift_heuristic& shift_h;
     median_heuristic_params params;
@@ -107,7 +112,8 @@ class probmedian_heuristic : public instance_view {
      * @param ordering vector where the ordering is stored
      * @param n_iterations number of iterations
      */
-    probmedian_heuristic(instance& instance_, median_heuristic_params params = median_heuristic_params())
+    probmedian_heuristic(instance& instance_, median_heuristic_params params =
+                                                  median_heuristic_params())
         : instance_view(instance_),
           another_ordering(n_free),
           medians(n_free),
@@ -127,15 +133,18 @@ class probmedian_heuristic : public instance_view {
 
     /**
      * @brief runs the probabilistic median heuristic solver
-     * and stores the result in ordering; expects an initial solution in ordering
+     * and stores the result in ordering; expects an initial solution in
+     * ordering
      *
      * @param ordering a valid ordering with n_crossings number of crossings
      * @param n_crossings number of crossings of ordering
      * @return crossing_number_t number of crossings
      */
-    crossing_number_t operator()(std::vector<vertex_t>& ordering, crossing_number_t n_crossings) {
+    crossing_number_t operator()(std::vector<vertex_t>& ordering,
+                                 crossing_number_t n_crossings) {
         // try to find a better solution with probabilistic median heuristic
-        for (uint8_t i = 1; lower_bound() < n_crossings && i <= params.n_lookahead; ++i) {
+        for (uint8_t i = 1;
+             lower_bound() < n_crossings && i <= params.n_lookahead; ++i) {
             const crossing_number_t candidate = generate_another_ordering();
             if (candidate < n_crossings) {
                 i = 0;
@@ -148,7 +157,8 @@ class probmedian_heuristic : public instance_view {
     }
 
     /**
-     * @brief runs the (probabilistic) median heuristic solver and stores the result in ordering
+     * @brief runs the (probabilistic) median heuristic solver and stores the
+     * result in ordering
      *
      * @return crossing_number_t number of crossings
      */
@@ -175,13 +185,17 @@ class probmedian_heuristic : public instance_view {
             return true;
         } else if (randomized_medians[a] > randomized_medians[b]) {
             return false;
-        } else if (medians[a] < medians[b]) {  // from here random_medians[a] == random_medians[b]
+        } else if (medians[a] < medians[b]) {  // from here random_medians[a] ==
+                                               // random_medians[b]
             return true;
-        } else if (medians[a] > medians[b]) {  // from here medians[a] == medians[b]
+        } else if (medians[a] >
+                   medians[b]) {  // from here medians[a] == medians[b]
             return false;
-        } else if (graph.get_degree(a) % 2 == 1 && graph.get_degree(b) % 2 == 0) {
+        } else if (graph.get_degree(a) % 2 == 1 &&
+                   graph.get_degree(b) % 2 == 0) {
             return true;
-        } else if (graph.get_degree(a) % 2 == 0 && graph.get_degree(b) % 2 == 1) {
+        } else if (graph.get_degree(a) % 2 == 0 &&
+                   graph.get_degree(b) % 2 == 1) {
             return false;
         } else {
             return a < b;
@@ -192,7 +206,9 @@ class probmedian_heuristic : public instance_view {
     inline crossing_number_t generate_another_ordering() {
         fill_randomized_medians();
         sort(another_ordering.begin(), another_ordering.end(),
-             [=](const vertex_t& a, const vertex_t& b) -> bool { return this->compare(a, b); });
+             [=](const vertex_t& a, const vertex_t& b) -> bool {
+                 return this->compare(a, b);
+             });
         return shift_h(another_ordering);
     }
 
@@ -205,7 +221,8 @@ class probmedian_heuristic : public instance_view {
         if (nof_neighbors == 0) {
             return 0;
         } else {
-            const std::size_t j = static_cast<std::size_t>(distribution(rd_generator) * nof_neighbors);
+            const std::size_t j = static_cast<std::size_t>(
+                distribution(rd_generator) * nof_neighbors);
             assert(j < nof_neighbors);
             return neighbors[j];
         }
