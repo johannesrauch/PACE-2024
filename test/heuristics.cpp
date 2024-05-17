@@ -92,7 +92,7 @@ void test_heuristics_with(const fs::path dirpath) {
 
 int main(int argc, char** argv) {
     if (argc <= 1) {
-        test_heuristics_with("tiny_test_set/instances");
+        test_heuristics_with("tiny/instances");
     } else {
         const fs::path path = argv[1];
         if (path.extension() == ".gr") {

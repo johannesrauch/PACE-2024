@@ -66,8 +66,8 @@ void test_exact_solver_with(const fs::path dirpath) {
  */
 int main(int argc, char** argv) {
     if (argc <= 1) {
-        test_exact_solver_with("tiny_test_set/instances");
-        test_exact_solver_with("my_tests/instances");
+        test_exact_solver_with("tiny/instances");
+        test_exact_solver_with("mine/instances");
     } else {
         const fs::path path = argv[1];
         if (path.extension() == ".gr") {

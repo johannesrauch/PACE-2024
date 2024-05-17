@@ -48,7 +48,7 @@ void test_crossing_matrix_with(const fs::path dirpath) {
     fmt::printf("%11s%11s%11s%11s%11s\n",  //
                 "instance", "reference", "matrix", "folded", "fastest");
     pace::test::print_line(67);
-    for (const auto& file : std::filesystem::directory_iterator("medium_test_set/instances")) {
+    for (const auto& file : std::filesystem::directory_iterator(dirpath)) {
         if (!file.is_regular_file()) continue;
         test_crossing_matrix(file.path());
         std::cout << std::flush;
@@ -60,7 +60,7 @@ void test_crossing_matrix_with(const fs::path dirpath) {
  */
 int main(int argc, char** argv) {
     if (argc <= 1) {
-        test_crossing_matrix_with("medium_test_set/instances");
+        test_crossing_matrix_with("medium/instances");
     } else {
         const fs::path path = argv[1];
         if (path.extension() == ".gr") {

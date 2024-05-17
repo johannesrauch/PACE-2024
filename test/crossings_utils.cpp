@@ -87,8 +87,8 @@ void test_number_of_crossings_with(const fs::path dirpath) {
  */
 int main(int argc, char** argv) {
     if (argc == 1) {
-        test_number_of_crossings_with("medium_test_set/instances");
-        test_crossing_numbers_of_with("medium_test_set/instances");
+        test_number_of_crossings_with("medium/instances");
+        test_crossing_numbers_of_with("medium/instances");
     } else {
         const fs::path path = argv[1];
         if (path.extension() == ".gr") {

@@ -74,8 +74,8 @@ void test_branch_and_cut_with(const fs::path dirpath) {
  */
 int main(int argc, char** argv) {
     if (argc <= 1) {
-        test_branch_and_cut_with("tiny_test_set/instances");
-        test_branch_and_cut_with("my_tests/instances");
+        test_branch_and_cut_with("tiny/instances");
+        test_branch_and_cut_with("mine/instances");
     } else {
         const fs::path path = argv[1];
         if (path.extension() == ".gr") {
