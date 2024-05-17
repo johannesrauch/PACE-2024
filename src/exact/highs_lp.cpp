@@ -57,7 +57,8 @@ void highs_lp::initial_partial_solve() {
     // 3-cycle ieqs
     bool cut_generated{true};
     while (cut_generated &&
-           info.n_3cycle_iters < params.max_initial_solve_3cycle_iters) {
+           info.n_3cycle_iters < params.max_initial_solve_3cycle_iters &&
+           info.n_solve_iters < params.max_initial_solve_iters) {
         delete_positive_slack_rows();
         run(params.max_initial_solve_simplex_iters);
 

@@ -17,6 +17,7 @@ struct highs_lp_params {
     const uint16_t max_initial_rows{16384};  ///< maximum number of initial rows
     const uint8_t max_delete_rows_3cycle_iters{
         64};  ///< maximum number of 3-cycle iterations with row deletion
+    const uint16_t max_initial_solve_iters{200};
     const uint8_t max_initial_solve_3cycle_iters{
         2};  ///< maximum number of times max_new_rows is doubled
     const int32_t max_initial_solve_simplex_iters{20000};
