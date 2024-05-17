@@ -124,12 +124,7 @@ class branch_and_cut : public instance_view {
     // getter
     //
 
-    const branch_and_cut_info &get_info() {
-        if (lp_solver_ptr) {
-            info.n_rows = lp_solver_ptr->get_n_rows();
-        }
-        return info;
-    }
+    const branch_and_cut_info &get_info() { return info; }
 };
 
 };  // namespace pace

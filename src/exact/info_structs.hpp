@@ -58,6 +58,8 @@ struct branch_and_cut_info {
     crossing_number_t n_crossings_h{0};
 
     double relax_h_confidence{-1.};
+
+    std::chrono::time_point<std::chrono::system_clock> t_end;
 };
 
 };  // namespace pace

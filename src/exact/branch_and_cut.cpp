@@ -143,6 +143,8 @@ uint32_t branch_and_cut::operator()(std::vector<vertex_t> &ordering) {
     };
 
     PACE_DEBUG_PRINTF("end   branch and cut\n");
+    info.n_rows = lp_solver_ptr->get_n_rows();
+    info.t_end = std::chrono::system_clock::now();
     ordering = get_ordering();
     return upper_bound;
 }
