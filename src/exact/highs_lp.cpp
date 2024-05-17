@@ -51,11 +51,17 @@ void highs_lp::run(const int32_t max_simplex_iter, const bool bookkeeping) {
 
 void highs_lp::initial_partial_solve() {
     info.n_solve_iters = 0;
+    info.n_3cycle_iters = 0;
     PACE_DEBUG_PRINTF_LPINFO_LINE();
+
+    run();
+    const std::size_t max_new_rows = params.max_new_rows;
+    params.max_new_rows = std::numeric_limits<std::size_t>::max();
+    bool cut_generated = cut();
+    params.max_new_rows = max_new_rows;
 
     // few 3-cycle iterations, solved to optimality, to sieve for "important"
     // 3-cycle ieqs
-    bool cut_generated{true};
     while (cut_generated &&
            info.n_3cycle_iters < params.max_initial_solve_3cycle_iters &&
            info.n_solve_iters < params.max_initial_solve_iters) {
