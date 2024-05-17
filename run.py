@@ -3,7 +3,7 @@ import time
 import os
 
 timeout = 1800
-testdir = "test/big_test_set_easy/"
+testdir = "test/exact/"
 instdir = testdir + "instances/"
 outpdir = testdir + "output/"
 weberk = "build/weberknecht"
