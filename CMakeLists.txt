@@ -23,6 +23,8 @@ add_subdirectory(src)
 
 add_executable(weberknecht ${CMAKE_SOURCE_DIR}/src/weberknecht.cpp)
 target_link_libraries(weberknecht oscm)
+add_executable(weberknecht_h ${CMAKE_SOURCE_DIR}/src/weberknecht_h.cpp)
+target_link_libraries(weberknecht_h oscm)
 
 if(PACE_BUILD_TESTS)
     add_subdirectory(test)
