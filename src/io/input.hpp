@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "io/parse_input.hpp"
+#include "log/debug_printf.hpp"
 #include "model/bipartite_graph.hpp"
 
 namespace pace {
@@ -26,9 +27,9 @@ class input {
    public:
     const fs::path filepath;
 
-    input() { parse_input(std::cin, graph); }
+    input();
 
-    input(const fs::path filepath) : filepath(filepath) { parse_input(filepath, graph); }
+    input(const fs::path filepath);
 
     // delete copy constructor and assignment
     input(const input &other) = delete;
@@ -52,7 +53,9 @@ class input {
         return first_graph_empty;
     }
 
-    void lift_ordering(const std::size_t i, const std::vector<vertex_t> &subordering, std::vector<vertex_t> &ordering);
+    void lift_ordering(const std::size_t i,
+                       const std::vector<vertex_t> &subordering,
+                       std::vector<vertex_t> &ordering);
 
     bool try_split();
 

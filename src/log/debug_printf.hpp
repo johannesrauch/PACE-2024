@@ -8,11 +8,16 @@ namespace pace {
 
 namespace test {
 
-void printf_info(const branch_and_cut_info& info_br, const highs_lp_info& info_lp);
+void printf_info(const branch_and_cut_info& info_br,
+                 const highs_lp_info& info_lp);
 
 void printf_lpinfo_line();
 
 void printf_lpinfo(const highs_lp_info& info);
+
+void printf_bounds(const crossing_number_t& lb, const crossing_number_t& ub);
+
+void printf_graph(const std::size_t n0, const std::size_t n1, const std::size_t m);
 
 };  // namespace test
 
@@ -60,6 +65,28 @@ void printf_lpinfo(const highs_lp_info& info);
     } while (false)
 #else
 #define PACE_DEBUG_PRINTF_LPINFO(...) \
+    do {                              \
+    } while (false)
+#endif
+
+#ifdef PACE_DEBUG_PRINT
+#define PACE_DEBUG_PRINTF_BOUNDS(lb, ub)   \
+    do {                                   \
+        pace::test::printf_bounds(lb, ub); \
+    } while (false)
+#else
+#define PACE_DEBUG_PRINTF_BOUNDS(...) \
+    do {                              \
+    } while (false)
+#endif
+
+#ifdef PACE_DEBUG_PRINT
+#define PACE_DEBUG_PRINTF_GRAPH(n0, n1, m)   \
+    do {                                   \
+        pace::test::printf_graph(n0, n1, m); \
+    } while (false)
+#else
+#define PACE_DEBUG_PRINTF_GRAPH(...) \
     do {                              \
     } while (false)
 #endif

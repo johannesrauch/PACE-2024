@@ -3,12 +3,30 @@
 namespace pace {
 
 //
+// ctors
+//
+
+input::input() {
+    parse_input(std::cin, graph);
+    PACE_DEBUG_PRINTF("\n");
+    PACE_DEBUG_PRINTF_GRAPH(  //
+        graph.get_n_fixed(), graph.get_n_free(), graph.get_m());
+}
+
+input::input(const fs::path filepath) : filepath(filepath) {
+    parse_input(filepath, graph);
+    PACE_DEBUG_PRINTF("\n");
+    PACE_DEBUG_PRINTF_GRAPH(  //
+        graph.get_n_fixed(), graph.get_n_free(), graph.get_m());
+}
+
+//
 // public methods
 //
 
 void input::lift_ordering(const std::size_t i,
-                                const std::vector<vertex_t> &subordering,
-                                std::vector<vertex_t> &ordering) {
+                          const std::vector<vertex_t> &subordering,
+                          std::vector<vertex_t> &ordering) {
     assert(tried_split);
     assert(i < get_n_subgraphs());
     assert(ordering.size() == graph.get_n_free());

@@ -81,6 +81,22 @@ void printf_lpinfo(const highs_lp_info& info) {
     std::cout << std::flush;
 }
 
+void printf_bounds(const crossing_number_t& lb, const crossing_number_t& ub) {
+    fmt::printf("%11s=%11u, %11s=%11u\n",  //
+                "lower_bound", lb,         //
+                "upper_bound", ub);
+    std::cout << std::flush;
+}
+
+void printf_graph(const std::size_t n0, const std::size_t n1,
+                  const std::size_t m) {
+    fmt::printf("%11s=%11u, %11s=%11u, %11s=%11u\n",  //
+                "n fixed", n0,             //
+                "n free", n1,              //
+                "m", m);
+    std::cout << std::flush;
+}
+
 };  // namespace test
 
 };  // namespace pace
