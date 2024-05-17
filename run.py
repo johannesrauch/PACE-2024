@@ -3,11 +3,11 @@ import time
 import os
 import sys
 
-timeout = 1800
+timeout = 300
 testdir = "test/" + sys.argv[1] + "/"
 instdir = testdir + "instances/"
 outpdir = testdir + "output/"
-weberk = "build/weberknecht"
+weberk = "build/weberknecht" + ("_h" if len(sys.argv) >= 3 else "")
 
 if __name__ == "__main__":
     succeded = []
@@ -16,13 +16,14 @@ if __name__ == "__main__":
     instances = os.listdir(instdir)
     instances.sort(key=lambda k: int(k.split(".")[0]))
     for filename in instances:
-        print(f"running {filename}")
+        print(f"running '{weberk} < {instdir + filename}'")
         n += 1
         with open(instdir + filename) as i, open(outpdir + filename[:-2] + "log", "w") as o:
             try:
-                subprocess.call([weberk], stdin=i, stdout=o, timeout=timeout)
+                r = subprocess.call([weberk], stdin=i, stdout=o, timeout=timeout)
+                if r != 0: raise ValueError
                 succeded.append(filename)
-            except subprocess.TimeoutExpired:
+            except (subprocess.TimeoutExpired, ValueError):
                 failed.append(filename)
     
     output = f"number of instances: {n}\n"
