@@ -21,6 +21,7 @@ struct branch_and_cut_params {
     std::size_t n_nodes_until_rins{25};
     bool do_rins{true};
     bool do_uninformed_h{true};
+    bool do_uninformed_rins{false};
 };
 
 class branch_and_cut : public instance_view {
@@ -118,7 +119,7 @@ class branch_and_cut : public instance_view {
     /**
      * @brief solves the given instance exactly with a branch and cut algorithm
      */
-    uint32_t operator()(std::vector<vertex_t> &ordering);
+    crossing_number_t operator()(std::vector<vertex_t> &ordering);
 
     //
     // getter

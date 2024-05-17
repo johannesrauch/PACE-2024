@@ -130,6 +130,11 @@ uint32_t branch_and_cut::operator()(std::vector<vertex_t> &ordering) {
         reli_branch_ptr =
             std::make_unique<reliability_branching>(*lp_solver_ptr);
 
+    if (params.do_uninformed_rins) {
+        lp_solver_ptr->run();
+        heuristic.rins(*lp_solver_ptr, ordering);
+    }
+
     const highs_lp_info &info_lp = lp_solver_ptr->get_info();
     PACE_DEBUG_PRINTF("%11s=%11u, %11s=%11u, %11s=%11u\n",  //
                       "n cols", info_lp.n_cols,             //
