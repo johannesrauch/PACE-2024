@@ -180,12 +180,15 @@ class instance {
     //
 
     instance *new_rins_instance(highs_lp &lp);
+    instance *new_lsearch_instance(const uint16_t lsearch_width);
 
     //
     // private helper methods
     //
 
    private:
+    instance *new_subinstance();
+
     void create_cr_matrix() {
         cr_matrix_unique_ptr =
             std::make_unique<crossing_matrix>(graph.get_n_free());
@@ -193,7 +196,8 @@ class instance {
         lower_bound = fill_crossing_matrix(graph, *cr_matrix_ptr);
     }
 
-    void create_kernel(highs_lp *lp = nullptr);
+    void create_kernel(highs_lp *lp = nullptr,
+                       const uint16_t lsearch_width = 0);
 
     void create_unsettled_pairs();
 
@@ -219,7 +223,8 @@ class instance {
      * @brief tells if we are able to fix u < v or v < u
      */
     pattern foresee(const vertex_t &u, const vertex_t &v, highs_lp *lp,
-                    const std::vector<vertex_t> &positions);
+                    const std::vector<vertex_t> &positions,
+                    const uint16_t &lsearch_width);
 
     /**
      * @brief if we construct the kernel for a rins instance, we fix were the
@@ -228,6 +233,10 @@ class instance {
     pattern based_on_relaxation(const vertex_t &u, const vertex_t &v,
                                 highs_lp &lp,
                                 const std::vector<vertex_t> &positions);
+
+    pattern based_on_ordering(const vertex_t &u, const vertex_t &v,
+                              const std::vector<vertex_t> &positions,
+                              const uint16_t &lsearch_width);
 
    public:
     /**

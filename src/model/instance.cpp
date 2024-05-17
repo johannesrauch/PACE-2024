@@ -41,14 +41,27 @@ void instance::update_kernel(const std::vector<double> &lp_sol) {
 }
 
 instance *instance::new_rins_instance(highs_lp &lp) {
+    instance *subinstance = new_subinstance();
+    assert(!subinstance->restriction_graph_ptr);
+    subinstance->create_kernel(&lp);
+    return subinstance;
+}
+
+instance *instance::new_lsearch_instance(const uint16_t lsearch_width) {
+    assert(lsearch_width > 0);
+    instance *subinstance = new_subinstance();
+    assert(!subinstance->restriction_graph_ptr);
+    subinstance->create_kernel(nullptr, lsearch_width);
+    return subinstance;
+}
+
+instance *instance::new_subinstance() {
     instance *subinstance = new instance(graph);
     subinstance->cr_matrix_ptr =
         const_cast<crossing_matrix *>(&get_cr_matrix());
     subinstance->lower_bound = get_lower_bound();
     subinstance->upper_bound = get_upper_bound();
     subinstance->ordering = get_ordering();
-    assert(!subinstance->restriction_graph_ptr);
-    subinstance->create_kernel(&lp);
     return subinstance;
 }
 
@@ -56,7 +69,7 @@ instance *instance::new_rins_instance(highs_lp &lp) {
 // private methods
 //
 
-void pace::instance::create_kernel(highs_lp *lp) {
+void pace::instance::create_kernel(highs_lp *lp, const uint16_t lsearch_width) {
     if (restriction_graph_ptr) return;
 
     PACE_DEBUG_PRINTF("start create_kernel\n");
@@ -65,12 +78,12 @@ void pace::instance::create_kernel(highs_lp *lp) {
     restriction_graph_ptr = std::make_unique<digraph>(graph.get_n_free());
     magic.resize(n_free_2);
     std::vector<vertex_t> positions;
-    if (lp != nullptr) inverse(ordering, positions);
+    if (lp != nullptr || lsearch_width > 0) inverse(ordering, positions);
 
     // let's foresee if we can fix u < v or v < u
     for (vertex_t u = 0u; u + 1u < n_free; ++u) {
         for (vertex_t v = u + 1u; v < n_free; ++v) {
-            switch (foresee(u, v, lp, positions)) {
+            switch (foresee(u, v, lp, positions, lsearch_width)) {
                 case u_before_v:
                     fix_u_before_v(u, v);
                     break;
@@ -132,12 +145,18 @@ void instance::compute_transitive_hull() {
 }
 
 pattern instance::foresee(const vertex_t &u, const vertex_t &v, highs_lp *lp,
-                          const std::vector<vertex_t> &positions) {
+                          const std::vector<vertex_t> &positions,
+                          const uint16_t &lsearch_width) {
     assert(u < v);
 
     pattern p = indeterminate;
     if (lp != nullptr) {
         p = based_on_relaxation(u, v, *lp, positions);
+        if (p != indeterminate) return p;
+    }
+
+    if (lsearch_width > 0) {
+        p = based_on_ordering(u, v, positions, lsearch_width);
         if (p != indeterminate) return p;
     }
 
@@ -165,22 +184,24 @@ pattern instance::based_on_relaxation(const vertex_t &u, const vertex_t &v,
     const std::size_t uv = flat_index(n_free, n_free_2, u, v);
     if (!lp.is_variable_integral(uv)) return indeterminate;
     const double x = lp.get_variable_value(uv);
-    if (positions[u] < positions[v] && x > 0.5) {
-        return u_before_v;
-    } else if (positions[v] < positions[u] & x <= 0.5) {
-        return v_before_u;
-    } else {
-        return indeterminate;
-    }
+
+    if (positions[u] < positions[v] && x > 0.5) return u_before_v;
+    if (positions[v] < positions[u] & x <= 0.5) return v_before_u;
+    return indeterminate;
+}
+
+pattern instance::based_on_ordering(const vertex_t &u, const vertex_t &v,
+                                    const std::vector<vertex_t> &positions,
+                                    const uint16_t &lsearch_width) {
+    if (positions[u] + lsearch_width < positions[v]) return u_before_v;
+    if (positions[v] + lsearch_width < positions[u]) return v_before_u;
+    return indeterminate;
 }
 
 pattern instance::based_on_degree(const vertex_t &u, const vertex_t &v) {
-    if (graph.get_degree(u) == 0)
-        return pattern::u_before_v;
-    else if (graph.get_degree(v) == 0)
-        return pattern::v_before_u;
-    else
-        return pattern::indeterminate;
+    if (graph.get_degree(u) == 0) return pattern::u_before_v;
+    if (graph.get_degree(v) == 0) return pattern::v_before_u;
+    return pattern::indeterminate;
 }
 
 pattern instance::based_on_crossing_numbers(const crossing_number_t &c_uv,
