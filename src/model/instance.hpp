@@ -1,6 +1,7 @@
 #ifndef PACE_MODEL_INSTANCE_HPP
 #define PACE_MODEL_INSTANCE_HPP
 
+#include <chrono>
 #include <limits>
 #include <memory>
 
@@ -80,6 +81,12 @@ class instance {
      */
     std::vector<vertex_t> ordering;
 
+    /**
+     * @brief time when best solution was found
+     */
+    std::chrono::time_point<std::chrono::system_clock> t_sol{
+        std::chrono::system_clock::now()};
+
    public:
     instance(const bipartite_graph &graph,
              const bool initialize_ordering = true)
@@ -150,6 +157,7 @@ class instance {
         if (n_crossings < upper_bound) {
             upper_bound = n_crossings;
             ordering = another_ordering;
+            t_sol = std::chrono::system_clock::now();
         }
     }
 
