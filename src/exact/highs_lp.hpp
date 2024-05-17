@@ -91,8 +91,6 @@ class highs_lp : public highs_base {
     highs_lp &operator=(const highs_lp &rhs) = delete;
     highs_lp &operator=(highs_lp &&rhs) = delete;
 
-    ~highs_lp() {}
-
     //
     // lp solving methods
     //
