@@ -7,8 +7,8 @@ namespace pace {
 //
 
 crossing_number_t exact_solver::operator()(std::vector<vertex_t> &ordering) {
-    PACE_DEBUG_PRINTF("start exact_solver, n_subgraphs=%u\n",
-                      in.get_n_subgraphs());
+    PACE_DEBUG_PRINTF(  //
+        "start exact_solver, n_subgraphs=%u\n", in.get_n_subgraphs());
     crossing_number_t n_cr;
     if (in.get_n_subgraphs() >= 2) {
         n_cr = solve_if_split(ordering);
