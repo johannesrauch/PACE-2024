@@ -25,7 +25,7 @@ void test_branch_and_cut(pace::input& input) {
 
     pace::branch_and_cut solver(instance);
     std::vector<vertex_t> ordering;
-    pace::reset_t0();
+    std::chrono::time_point<std::chrono::system_clock> t0 = pace::now();
     crossing_number_t test = solver(ordering);
 
     PACE_DEBUG_PRINTF("TEST: %u\n", test);
@@ -42,9 +42,10 @@ void test_branch_and_cut(pace::input& input) {
     }
 
     const pace::branch_and_cut_info& info = solver.get_info();
-    fmt::printf("|%11.1f%11u%11u%11u|%11u%11u%11u|%11s%11s\n",                                         //
-                pace::elapsed_walltime_in_s(pace::now()), info.n_rows, info.n_iters, info.n_search_nodes,  //
-                info.lower_bound, info.n_crossings_h, info.upper_bound,                                //
+    fmt::printf("|%11.1f%11u%11u%11u|%11u%11u%11u|%11s%11s\n",  //
+                pace::elapsed_walltime_in_s(pace::now(), t0), info.n_rows,
+                info.n_iters, info.n_search_nodes,                       //
+                info.lower_bound, info.n_crossings_h, info.upper_bound,  //
                 warning, test_ok ? "true" : "false");
 }
 
