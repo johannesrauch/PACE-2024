@@ -17,7 +17,7 @@ namespace pace {
  * @tparam T vertex type of graph
  * @tparam R return type
  */
-template <typename T, typename R = uint32_t>
+template <typename T, typename R = crossing_number_t>
 std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph,
                                     T u, T v) {
     assert(graph.is_sorted());
