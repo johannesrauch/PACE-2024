@@ -64,7 +64,7 @@ class median_heuristic : public instance_view {
      * @return true a < b (according to medians)
      * @return false a >= b (according to medians)
      */
-    bool compare(const vertex_t& a, const vertex_t& b) const {
+    inline bool compare(const vertex_t& a, const vertex_t& b) const {
         assert(a < n_free && b < n_free);
         if (medians[a] < medians[b])
             return true;
@@ -145,7 +145,8 @@ class probmedian_heuristic : public instance_view {
         PACE_DEBUG_PRINTF("start probmedian heuristic\n");
         // try to find a better solution with probabilistic median heuristic
         for (uint8_t i = 1;
-             lower_bound() < n_crossings && i <= params.n_lookahead; ++i) {
+             lower_bound() < n_crossings && i <= params.n_lookahead && !tle;
+             ++i) {
             const crossing_number_t candidate = generate_another_ordering();
             if (candidate < n_crossings) {
                 i = 0;

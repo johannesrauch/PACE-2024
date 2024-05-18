@@ -7,12 +7,14 @@ crossing_number_t heuristics::uninformed(  //
     PACE_DEBUG_PRINTF("start uninformed heuristics\n");
     crossing_number_t n_cr = barycenter_h(ordering);
     if (n_cr <= lower_bound()) return n_cr;
-    const crossing_number_t n_cr_probm = probmedian_h(another_ordering);
-    if (n_cr_probm < n_cr) {
-        n_cr = n_cr_probm;
-        std::swap(another_ordering, ordering);
+    if (!tle) {
+        const crossing_number_t n_cr_probm = probmedian_h(another_ordering);
+        if (n_cr_probm < n_cr) {
+            n_cr = n_cr_probm;
+            std::swap(another_ordering, ordering);
+        }
     }
-    if (do_lsearch) {
+    if (do_lsearch && !tle) {
         if (n_cr <= lower_bound()) return n_cr;
         const crossing_number_t n_cr_lsearch = lsearch_h(another_ordering);
         if (n_cr_lsearch < n_cr) {
