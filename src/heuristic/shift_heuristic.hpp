@@ -56,11 +56,12 @@ class shift_heuristic : public instance_view {
     crossing_number_t operator()(std::vector<vertex_t> &ordering,
                                  crossing_number_t n_crossings) {
         assert(ordering.size() == n_free);
+        PACE_DEBUG_PRINTF("start shift heuristic\n");
         if (lower_bound() >= n_crossings) return n_crossings;
 
         assert(ordering.size() == graph.get_n_free());
         std::copy(ordering.begin(), ordering.end(), ordering_.begin());
-        bool go_on = true;
+        uint32_t go_on = 1;
 
         for (std::size_t i = 0;
              i < params.n_iterations && lower_bound() < n_crossings && go_on;
@@ -69,9 +70,10 @@ class shift_heuristic : public instance_view {
             for (typename std::list<vertex_t>::iterator it = ordering_.begin();
                  it != ordering_.end();) {
                 const auto [go_on_, it_] = improve(it, n_crossings);
-                go_on |= go_on_;
+                go_on += go_on_;
                 it = it_;
             }
+            PACE_DEBUG_PRINTF("%11s=%11s\n", "n improve", go_on);
         }
 
         std::copy(ordering_.begin(), ordering_.end(), ordering.begin());
@@ -79,6 +81,7 @@ class shift_heuristic : public instance_view {
         assert(number_of_crossings(graph, ordering) == n_crossings);
         update_ordering(ordering, n_crossings);
 
+        PACE_DEBUG_PRINTF("end   shift heuristic\n");
         return n_crossings;
     }
 

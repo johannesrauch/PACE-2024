@@ -142,6 +142,7 @@ class probmedian_heuristic : public instance_view {
      */
     crossing_number_t operator()(std::vector<vertex_t>& ordering,
                                  crossing_number_t n_crossings) {
+        PACE_DEBUG_PRINTF("start probmedian heuristic\n");
         // try to find a better solution with probabilistic median heuristic
         for (uint8_t i = 1;
              lower_bound() < n_crossings && i <= params.n_lookahead; ++i) {
@@ -151,8 +152,11 @@ class probmedian_heuristic : public instance_view {
                 n_crossings = candidate;
                 std::swap(ordering, another_ordering);
             }
+            PACE_DEBUG_PRINTF("%11s=%11u, %11s=%11u\n", "i", i, "pm look",
+                              params.n_lookahead);
         }
         update_ordering(ordering, n_crossings);
+        PACE_DEBUG_PRINTF("end   probmedian heuristic\n");
         return n_crossings;
     }
 

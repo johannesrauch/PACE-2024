@@ -168,6 +168,7 @@ crossing_number_t lower_bound_of(const folded_matrix<R>& cr_matrix) {
  */
 template <typename T>
 crossing_number_t lower_bound_of(const general_bipartite_graph<T>& graph) {
+    PACE_DEBUG_PRINTF("start lower_bound_of\n");
     const std::size_t n_free = graph.get_n_free();
     crossing_number_t lb = 0;
     for (T u = 0; u + 1u < n_free; ++u) {
@@ -176,6 +177,7 @@ crossing_number_t lower_bound_of(const general_bipartite_graph<T>& graph) {
             lb += std::min(c_uv, c_vu);
         }
     }
+    PACE_DEBUG_PRINTF("end   lower_bound_of\n");
     return lb;
 }
 
