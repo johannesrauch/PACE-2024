@@ -39,7 +39,9 @@
 
 .vscode/*
 # *.sol
+
 */.gdb_history
+.gdb_history
 
 dep
 highs/*
