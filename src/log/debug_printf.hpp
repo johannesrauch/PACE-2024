@@ -3,6 +3,7 @@
 
 #include "exact/info_structs.hpp"
 #include "fmt/printf.hpp"
+#include "utils/time.hpp"
 
 namespace pace {
 
@@ -20,7 +21,7 @@ void printf_bounds(const crossing_number_t& lb, const crossing_number_t& ub);
 void printf_graph(  //
     const std::size_t n0, const std::size_t n1, const std::size_t m);
 
-void printf_summary(const branch_and_cut_info &info);
+void printf_summary(const branch_and_cut_info& info);
 
 };  // namespace test
 

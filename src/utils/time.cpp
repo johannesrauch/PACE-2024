@@ -1,6 +1,8 @@
-#include "exact/info_structs.hpp"
+#include "utils/time.hpp"
 
 namespace pace {
+
+void time_limit_exceeded(int signum) { tle = 1; }
 
 void reset_t0() { t0 = now(); }
 
@@ -14,4 +16,4 @@ double elapsed_walltime_in_s(
     return std::chrono::duration<double>(t1 - t0).count();
 }
 
-};  // namespace pace
+}  // namespace pace
