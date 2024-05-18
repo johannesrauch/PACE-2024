@@ -16,6 +16,8 @@ class exact_solver {
 
    private:
     crossing_number_t solve_if_split(std::vector<vertex_t> &ordering);
+
+    crossing_number_t solve(const bipartite_graph &graph, std::vector<vertex_t> &ordering);
 };
 
 }  // namespace pace

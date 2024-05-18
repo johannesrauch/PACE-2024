@@ -33,29 +33,42 @@ crossing_number_t exact_solver::solve_if_split(
     crossing_number_t n_crossings{0};
     ordering.resize(in.get_graph().get_n_free());
 
-    const bool first_graph_empty = in.is_first_graph_empty();
-    if (first_graph_empty) {
-        const std::size_t n_free = in.get_subgraph(0).get_n_free();
-        identity(n_free, subordering);
-        in.lift_ordering(0, subordering, ordering);
-    }
-
-    for (std::size_t i = first_graph_empty; i < n_subgraphs; ++i) {
+    for (std::size_t i = 0; i < n_subgraphs; ++i) {
         const bipartite_graph &subgraph{in.get_subgraph(i)};
-        const std::size_t n_free = subgraph.get_n_free();
-        assert(n_free > 0);
-        if (n_free >= 2) {
-            instance instance_(subgraph);
-            branch_and_cut solver(instance_);
-            n_crossings += solver(subordering);
-        } else {
-            identity(n_free, subordering);
-        }
+        n_crossings += solve(subgraph, subordering);
         in.lift_ordering(i, subordering, ordering);
     }
 
     assert(n_crossings == number_of_crossings(in.get_graph(), ordering));
     return n_crossings;
+}
+
+crossing_number_t exact_solver::solve(  //
+    const bipartite_graph &graph, std::vector<vertex_t> &ordering) {
+    const std::size_t n_free = graph.get_n_free();
+    
+    if (graph.get_m() == 0 || n_free == 1) {
+        identity(n_free, ordering);
+        return 0;
+    }
+
+    instance instance_(graph);
+    if (n_free == 2) {
+        ordering.resize(2);
+        const auto [c_01, c_10] = instance_.get_cr_numbers(0, 1);
+        if (c_01 < c_10) {
+            ordering[0] = 0;
+            ordering[1] = 1;
+            return c_01;
+        } else {
+            ordering[0] = 1;
+            ordering[1] = 0;    
+            return c_10;
+        }
+    }
+
+    branch_and_cut solver(instance_);
+    return solver(ordering);
 }
 
 }  // namespace pace
