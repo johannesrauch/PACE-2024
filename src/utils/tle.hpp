@@ -7,7 +7,7 @@ namespace pace {
 
 static volatile sig_atomic_t tle = 0;
 
-void time_limit_exceeded(int signum) {
+static void time_limit_exceeded(int signum) {
     tle = 1;
 }
 
