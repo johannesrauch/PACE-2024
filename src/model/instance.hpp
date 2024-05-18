@@ -33,6 +33,7 @@ class instance {
     const std::size_t n_free;
     const std::size_t n_free_2;
     const std::size_t n_fixed;
+    const std::size_t max_n_free_for_matrix{20000};
 
    private:
     /**
@@ -120,6 +121,9 @@ class instance {
     }
 
     std::pair<crossing_number_t, crossing_number_t> get_cr_numbers(const vertex_t u, const vertex_t v) {
+        if (n_free <= max_n_free_for_matrix && !cr_matrix_ptr) {
+            create_cr_matrix();
+        }
         if (cr_matrix_ptr) {
             return std::make_pair((*cr_matrix_ptr)(u, v), (*cr_matrix_ptr)(v, u));
         }
@@ -147,8 +151,9 @@ class instance {
     }
 
     const crossing_number_t &get_lower_bound() {
-        if (lower_bound == 0) {
-            lower_bound = lower_bound_of(graph);
+        // above 20000 difficult to compute in 5mins for heuristic track
+        if (n_free <= max_n_free_for_matrix && !cr_matrix_ptr) {
+            create_cr_matrix();
         }
         return lower_bound;
     }
