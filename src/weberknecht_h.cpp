@@ -13,6 +13,7 @@ int main(int argc, char** argv) {
     pace::heuristic_solver solver(in);
     std::vector<pace::vertex_t> ordering;
     solver(ordering);
+    PACE_DEBUG_PRINTF("%11s=%11u\n", "tle", pace::tle);
     pace::print_output(in.get_graph().get_n_fixed(), ordering);
     return 0;
 }
