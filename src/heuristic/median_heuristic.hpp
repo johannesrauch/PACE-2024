@@ -177,7 +177,7 @@ class probmedian_heuristic : public instance_view {
      * @return true a < b (according to medians)
      * @return false a >= b (according to medians)
      */
-    bool compare(const vertex_t& a, const vertex_t& b) const {
+    inline bool compare(const vertex_t& a, const vertex_t& b) const {
         assert(n_free == randomized_medians.size());
         assert(n_free == medians.size());
         assert(a < n_free && b < n_free);
