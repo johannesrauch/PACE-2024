@@ -16,7 +16,7 @@ if __name__ == "__main__":
     instances = os.listdir(instdir)
     instances.sort(key=lambda k: int(k.split(".")[0]))
     for filename in instances:
-        print(f"running '{weberk} < {instdir + filename}'. ", end="")
+        print(f"running '{weberk} < {instdir + filename}'. ", end="", flush=True)
         n += 1
         with open(instdir + filename) as i, open(outpdir + filename[:-2] + "log", "w") as o:
             try:
