@@ -36,8 +36,8 @@ crossing_number_t shift_heuristic::operator()(std::vector<vertex_t> &ordering,
 }
 
 std::pair<bool, typename std::list<vertex_t>::iterator>  //
-shift_heuristic::improve(typename std::list<vertex_t>::iterator i,
-                         uint32_t &n_crossings) {
+shift_heuristic::improve(                                //
+    typename std::list<vertex_t>::iterator i, uint32_t &n_crossings) {
     // try left shifts
     uint32_t c_old{0}, c_new{0}, improvement = 0;
     typename std::list<vertex_t>::iterator k = i, l = i;
