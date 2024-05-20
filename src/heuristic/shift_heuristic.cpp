@@ -5,7 +5,8 @@ namespace pace {
 crossing_number_t shift_heuristic::operator()(std::vector<vertex_t> &ordering,
                                               crossing_number_t n_crossings) {
     assert(ordering.size() == n_free);
-    PACE_DEBUG_PRINTF("start shift heuristic, shift_length=%11u\n", params.shift_length);
+    PACE_DEBUG_PRINTF("start shift heuristic, shift_length=%11u\n",
+                      params.shift_length);
     if (lower_bound() >= n_crossings) return n_crossings;
 
     assert(ordering.size() == graph.get_n_free());
@@ -14,11 +15,11 @@ crossing_number_t shift_heuristic::operator()(std::vector<vertex_t> &ordering,
 
     for (std::size_t i = 0;  //
          i < params.n_iterations && lower_bound() < n_crossings && go_on &&
-         !tle;
+         !timelimit::was_sigterm_sent();
          ++i) {
         go_on = false;
         for (typename std::list<vertex_t>::iterator it = ordering_.begin();
-             it != ordering_.end() && !tle;) {
+             it != ordering_.end() && !timelimit::was_sigterm_sent();) {
             const auto [go_on_, it_] = improve(it, n_crossings);
             go_on += go_on_;
             it = it_;

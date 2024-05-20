@@ -145,7 +145,7 @@ class probmedian_heuristic : public instance_view {
         PACE_DEBUG_PRINTF("start probmedian heuristic\n");
         // try to find a better solution with probabilistic median heuristic
         for (uint8_t i = 1;
-             lower_bound() < n_crossings && i <= params.n_lookahead && !tle;
+             lower_bound() < n_crossings && i <= params.n_lookahead && !timelimit::was_sigterm_sent();
              ++i) {
             const crossing_number_t candidate = generate_another_ordering();
             if (candidate < n_crossings) {

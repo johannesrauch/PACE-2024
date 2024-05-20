@@ -1,10 +1,13 @@
 #include "utils/time.hpp"
 
+#include "log/debug_printf.hpp"
+
 namespace pace {
 
-void time_limit_exceeded(int signum) { tle = 1; }
-
-void reset_t0() { t0 = now(); }
+timelimit &timelimit::singleton() {
+    static timelimit timelimit;
+    return timelimit;
+}
 
 std::chrono::time_point<std::chrono::system_clock> now() {
     return std::chrono::system_clock::now();

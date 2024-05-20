@@ -1,20 +1,31 @@
 #ifndef PACE_UTILS_TLE_HPP
 #define PACE_UTILS_TLE_HPP
 
-#include <signal.h>
-
 #include <chrono>
+#include <csignal>
 
 namespace pace {
 
-volatile static sig_atomic_t tle = 0;
+/**
+ * @brief singleton class
+ */
+class timelimit {
+    timelimit() = default;
+    static timelimit &singleton();
+    std::sig_atomic_t tle{0};
 
-void time_limit_exceeded(int signum);
+    public:
+    static bool was_sigterm_sent() {
+        return singleton().tle;
+    }
+
+    static void sigterm_sent(int signum) {
+        singleton().tle = 1;
+    }
+};
 
 static std::chrono::time_point<std::chrono::system_clock> t0{
     std::chrono::system_clock::now()};
-
-void reset_t0();
 
 std::chrono::time_point<std::chrono::system_clock> now();
 

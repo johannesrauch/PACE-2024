@@ -5,16 +5,17 @@ namespace pace {
 crossing_number_t heuristics::uninformed(  //
     std::vector<vertex_t> &ordering, const bool do_lsearch) {
     PACE_DEBUG_PRINTF("start uninformed heuristics\n");
+
     crossing_number_t n_cr = barycenter_h(ordering);
     if (n_cr <= lower_bound()) return n_cr;
-    if (!tle) {
+    if (!timelimit::was_sigterm_sent()) {
         const crossing_number_t n_cr_probm = probmedian_h(another_ordering);
         if (n_cr_probm < n_cr) {
             n_cr = n_cr_probm;
             std::swap(another_ordering, ordering);
         }
     }
-    if (do_lsearch && !tle) {
+    if (do_lsearch && !timelimit::was_sigterm_sent()) {
         if (n_cr <= lower_bound()) return n_cr;
         const crossing_number_t n_cr_lsearch = lsearch_h(another_ordering);
         if (n_cr_lsearch < n_cr) {
@@ -22,6 +23,7 @@ crossing_number_t heuristics::uninformed(  //
             std::swap(another_ordering, ordering);
         }
     }
+
     PACE_DEBUG_PRINTF("end   uninformed heuristics\n");
     return n_cr;
 }
