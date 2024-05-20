@@ -16,11 +16,11 @@ if __name__ == "__main__":
     instances = os.listdir(instdir)
     instances.sort(key=lambda k: int(k.split(".")[0]))
     for filename in instances:
-        print(f"running '{weberk} < {instdir + filename}'. ", end="", flush=True)
+        print(f"running '{weberk} < {instdir + filename}'. ", flush=True)
         n += 1
         with open(instdir + filename) as i, open(outpdir + filename[:-2] + "log", "w") as o:
             try:
-                r = subprocess.call([weberk], stdin=i, stdout=o, timeout=timeout)
+                r = subprocess.call(["time", weberk], stdin=i, stdout=o, timeout=timeout)
                 if r != 0: raise ValueError
                 succeded.append(filename)
                 print("success")
