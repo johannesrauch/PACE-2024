@@ -52,16 +52,18 @@ void highs_lp::initial_solve() {
     info.n_solve_iters = 0;
     const std::size_t max_new_rows = params.max_new_rows;
     params.max_new_rows = std::numeric_limits<std::size_t>::max();
+    add_interesting_rows();
     PACE_DEBUG_PRINTF_LPINFO_LINE();
 
-    do {
-        delete_positive_slack_rows();
+    for (;;) {
         run();
         PACE_DEBUG_PRINTF_LPINFO(info);
         ++info.n_solve_iters;
         reset_row_info();
-        if (get_rounded_objective_value() >= upper_bound) return;
-    } while (cut());
+        if (get_rounded_objective_value() >= upper_bound) break;
+        if (!cut()) break;
+        delete_positive_slack_rows();
+    }
 
     params.max_new_rows = max_new_rows;
 }
@@ -103,7 +105,7 @@ void highs_lp::resolve() {
         PACE_DEBUG_PRINTF_LPINFO(info);
         ++info.n_solve_iters;
         reset_row_info();
-        if (get_rounded_objective_value() >= upper_bound) return;
+        if (get_rounded_objective_value() >= upper_bound) break;
     } while (cut());
 
     params.max_new_rows = max_new_rows;
@@ -306,6 +308,38 @@ void highs_lp::add_initial_rows_from_interesting() {
                    indices.size(), &starts[0], &indices[0], &values[0]);
     info.n_init_rows_candidates = candidates.size();
     info.n_rows = get_n_rows();
+}
+
+void highs_lp::add_interesting_rows() {
+    const std::vector<std::pair<vertex_t, vertex_t>> unsettled =
+        unsettled_pairs();
+
+    auto end = unsettled.end();
+    for (auto it1 = unsettled.begin(); it1 + 1 != end; ++it1) {
+        const auto &[u, v] = *it1;
+        for (auto it2 = it1 + 1; it2 != end; ++it2) {
+            const auto &[x, y] = *it2;
+            if (u == x) {
+                if (is_3cycle_interesting(u, v, y)) {
+                    add_3cycle_row_to_aux_vectors(u, v, y);
+                    add_3cycle_row_to_internal_rows(u, v, y);
+                }
+            } else
+                break;
+        }
+
+        for (auto it2 = std::lower_bound(it1, end, std::make_pair(v, 0u));
+             it2 != end; ++it2) {
+            const auto &[x, y] = *it2;
+            if (v == x) {
+                if (is_3cycle_interesting(u, v, y)) {
+                    add_3cycle_row_to_aux_vectors(u, v, y);
+                    add_3cycle_row_to_internal_rows(u, v, y);
+                }
+            } else
+                break;
+        }
+    }
 }
 
 std::size_t highs_lp::add_3cycle_rows() {

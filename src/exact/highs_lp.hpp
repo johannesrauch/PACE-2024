@@ -14,7 +14,9 @@ namespace pace {
 struct highs_lp_params {
     std::size_t max_new_rows{
         256};  ///< maximum number of new rows per check_3cycles call
-    const uint16_t max_initial_rows{16384};  ///< maximum number of initial rows
+    const uint32_t max_initial_rows{
+        std::numeric_limits<uint32_t>::max()};  ///< maximum number of initial
+                                                ///< rows
     const uint8_t max_delete_rows_3cycle_iters{
         64};  ///< maximum number of 3-cycle iterations with row deletion
     const uint16_t max_initial_solve_iters{200};
@@ -255,6 +257,7 @@ class highs_lp : public highs_base {
      * @brief adds at most params.max_initial_rows "interesting" rows to the lp
      */
     void add_initial_rows_from_interesting();
+    void add_interesting_rows();
 
     /**
      * @brief expects the violated 3-cycle ieqs in buckets.
