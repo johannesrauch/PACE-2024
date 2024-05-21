@@ -120,12 +120,14 @@ class instance {
         return *cr_matrix_ptr;
     }
 
-    std::pair<crossing_number_t, crossing_number_t> get_cr_numbers(const vertex_t u, const vertex_t v) {
+    std::pair<crossing_number_t, crossing_number_t> get_cr_numbers(
+        const vertex_t u, const vertex_t v) {
         if (n_free <= max_n_free_for_matrix && !cr_matrix_ptr) {
             create_cr_matrix();
         }
         if (cr_matrix_ptr) {
-            return std::make_pair((*cr_matrix_ptr)(u, v), (*cr_matrix_ptr)(v, u));
+            return std::make_pair((*cr_matrix_ptr)(u, v),
+                                  (*cr_matrix_ptr)(v, u));
         }
         return crossing_numbers_of(graph, u, v);
     }
@@ -212,8 +214,8 @@ class instance {
         lower_bound = fill_crossing_matrix(graph, *cr_matrix_ptr);
     }
 
-    void create_kernel(highs_lp *lp = nullptr,
-                       const uint16_t lsearch_width = 0);
+    void create_kernel(  //
+        highs_lp *lp = nullptr, const uint16_t lsearch_width = 0);
 
     void create_unsettled_pairs();
 
@@ -306,7 +308,8 @@ struct instance_view {
 
     const crossing_matrix &cr_matrix() { return instance_.get_cr_matrix(); }
 
-    std::pair<crossing_number_t, crossing_number_t> cr_numbers(const vertex_t u, const vertex_t v) {
+    std::pair<crossing_number_t, crossing_number_t> cr_numbers(
+        const vertex_t u, const vertex_t v) {
         return instance_.get_cr_numbers(u, v);
     }
 
