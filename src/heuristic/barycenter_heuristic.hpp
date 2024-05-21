@@ -36,12 +36,7 @@ class barycenter_heuristic : public instance_view {
     /**
      * @brief runs the barycenter heuristic and stores the ordering in `ordering`
      */
-    crossing_number_t operator()(std::vector<vertex_t> &ordering) {
-        identity(n_free, ordering);
-        std::sort(ordering.begin(), ordering.end(),
-                  [=](const vertex_t &a, const vertex_t &b) -> bool { return this->compare(a, b); });
-        return shift_h(ordering);
-    }
+    crossing_number_t operator()(std::vector<vertex_t> &ordering);
 
     inline bool compare(const vertex_t &a, const vertex_t &b) {
         if (barycenters[a] < barycenters[b])
