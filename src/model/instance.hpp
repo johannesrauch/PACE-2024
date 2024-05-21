@@ -191,8 +191,6 @@ class instance {
     // void update_upper_bound(crossing_number_t ub) { upper_bound =
     // std::min(upper_bound, ub); }
 
-    void update_kernel(const std::vector<double> &lp_sol);
-
     //
     // subinstance
     //

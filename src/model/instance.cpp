@@ -9,37 +9,6 @@ namespace pace {
 // public methods
 //
 
-void instance::update_kernel(const std::vector<double> &lp_sol) {
-    if (!restriction_graph_ptr) create_kernel();
-
-    std::vector<vertex_t> positions;
-    inverse(ordering, positions);
-
-    const double tol = 1e-6;
-    for (const auto &[u, v] : unsettled_pairs) {
-        const std::size_t i = flat_index(n_free, n_free_2, u, v);
-        if (positions[u] < positions[v] && lp_sol[i] >= 1. - tol) {
-            fix_u_before_v(u, v);
-        } else if (positions[v] < positions[u] && lp_sol[i] <= tol) {
-            fix_v_before_u(u, v);
-        }
-    }
-
-#ifndef NDEBUG
-    std::vector<vertex_t> ordering;
-    assert(topological_sort(*restriction_graph_ptr, ordering));
-#endif
-
-    compute_transitive_hull();
-
-    // restriction graph is finished
-    restriction_graph_ptr->set_rollback_point();
-    assert(topological_sort(*restriction_graph_ptr, ordering));
-
-    // magic and unsettled_pairs needs some last work
-    create_unsettled_pairs();
-}
-
 instance *instance::new_rins_instance(highs_lp &lp) {
     instance *subinstance = new_subinstance();
     assert(!subinstance->restriction_graph_ptr);
