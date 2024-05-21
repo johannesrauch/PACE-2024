@@ -21,7 +21,7 @@ void test_exact_solver(pace::input& input) {
 
     pace::exact_solver solver(input);
     std::vector<vertex_t> ordering;
-    const std::chrono::time_point<std::chrono::system_clock> t0 = std::chrono::system_clock::now();
+    std::chrono::time_point<std::chrono::system_clock> t0 = pace::now();
     crossing_number_t test = solver(ordering);
 
     PACE_DEBUG_PRINTF("TEST: %u\n", test);
@@ -37,7 +37,8 @@ void test_exact_solver(pace::input& input) {
         warning = e.what();
     }
 
-    fmt::printf("|%11.1f|%11s%11s\n", pace::elapsed_walltime_in_s(t0), warning, test_ok ? "true" : "false");
+    fmt::printf("|%11.1f|%11s%11s\n", pace::elapsed_walltime_in_s(pace::now(), t0),
+                warning, test_ok ? "true" : "false");
 }
 
 void test_exact_solver_with(const fs::path dirpath) {
@@ -64,8 +65,8 @@ void test_exact_solver_with(const fs::path dirpath) {
  */
 int main(int argc, char** argv) {
     if (argc <= 1) {
-        test_exact_solver_with("tiny_test_set/instances");
-        test_exact_solver_with("my_tests/instances");
+        test_exact_solver_with("tiny/instances");
+        test_exact_solver_with("mine/instances");
     } else {
         const fs::path path = argv[1];
         if (path.extension() == ".gr") {

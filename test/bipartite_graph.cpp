@@ -13,7 +13,7 @@ const std::vector<std::pair<uint64_t, uint64_t>> ref_edges =
  * @brief tests model/bipartite_graph.hpp a little
  */
 int main() {
-    const fs::path filepath = "tiny_test_set/instances/cycle_8_sorted.gr";
+    const fs::path filepath = "tiny/instances/cycle_8_sorted.gr";
     pace::bipartite_graph graph;
     pace::parse_input(filepath, graph);
 

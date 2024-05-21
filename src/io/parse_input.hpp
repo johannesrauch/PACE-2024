@@ -40,29 +40,42 @@ void parse_input(std::basic_istream<CharT, Traits> &input, general_bipartite_gra
     assert(input.good());
     graph.clear();
 
-    std::size_t n_fixed = 0, n_free = 0, m = 0;
+    std::size_t n_fixed = 0, n_free = 0, m = 0, cw = 0;
+    bool param_track = false;
     char type_of_line = 0;
-    std::string problem_descriptor, comment;
+    std::string problem_descriptor, line;
 
     // parameter and comment lines
     do {
         input >> type_of_line;
         switch (type_of_line) {
             case 'c':  // comment line
-            case 'C':
-                std::getline(input, comment);
+            case 'C': {
+                std::getline(input, line);
                 break;
+            }
 
             case 'p':  // parameter line
-            case 'P':
-                input >> problem_descriptor >> n_fixed >> n_free >> m;
+            case 'P': {
+                std::getline(input, line);
+                std::istringstream stream(line);
+                stream >> problem_descriptor >> n_fixed >> n_free >> m;
+                if (stream >> cw) {
+                    param_track = true;
+                }
                 break;
+            }
 
-            default:
+            default: {
                 std::cerr << "pace::parse_input(): unknown line type" << std::endl;
                 return;
+            }
         }
     } while (type_of_line != 'p' && type_of_line != 'P');
+
+    if (param_track) {
+        for (std::size_t i = 0; i < n_fixed + n_free; ++i) std::getline(input, line);
+    }
 
     graph.add_fixed_vertices(n_fixed);
     graph.add_free_vertices(n_free);

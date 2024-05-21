@@ -25,7 +25,7 @@ void test_branch_and_cut(pace::input& input) {
 
     pace::branch_and_cut solver(instance);
     std::vector<vertex_t> ordering;
-    const std::chrono::time_point<std::chrono::system_clock> t0 = std::chrono::system_clock::now();
+    std::chrono::time_point<std::chrono::system_clock> t0 = pace::now();
     crossing_number_t test = solver(ordering);
 
     PACE_DEBUG_PRINTF("TEST: %u\n", test);
@@ -42,9 +42,10 @@ void test_branch_and_cut(pace::input& input) {
     }
 
     const pace::branch_and_cut_info& info = solver.get_info();
-    fmt::printf("|%11.1f%11u%11u%11u|%11u%11u%11u|%11s%11s\n",                                         //
-                pace::elapsed_walltime_in_s(t0), info.n_rows, info.n_iterations, info.n_branch_nodes,  //
-                info.lower_bound, info.n_crossings_h, info.upper_bound,                                //
+    fmt::printf("|%11.1f%11u%11u%11u|%11u%11u%11u|%11s%11s\n",  //
+                pace::elapsed_walltime_in_s(pace::now(), t0), info.n_rows,
+                info.n_iters, info.n_search_nodes,                       //
+                info.lower_bound, info.n_crossings_h, info.upper_bound,  //
                 warning, test_ok ? "true" : "false");
 }
 
@@ -74,8 +75,8 @@ void test_branch_and_cut_with(const fs::path dirpath) {
  */
 int main(int argc, char** argv) {
     if (argc <= 1) {
-        test_branch_and_cut_with("tiny_test_set/instances");
-        test_branch_and_cut_with("my_tests/instances");
+        test_branch_and_cut_with("tiny/instances");
+        test_branch_and_cut_with("mine/instances");
     } else {
         const fs::path path = argv[1];
         if (path.extension() == ".gr") {

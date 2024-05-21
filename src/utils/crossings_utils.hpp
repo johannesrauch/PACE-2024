@@ -5,8 +5,8 @@
 #include <utility>
 #include <vector>
 
-#include "model/bipartite_graph.hpp"
 #include "matrix/matrix.hpp"
+#include "model/bipartite_graph.hpp"
 #include "utils/vector_utils.hpp"
 
 namespace pace {
@@ -17,8 +17,9 @@ namespace pace {
  * @tparam T vertex type of graph
  * @tparam R return type
  */
-template <typename T, typename R = uint32_t>
-std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph, T u, T v) {
+template <typename T, typename R = crossing_number_t>
+std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph,
+                                    T u, T v) {
     assert(graph.is_sorted());
     const auto& nbors_u = graph.get_neighbors(u);
     const auto& nbors_v = graph.get_neighbors(v);
@@ -29,9 +30,11 @@ std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph, T u
     // cases with no crossings
     if (deg_u == 0 || deg_v == 0) return std::make_pair(0, 0);
     if (nbors_u[deg_u - 1] <= nbors_v[0])
-        return std::pair<R, R>{0, deg_u * deg_v - (nbors_u[deg_u - 1] < nbors_v[0] ? 0 : 1)};
+        return std::pair<R, R>{
+            0, deg_u * deg_v - (nbors_u[deg_u - 1] < nbors_v[0] ? 0 : 1)};
     if (nbors_v[deg_v - 1] <= nbors_u[0])
-        return std::pair<R, R>{deg_u * deg_v - (nbors_v[deg_v - 1] < nbors_u[0] ? 0 : 1), 0};
+        return std::pair<R, R>{
+            deg_u * deg_v - (nbors_v[deg_v - 1] < nbors_u[0] ? 0 : 1), 0};
 
     // compute number of common neighbors of u and v
     R nof_common_nbors = sorted_vector_intersection<T, R>(nbors_u, nbors_v);
@@ -62,25 +65,28 @@ std::pair<R, R> crossing_numbers_of(const general_bipartite_graph<T>& graph, T u
  * @tparam T vertex type
  * @tparam R accumulation tree type
  */
-template <typename T, typename R = uint32_t>
-uint32_t number_of_crossings(const general_bipartite_graph<T>& graph, const std::vector<T>& ordering) {
+template <typename T, typename R = crossing_number_t>
+crossing_number_t number_of_crossings(  //
+    const general_bipartite_graph<T>& graph, const std::vector<T>& ordering) {
     assert(graph.is_sorted());
 
-    // compute the positions of each element (inverse of the permutation ordering)
+    // compute the positions of each element (inverse of the permutation
+    // ordering)
     const std::size_t n1 = graph.get_n_free();
     std::vector<T> positions(n1);
     inverse(ordering, positions);
 
     // sort, we need the positions of the ends of the edges in the free layer
     auto& edges = const_cast<general_bipartite_graph<T>&>(graph).get_edges();
-    std::sort(edges.begin(), edges.end(), [&](const std::pair<T, T>& a, const std::pair<T, T>& b) {
-        if (a.first < b.first)
-            return true;
-        else if (a.first > b.first)
-            return false;
-        else
-            return positions[a.second] < positions[b.second];
-    });
+    std::sort(edges.begin(), edges.end(),
+              [&](const std::pair<T, T>& a, const std::pair<T, T>& b) {
+                  if (a.first < b.first)
+                      return true;
+                  else if (a.first > b.first)
+                      return false;
+                  else
+                      return positions[a.second] < positions[b.second];
+              });
 
     // build the accumulator tree
     std::size_t q = ordering.size();
@@ -117,7 +123,8 @@ uint32_t number_of_crossings(const general_bipartite_graph<T>& graph, const std:
  * @param ordering ordering of free layer
  */
 template <typename T, typename R>
-uint32_t number_of_crossings(const folded_matrix<R>& cr_matrix, const std::vector<T>& ordering) {
+uint32_t number_of_crossings(const folded_matrix<R>& cr_matrix,
+                             const std::vector<T>& ordering) {
     const std::size_t n1 = cr_matrix.get_m();
     assert(n1 == ordering.size());
     std::vector<T> positions(n1);
@@ -140,14 +147,34 @@ uint32_t number_of_crossings(const folded_matrix<R>& cr_matrix, const std::vecto
  *
  * @tparam R crossing number type
  * @param cr_matrix crossing number matrix
- * @return uint32_t lower bound for the instance
+ * @return crossing_number_t lower bound for the instance
  */
 template <typename R>
-uint32_t get_lower_bound(const folded_matrix<R>& cr_matrix) {
+crossing_number_t lower_bound_of(const folded_matrix<R>& cr_matrix) {
     const std::size_t n2 = cr_matrix.get_n2();
-    uint32_t lb = 0;
+    crossing_number_t lb = 0;
     for (std::size_t i = 0; i < n2; i += 2) {
         lb += std::min(cr_matrix.get_element(i), cr_matrix.get_element(i + 1));
+    }
+    return lb;
+}
+
+/**
+ * @brief returns sum min(c_uv, c_vu), which is a lower bound for the instance
+ *
+ * @tparam T vertex type
+ * @param cr_matrix crossing number matrix
+ * @return uint32_t lower bound for the instance
+ */
+template <typename T>
+crossing_number_t lower_bound_of(const general_bipartite_graph<T>& graph) {
+    const std::size_t n_free = graph.get_n_free();
+    crossing_number_t lb = 0;
+    for (T u = 0; u + 1u < n_free; ++u) {
+        for (T v = u + 1u; v < n_free; ++v) {
+            const auto [c_uv, c_vu] = crossing_numbers_of(graph, u, v);
+            lb += std::min(c_uv, c_vu);
+        }
     }
     return lb;
 }

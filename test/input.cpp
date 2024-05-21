@@ -68,8 +68,8 @@ void test_input_with(const fs::path dirpath) {
 
 int main(int argc, char** argv) {
     if (argc <= 1) {
-        test_input_with("tiny_test_set/instances");
-        test_input_with("my_tests/instances");
+        test_input_with("tiny/instances");
+        test_input_with("mine/instances");
     } else {
         const fs::path path = argv[1];
         if (path.extension() == ".gr") {

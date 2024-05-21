@@ -1,7 +1,7 @@
 # PACE
 This project includes code for [PACE 2024](https://pacechallenge.org/2024/).
 That is, this project implements exact solvers and heuristics to solve the One-Sided Crossing Minimization problem.
-Its main executable is the exact solver `weberknecht`.
+Its main executables are the exact solver `weberknecht` (also used for the parameterized track) and the heuristic solver `weberknecht_h`.
 
 ## Dependencies
 - Modern C++ compiler; we use `c++17`.
@@ -13,9 +13,16 @@ Its main executable is the exact solver `weberknecht`.
 Currently only linux builds are supported.
 
 ### Installing HiGHS
-This works automatically, just follow the steps below.
+You may clone [HiGHS](https://github.com/ERGO-Code/HiGHS) and install it in `/usr/local`.
+Alternatively, uncomment the lines
+```
+#add_subdirectory(highs)
+#set(HIGHS_DIR highs/lib/cmake/highs)
+```
+in the root `CMakeLists.txt` file. 
+In this case, [HiGHS](https://github.com/ERGO-Code/HiGHS) is set up locally in the project folder.
 
-### Building `weberknecht`
+### Building `weberknecht` and `weberknecht_h`
 The command-chain is
 ```
 mkdir build
@@ -23,7 +30,7 @@ cd build
 cmake ..
 cmake --build .
 ```
-This creates the executable `weberknecht` in `build`, which is the exact solver.
+This creates the executables `weberknecht` and `weberknecht_h` in `build`.
 
 ### Building Tests
 
@@ -31,7 +38,8 @@ For testing, execute
 ```
 cmake -DPACE_BUILD_TESTS=ON ..
 ```
-instead of the third command.
+instead `cmake ..`.
+The test executables are built in `build/test`.
 
 ## Contributing
 You are welcome to contribute.
@@ -40,7 +48,7 @@ Please follow the following rules.
 ### Formatting
 Please use clang-format with
 ```
-{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 120 }
+{ BasedOnStyle: Google, IndentWidth: 4, ColumnLimit: 80 }
 ```
 options.
 

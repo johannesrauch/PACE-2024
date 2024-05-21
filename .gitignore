@@ -39,7 +39,9 @@
 
 .vscode/*
 # *.sol
+
 */.gdb_history
+.gdb_history
 
 dep
 highs/*
@@ -47,4 +49,6 @@ highs/*
 *.log
 build/
 test/big_test_set
-sub.tar.gz
+weberknecht.tgz
+weberknecht_h.tgz
+test/param_set

@@ -7,13 +7,6 @@
 
 namespace pace {
 
-const std::chrono::time_point<std::chrono::system_clock> t0{std::chrono::system_clock::now()};
-
-double elapsed_walltime_in_s(const std::chrono::time_point<std::chrono::system_clock> &t0 = t0) {
-    const std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
-    return std::chrono::duration<double>(now - t0).count();
-}
-
 struct highs_lp_info {
     const vertex_t &u_old;
     const vertex_t &v_old;
@@ -27,16 +20,19 @@ struct highs_lp_info {
     std::size_t n_added_rows{0};
     std::size_t n_deleted_rows{0};
     std::size_t n_delete_rows_spared{0};
+    bool tried_deleting_rows{false};
 
-    std::size_t n_iterations_simplex{0};
-    std::size_t n_iter_simplex_coldstart{0};
-    double n_iterations_simplex_avg{0.};
-    std::size_t n_iterations_3cycles{0};
+    std::size_t n_solve_iters{0};
+    std::size_t n_simplex_iters{0};
+    std::size_t n_simplex_coldstart_iters{0};
+    double n_avg_simplex_iters{0.};
+    std::size_t n_3cycle_iters{0};
     std::size_t n_init_rows_candidates{0};
     bool new_3cycle_iter{false};
 
     double t_simplex{0.};
     double objective_value{0.};
+    double percent_integral{0.};
     bool was_warmstart{false};
 
     double min_viol_score{0.};
@@ -47,8 +43,8 @@ struct branch_and_cut_info {
     const crossing_number_t &lower_bound;
     const crossing_number_t &upper_bound;
 
-    std::size_t n_iterations{0};
-    std::size_t n_branch_nodes{0};
+    std::size_t n_iters{0};
+    std::size_t n_search_nodes{0};
     std::size_t n_rows{0};
     std::size_t n_iter_3cycle_current_node{0};
     std::size_t depth;
@@ -57,6 +53,10 @@ struct branch_and_cut_info {
     crossing_number_t n_crossings_h{0};
 
     double relax_h_confidence{-1.};
+
+    std::chrono::time_point<std::chrono::system_clock> t_start;
+    std::chrono::time_point<std::chrono::system_clock> t_end;
+    std::chrono::time_point<std::chrono::system_clock> t_sol;
 };
 
 };  // namespace pace
