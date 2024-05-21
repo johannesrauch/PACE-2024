@@ -46,14 +46,7 @@ class median_heuristic : public instance_view {
      * @param ordering out parameter where result is stored
      * @return crossing_number_t number of crossings of 'ordering'
      */
-    crossing_number_t operator()(std::vector<vertex_t>& ordering) {
-        identity(n_free, ordering);
-        sort(ordering.begin(), ordering.end(),
-             [=](const vertex_t& a, const vertex_t& b) -> bool {
-                 return this->compare(a, b);
-             });
-        return shift_h(ordering);
-    }
+    crossing_number_t operator()(std::vector<vertex_t>& ordering);
 
     shift_heuristic& get_shift_heuristic() { return shift_h; }
 
@@ -141,25 +134,7 @@ class probmedian_heuristic : public instance_view {
      * @return crossing_number_t number of crossings
      */
     crossing_number_t operator()(std::vector<vertex_t>& ordering,
-                                 crossing_number_t n_crossings) {
-        PACE_DEBUG_PRINTF("start probmedian heuristic\n");
-        // try to find a better solution with probabilistic median heuristic
-        for (uint8_t i = 1;
-             lower_bound() < n_crossings && i <= params.n_lookahead && !timelimit::was_sigterm_sent();
-             ++i) {
-            const crossing_number_t candidate = generate_another_ordering();
-            if (candidate < n_crossings) {
-                i = 0;
-                n_crossings = candidate;
-                std::swap(ordering, another_ordering);
-            }
-            PACE_DEBUG_PRINTF("%11s=%11u, %11s=%11u\n", "i", i, "pm look",
-                              params.n_lookahead);
-        }
-        update_ordering(ordering, n_crossings);
-        PACE_DEBUG_PRINTF("end   probmedian heuristic\n");
-        return n_crossings;
-    }
+                                 crossing_number_t n_crossings);
 
     /**
      * @brief runs the (probabilistic) median heuristic solver and stores the
@@ -167,11 +142,7 @@ class probmedian_heuristic : public instance_view {
      *
      * @return crossing_number_t number of crossings
      */
-    crossing_number_t operator()(std::vector<vertex_t>& ordering) {
-        const crossing_number_t n_crossings = median_h(ordering);
-        // try to find a better solution with probabilistic median heuristic
-        return (*this)(ordering, n_crossings);
-    }
+    crossing_number_t operator()(std::vector<vertex_t>& ordering);
 
     /**
      * @brief compares the randomized medians of a and b
@@ -237,7 +208,7 @@ class probmedian_heuristic : public instance_view {
      * @brief computes randomized medians of every `graph.get_neighbors(i)`
      * using `randomized_median(i)` and stores them in `randomized_medians`
      */
-    void fill_randomized_medians() {
+    inline void fill_randomized_medians() {
         for (std::size_t i = 0; i < n_free; ++i) {
             randomized_medians[i] = randomized_median(i);
         }
