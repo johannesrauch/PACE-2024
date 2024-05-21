@@ -14,10 +14,9 @@ Currently only linux builds are supported.
 
 ### Installing HiGHS
 You may clone [HiGHS](https://github.com/ERGO-Code/HiGHS) and install it in `/usr/local`.
-Alternatively, uncomment the lines
+Alternatively, uncomment the line
 ```
 #add_subdirectory(highs)
-#set(HIGHS_DIR highs/lib/cmake/highs)
 ```
 in the root `CMakeLists.txt` file. 
 In this case, [HiGHS](https://github.com/ERGO-Code/HiGHS) is set up locally in the project folder.
