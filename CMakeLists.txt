@@ -15,6 +15,7 @@ endif()
 include_directories(${CMAKE_SOURCE_DIR}/src)
 file(GLOB PACE_SOURCES ${CMAKE_SOURCE_DIR}/src/*/*.cpp)
 
+# Uncomment the following two lines if you do not have highs installed
 #add_subdirectory(highs)
 #set(HIGHS_DIR highs/lib/cmake/highs)
 find_package(HIGHS REQUIRED)
