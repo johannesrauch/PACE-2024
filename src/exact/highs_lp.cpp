@@ -22,8 +22,8 @@ highs_lp::highs_lp(instance &instance_, highs_lp_params params)
 
     info.n_cols = get_n_cols();
     // PACE_DEBUG_PRINTF("start add_initial_rows\n");
-    // add_initial_rows_from_ordering();
-    // if (get_n_rows() == 0) add_initial_rows_from_interesting();
+    // add_some_interesting_rows_based_on_ordering();
+    // if (get_n_rows() == 0) add_some_interesting_rows();
     // PACE_DEBUG_PRINTF("end   add_initial_rows\n");
 }
 
@@ -52,7 +52,7 @@ void highs_lp::initial_solve() {
     info.n_solve_iters = 0;
     const std::size_t max_new_rows = params.max_new_rows;
     // params.max_new_rows = std::numeric_limits<std::size_t>::max();
-    // add_interesting_rows();
+    // add_all_interesting_rows();
     PACE_DEBUG_PRINTF_LPINFO_LINE();
 
     for (;;) {
@@ -222,7 +222,7 @@ bool highs_lp::add_3cycle_row_to_internal_rows(  //
     }
 }
 
-void highs_lp::add_initial_rows_from_ordering() {
+void highs_lp::add_some_interesting_rows_based_on_ordering() {
     clear_aux_vectors();
     const std::vector<vertex_t> &ordering = get_ordering();
     std::vector<vertex_t> positions(ordering.size());
@@ -278,7 +278,7 @@ void highs_lp::add_initial_rows_from_ordering() {
     info.n_rows = get_n_rows();
 }
 
-void highs_lp::add_initial_rows_from_interesting() {
+void highs_lp::add_some_interesting_rows() {
     clear_aux_vectors();
     std::vector<triple> candidates;
     for (vertex_t u = 0u; u + 2u < n_free; ++u) {
@@ -310,7 +310,7 @@ void highs_lp::add_initial_rows_from_interesting() {
     info.n_rows = get_n_rows();
 }
 
-void highs_lp::add_interesting_rows() {
+void highs_lp::add_all_interesting_rows() {
     const std::vector<std::pair<vertex_t, vertex_t>> unsettled =
         unsettled_pairs();
 

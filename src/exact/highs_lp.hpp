@@ -251,13 +251,13 @@ class highs_lp : public highs_base {
     bool add_3cycle_row_to_internal_rows(  //
         const vertex_t &u, const vertex_t &v, const vertex_t &w);
 
-    void add_initial_rows_from_ordering();
+    void add_some_interesting_rows_based_on_ordering();
 
     /**
      * @brief adds at most params.max_initial_rows "interesting" rows to the lp
      */
-    void add_initial_rows_from_interesting();
-    void add_interesting_rows();
+    void add_some_interesting_rows();
+    void add_all_interesting_rows();
 
     /**
      * @brief expects the violated 3-cycle ieqs in buckets.
