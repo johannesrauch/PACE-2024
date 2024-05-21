@@ -118,13 +118,13 @@ pattern instance::foresee(const vertex_t &u, const vertex_t &v, highs_lp *lp,
     assert(u < v);
 
     pattern p = indeterminate;
-    if (lp != nullptr) {
-        p = based_on_relaxation(u, v, *lp, positions);
-        if (p != indeterminate) return p;
-    }
-
     if (lsearch_width > 0) {
         p = based_on_ordering(u, v, positions, lsearch_width);
+        return p;
+    }
+
+    if (lp != nullptr) {
+        p = based_on_relaxation(u, v, *lp, positions);
         if (p != indeterminate) return p;
     }
 
