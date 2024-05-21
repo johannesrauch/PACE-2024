@@ -51,8 +51,8 @@ void highs_lp::run(const int32_t max_simplex_iter, const bool bookkeeping) {
 void highs_lp::initial_solve() {
     info.n_solve_iters = 0;
     const std::size_t max_new_rows = params.max_new_rows;
-    params.max_new_rows = std::numeric_limits<std::size_t>::max();
-    add_interesting_rows();
+    // params.max_new_rows = std::numeric_limits<std::size_t>::max();
+    // add_interesting_rows();
     PACE_DEBUG_PRINTF_LPINFO_LINE();
 
     for (;;) {
