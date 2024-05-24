@@ -88,7 +88,9 @@ bool branch_and_cut::branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
         return backtrack();
     }
 
-    if (lp_solver_ptr->get_rounded_objective_value() >= upper_bound) {
+    const crossing_number_t rounded_obj_val =
+        lp_solver_ptr->get_rounded_objective_value();
+    if (rounded_obj_val >= upper_bound) {
         update_costs();
         return backtrack();
     }
@@ -105,6 +107,12 @@ bool branch_and_cut::branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
         params.do_rins && info.n_search_nodes % params.n_nodes_until_rins == 0;
     heuristic.informed(*lp_solver_ptr, ordering, do_rins);
     info.relax_h_confidence = heuristic.get_confidence();
+
+    if (rounded_obj_val >= upper_bound) {
+        update_costs();
+        return backtrack();
+    }
+
     if (upper_bound < ub_old) lp_solver_ptr->fix_columns();
 
     return branch();
@@ -117,7 +125,7 @@ bool branch_and_cut::branch_and_bound_and_cut(std::vector<vertex_t> &ordering) {
 uint32_t branch_and_cut::operator()(std::vector<vertex_t> &ordering) {
     PACE_DEBUG_PRINTF("start branch and cut\n");
     info.t_start = now();
-    cr_matrix(); // initialize
+    cr_matrix();  // initialize
 
     // uninformed heuristics
     if (params.do_uninformed_h) {
