@@ -12,7 +12,6 @@
 #include "log/debug_printf.hpp"
 #include "model/instance.hpp"
 #include "utils/crossings_utils.hpp"
-#include "utils/restr_graph_utils.hpp"
 
 namespace pace {
 

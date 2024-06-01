@@ -8,6 +8,7 @@
 #include "exact/info_structs.hpp"
 #include "utils/index_utils.hpp"
 #include "utils/randomness_utils.hpp"
+#include "utils/restr_graph_utils.hpp"
 
 namespace pace {
 
@@ -284,6 +285,7 @@ class highs_lp : public highs_base {
      */
     bool check_3cycles();
     bool check_3cycles_depr();
+    bool check_3cycles_backarcs();
 
     /**
      * @brief clears auxiliary vectors for adding rows

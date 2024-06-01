@@ -8,10 +8,10 @@ namespace pace {
 
 highs_lp::highs_lp(instance &instance_, highs_lp_params params)
     : highs_base(instance_), info{u_old, v_old, w_old}, params(params) {
-    this->params.max_new_rows =
-        std::max(static_cast<std::size_t>(0.2 * std::sqrt(n_free) * n_free),
-                 params.max_new_rows);
-    // this->params.max_new_rows = std::numeric_limits<std::size_t>::max();
+    // this->params.max_new_rows =
+    //     std::max(static_cast<std::size_t>(0.2 * std::sqrt(n_free) * n_free),
+    //              params.max_new_rows);
+    this->params.max_new_rows = std::numeric_limits<std::size_t>::max();
 
     rows_to_delete.reserve(params.max_new_rows);
     lower_bounds.reserve(params.max_new_rows);
@@ -37,8 +37,7 @@ highs_lp::highs_lp(instance &instance_, highs_lp_params params)
 
 bool highs_lp::cut() {
     n_old_rows = get_n_rows();
-
-    bool success = check_3cycles();
+    bool success = check_3cycles_backarcs();
     return success;
 }
 
@@ -465,6 +464,43 @@ bool highs_lp::check_3cycles_depr() {
     }
 
 check_3cycles_fast_after_for:
+    info.n_bucket_entries = get_n_bucket_entries();
+    return add_3cycle_rows() > 0;
+}
+
+bool highs_lp::check_3cycles_backarcs() {
+    PACE_DEBUG_PRINTF("start check 3cycles\n");
+    std::vector<vertex_t> ordering;
+    std::vector<std::pair<vertex_t, vertex_t>> backarcs;
+
+    build_restr_graph_ordering(  //
+        get_column_values(), unsettled_pairs(), params.tol_integer,
+        restriction_graph(), ordering, backarcs);
+
+    if (backarcs.size() == 0) return false;
+
+    std::unordered_set<triple, triple_hash> rows_added;
+    std::size_t i = 0;
+    for (const auto &[a, b] : backarcs) {
+        PACE_DEBUG_PRINTF("i=%u, n=%u\n", i++, backarcs.size());
+        assert(a != b);
+        vertex_t u, v;
+        if (a < b)
+            u = a, v = b;
+        else
+            u = b, v = a;
+        for (vertex_t w = 0; w < u; ++w) rows_added.emplace(w, u, v);
+        for (vertex_t w = u + 1u; w < v; ++w) rows_added.emplace(u, w, v);
+        for (vertex_t w = v + 1u; w < n_free; ++w) rows_added.emplace(u, v, w);
+    }
+
+    for (const auto &[u, v, w] : rows_added) {
+        check_3cycle(u, v, w);
+        bool stop = is_last_bucket_full() || is_n_bucket_entries_large();
+        if (stop) break;
+    }
+
+    PACE_DEBUG_PRINTF("end   check 3cycles\n");
     info.n_bucket_entries = get_n_bucket_entries();
     return add_3cycle_rows() > 0;
 }

@@ -25,18 +25,21 @@ namespace internal {
  * @return number of cycles found
  */
 template <bool RETURN_IF_CYCLIC = true, typename T, typename A>
-std::size_t topological_sort_dfs(const general_digraph<T>& graph, std::vector<T, A>& ordering,  //
-                                 std::vector<uint8_t>& visited,                                 //
-                                 T v) {
+std::size_t topological_sort_dfs(const general_digraph<T>& graph,  //
+                                 std::vector<T, A>& ordering,      //
+                                 std::vector<uint8_t>& visited,    //
+                                 T v, std::vector<std::pair<T, T>>& backarcs) {
     visited[v] = 1;
     const auto& neighbors = graph.get_neighbors(v);
     std::size_t n_cycles = 0;
     for (const T& u : neighbors) {
         std::size_t n_cycles_ = 0;
         if (visited[u] == 0) {
-            n_cycles_ = topological_sort_dfs<RETURN_IF_CYCLIC, T, A>(graph, ordering, visited, u);
+            n_cycles_ = topological_sort_dfs<RETURN_IF_CYCLIC, T, A>(
+                graph, ordering, visited, u, backarcs);
         } else if (visited[u] == 1) {
             n_cycles_ = 1;
+            backarcs.emplace_back(v, u);
         }
         n_cycles += n_cycles_;
         if (RETURN_IF_CYCLIC && n_cycles > 0) {
@@ -62,14 +65,17 @@ std::size_t topological_sort_dfs(const general_digraph<T>& graph, std::vector<T,
  * @return false if a (directed) cycle was found
  */
 template <typename T, typename A>
-bool topological_sort(const general_digraph<T>& graph, std::vector<T, A>& ordering) {
+bool topological_sort(const general_digraph<T>& graph,
+                      std::vector<T, A>& ordering) {
     const std::size_t n = graph.get_n();
     ordering.clear();
     ordering.reserve(n);
     std::vector<uint8_t> visited(n, 0);
+    std::vector<std::pair<T, T>> backarcs;
 
     for (T v = 0; v < n; ++v) {
-        if (visited[v] == 0 && internal::topological_sort_dfs(graph, ordering, visited, v) > 0) {
+        if (visited[v] == 0 && internal::topological_sort_dfs(
+                                   graph, ordering, visited, v, backarcs) > 0) {
             // cycle found
             return false;
         }
@@ -91,18 +97,55 @@ bool topological_sort(const general_digraph<T>& graph, std::vector<T, A>& orderi
  * @return number of cycles found
  */
 template <typename T, typename A>
-std::size_t topological_sort_rd(const general_digraph<T>& graph, std::vector<T, A>& ordering) {
+std::size_t topological_sort_rd(const general_digraph<T>& graph,
+                                std::vector<T, A>& ordering) {
     const std::size_t n = graph.get_n();
     ordering.clear();
     ordering.reserve(n);
     std::vector<uint8_t> visited(n, 0);
     std::vector<T> vertices(n);
-    pace::test::shuffle(vertices);  // if graph has cycle (see round_heuristic), this may be useful
+    pace::test::shuffle(vertices);  // may useful for round heuristic
+    std::vector<std::pair<T, T>> backarcs;
 
     std::size_t n_cycles = 0;
     for (const T& v : vertices) {
         if (visited[v] == 0) {
-            n_cycles += internal::topological_sort_dfs<false, T, A>(graph, ordering, visited, v);
+            n_cycles += internal::topological_sort_dfs<false, T, A>(
+                graph, ordering, visited, v, backarcs);
+        }
+    }
+
+    std::reverse(ordering.begin(), ordering.end());
+    assert(n == ordering.size());
+    return n_cycles;
+}
+
+/**
+ * @brief computes a topological sort (if possible) of the given graph
+ * and stores it in the vector ordering.
+ *
+ * @tparam T vertex type
+ * @tparam A allocator
+ * @param graph
+ * @param ordering
+ * @return number of cycles found
+ */
+template <typename T, typename A>
+std::size_t topological_sort_backarcs(const general_digraph<T>& graph,
+                                      std::vector<T, A>& ordering,
+                                      std::vector<std::pair<T, T>>& backarcs) {
+    const std::size_t n = graph.get_n();
+    ordering.clear();
+    ordering.reserve(n);
+    std::vector<uint8_t> visited(n, 0);
+    std::vector<T> vertices(n);
+    pace::test::shuffle(vertices);  // may useful for round heuristic
+
+    std::size_t n_cycles = 0;
+    for (const T& v : vertices) {
+        if (visited[v] == 0) {
+            n_cycles += internal::topological_sort_dfs<false, T, A>(
+                graph, ordering, visited, v, backarcs);
         }
     }
 
