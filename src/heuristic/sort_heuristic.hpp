@@ -1,11 +1,12 @@
 #ifndef PACE_HEURISTIC_SORT_HEURISTIC_HPP
 #define PACE_HEURISTIC_SORT_HEURISTIC_HPP
 
-#include "exact/highs_lp.hpp"
 #include "heuristic/shift_heuristic.hpp"
 #include "utils/vector_utils.hpp"
 
 namespace pace {
+
+class highs_lp;
 
 class sort_heuristic : public instance_view {
     shift_heuristic shift_h;

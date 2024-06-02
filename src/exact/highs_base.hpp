@@ -83,7 +83,7 @@ class highs_base : public instance_view {
     }
 
     /**
-     * @brief returns value of variable x_uv
+     * @brief returns value of variable x_uv, u < v
      */
     double get_variable_value(const std::size_t uv) {
         assert(uv < n_free_2);
@@ -93,6 +93,13 @@ class highs_base : public instance_view {
         } else {
             return solver.getSolution().col_value[m[uv]];
         }
+    }
+
+    /**
+     * @brief returns value of variable x_uv, u < v
+     */
+    double get_variable_value(const vertex_t u, const vertex_t v) {
+        return get_variable_value(flat_index(n_free, n_free_2, u, v));
     }
 
     /**

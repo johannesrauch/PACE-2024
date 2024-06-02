@@ -1,5 +1,7 @@
 #include "heuristic/sort_heuristic.hpp"
 
+#include "exact/highs_lp.hpp"
+
 namespace pace {
 
 crossing_number_t sort_heuristic::operator()(  //

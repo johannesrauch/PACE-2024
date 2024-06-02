@@ -7,11 +7,13 @@ namespace pace {
 //
 
 highs_lp::highs_lp(instance &instance_, highs_lp_params params)
-    : highs_base(instance_), info{u_old, v_old, w_old}, params(params) {
+    : highs_base(instance_),
+      info{u_old, v_old, w_old},
+      params(params),
+      sort_h(instance_) {
     // this->params.max_new_rows =
     //     std::max(static_cast<std::size_t>(0.2 * std::sqrt(n_free) * n_free),
     //              params.max_new_rows);
-    this->params.max_new_rows = std::numeric_limits<std::size_t>::max();
 
     rows_to_delete.reserve(params.max_new_rows);
     lower_bounds.reserve(params.max_new_rows);
@@ -19,6 +21,9 @@ highs_lp::highs_lp(instance &instance_, highs_lp_params params)
     starts.reserve(params.max_new_rows);
     indices.reserve(3 * params.max_new_rows);
     values.reserve(3 * params.max_new_rows);
+
+    assert(n_free >= 2);
+    this->params.max_new_rows = n_free_2 * (n_free - 2) / (3 * 50);
 
     info.n_cols = get_n_cols();
     // PACE_DEBUG_PRINTF("start add_initial_rows\n");
@@ -469,38 +474,59 @@ check_3cycles_fast_after_for:
 }
 
 bool highs_lp::check_3cycles_backarcs() {
-    PACE_DEBUG_PRINTF("start check 3cycles\n");
+    clear_buckets();
+
     std::vector<vertex_t> ordering;
-    std::vector<std::pair<vertex_t, vertex_t>> backarcs;
+    sort_h(*this, ordering);
+    std::vector<vertex_t> positions;
+    inverse(ordering, positions);
 
-    build_restr_graph_ordering(  //
-        get_column_values(), unsettled_pairs(), params.tol_integer,
-        restriction_graph(), ordering, backarcs);
+    for (std::size_t i = 0; i + 2u < n_free; ++i) {
+        const vertex_t a = positions[i];
+        for (std::size_t j = i + 1u; j + 1u < n_free; ++j) {
+            const vertex_t b = positions[j];
+            assert(a != b);
 
-    if (backarcs.size() == 0) return false;
+            vertex_t u, v;
+            bool backarc;
+            if (a < b) {
+                u = a, v = b;
+                backarc = get_variable_value(u, v) < 1. - params.tol_integer;
+            } else {
+                u = b, v = a;
+                backarc = get_variable_value(u, v) > params.tol_integer;
+            }
 
-    std::unordered_set<triple, triple_hash> rows_added;
-    std::size_t i = 0;
-    for (const auto &[a, b] : backarcs) {
-        PACE_DEBUG_PRINTF("i=%u, n=%u\n", i++, backarcs.size());
-        assert(a != b);
-        vertex_t u, v;
-        if (a < b)
-            u = a, v = b;
-        else
-            u = b, v = a;
-        for (vertex_t w = 0; w < u; ++w) rows_added.emplace(w, u, v);
-        for (vertex_t w = u + 1u; w < v; ++w) rows_added.emplace(u, w, v);
-        for (vertex_t w = v + 1u; w < n_free; ++w) rows_added.emplace(u, v, w);
+            if (backarc) {
+                for (std::size_t k = i + 1u; k < j; ++k) {
+                    const vertex_t w = positions[k];
+                    if (a < w &&
+                        get_variable_value(a, w) < 1. - params.tol_integer)
+                        continue;
+                    if (w < a && get_variable_value(w, a) > params.tol_integer)
+                        continue;
+                    
+                    if (w < u)
+                        check_3cycle(w, u, v);
+                    else if (w < v)
+                        check_3cycle(u, w, v);
+                    else
+                        check_3cycle(u, v, w);
+                }
+
+                for (std::size_t k = j + 1u; k < n_free; ++k) {
+                    const vertex_t w = positions[k];
+                    if (w < u)
+                        check_3cycle(w, u, v);
+                    else if (w < v)
+                        check_3cycle(u, w, v);
+                    else
+                        check_3cycle(u, v, w);
+                }
+            }
+        }
     }
 
-    for (const auto &[u, v, w] : rows_added) {
-        check_3cycle(u, v, w);
-        bool stop = is_last_bucket_full() || is_n_bucket_entries_large();
-        if (stop) break;
-    }
-
-    PACE_DEBUG_PRINTF("end   check 3cycles\n");
     info.n_bucket_entries = get_n_bucket_entries();
     return add_3cycle_rows() > 0;
 }

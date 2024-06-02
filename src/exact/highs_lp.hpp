@@ -6,11 +6,14 @@
 
 #include "exact/highs_base.hpp"
 #include "exact/info_structs.hpp"
+#include "heuristic/sort_heuristic.hpp"
 #include "utils/index_utils.hpp"
 #include "utils/randomness_utils.hpp"
 #include "utils/restr_graph_utils.hpp"
 
 namespace pace {
+
+class sort_heuristic;
 
 struct highs_lp_params {
     std::size_t max_new_rows{
@@ -86,6 +89,8 @@ class highs_lp : public highs_base {
     std::unordered_map<triple, row_info, triple_hash> rows_info;
 
     std::list<triple> rows;
+
+    sort_heuristic sort_h;
 
    public:
     highs_lp(instance &instance_, highs_lp_params params = highs_lp_params());
