@@ -501,11 +501,11 @@ bool highs_lp::check_3cycles_backarcs() {
             if (backarc) {
                 for (std::size_t k = i + 1u; k < j; ++k) {
                     const vertex_t w = positions[k];
-                    if (a < w &&
-                        get_variable_value(a, w) < 1. - params.tol_integer)
-                        continue;
-                    if (w < a && get_variable_value(w, a) > params.tol_integer)
-                        continue;
+                    // if (a < w &&
+                    //     get_variable_value(a, w) < 1. - params.tol_integer)
+                    //     continue;
+                    // if (w < a && get_variable_value(w, a) > params.tol_integer)
+                    //     continue;
                     
                     if (w < u)
                         check_3cycle(w, u, v);
