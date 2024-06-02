@@ -22,8 +22,9 @@ highs_lp::highs_lp(instance &instance_, highs_lp_params params)
     indices.reserve(3 * params.max_new_rows);
     values.reserve(3 * params.max_new_rows);
 
-    assert(n_free >= 2);
-    this->params.max_new_rows = n_free_2 * (n_free - 2) / (3 * 50);
+    // assert(n_free >= 2);
+    // this->params.max_new_rows = n_free_2 * (n_free - 2) / (3 * 50);
+    this->params.max_new_rows = std::numeric_limits<std::size_t>::max();
 
     info.n_cols = get_n_cols();
     // PACE_DEBUG_PRINTF("start add_initial_rows\n");
