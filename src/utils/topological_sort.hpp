@@ -128,6 +128,7 @@ std::size_t topological_sort_rd(const general_digraph<T>& graph,
  * @tparam A allocator
  * @param graph
  * @param ordering
+ * @param backarcs
  * @return number of cycles found
  */
 template <typename T, typename A>
@@ -138,11 +139,9 @@ std::size_t topological_sort_backarcs(const general_digraph<T>& graph,
     ordering.clear();
     ordering.reserve(n);
     std::vector<uint8_t> visited(n, 0);
-    std::vector<T> vertices(n);
-    pace::test::shuffle(vertices);  // may useful for round heuristic
 
     std::size_t n_cycles = 0;
-    for (const T& v : vertices) {
+    for (T v = 0; v < n; ++v) {
         if (visited[v] == 0) {
             n_cycles += internal::topological_sort_dfs<false, T, A>(
                 graph, ordering, visited, v, backarcs);
