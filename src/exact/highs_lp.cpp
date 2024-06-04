@@ -41,9 +41,11 @@ highs_lp::highs_lp(instance &instance_, highs_lp_params params)
 // lp solving methods
 //
 
-bool highs_lp::cut() {
+bool highs_lp::cut(bool backarcs_explicit) {
     n_old_rows = get_n_rows();
-    bool success = check_3cycles_backarcs();
+    bool success =
+        backarcs_explicit ? check_3cycles_topsort() : check_3cycles_backarcs();
+    // bool success = check_3cycles();
     return success;
 }
 
@@ -479,13 +481,11 @@ bool highs_lp::check_3cycles_backarcs() {
 
     std::vector<vertex_t> ordering;
     sort_h(*this, ordering);
-    std::vector<vertex_t> positions;
-    inverse(ordering, positions);
 
-    for (std::size_t i = 0; i + 2u < n_free; ++i) {
-        const vertex_t a = positions[i];
-        for (std::size_t j = i + 1u; j + 1u < n_free; ++j) {
-            const vertex_t b = positions[j];
+    for (std::size_t i = 0; i + 1u < n_free; ++i) {
+        const vertex_t a = ordering[i];
+        for (std::size_t j = i + 1u; j < n_free; ++j) {
+            const vertex_t b = ordering[j];
             assert(a != b);
 
             vertex_t u, v;
@@ -500,13 +500,13 @@ bool highs_lp::check_3cycles_backarcs() {
 
             if (backarc) {
                 for (std::size_t k = i + 1u; k < j; ++k) {
-                    const vertex_t w = positions[k];
-                    // if (a < w &&
-                    //     get_variable_value(a, w) < 1. - params.tol_integer)
-                    //     continue;
-                    // if (w < a && get_variable_value(w, a) > params.tol_integer)
-                    //     continue;
-                    
+                    const vertex_t w = ordering[k];
+                    if (a < w &&
+                        get_variable_value(a, w) < 1. - params.tol_integer)
+                        continue;
+                    if (w < a && get_variable_value(w, a) > params.tol_integer)
+                        continue;
+
                     if (w < u)
                         check_3cycle(w, u, v);
                     else if (w < v)
@@ -516,7 +516,7 @@ bool highs_lp::check_3cycles_backarcs() {
                 }
 
                 for (std::size_t k = j + 1u; k < n_free; ++k) {
-                    const vertex_t w = positions[k];
+                    const vertex_t w = ordering[k];
                     if (w < u)
                         check_3cycle(w, u, v);
                     else if (w < v)
@@ -525,6 +525,52 @@ bool highs_lp::check_3cycles_backarcs() {
                         check_3cycle(u, v, w);
                 }
             }
+        }
+    }
+
+    info.n_bucket_entries = get_n_bucket_entries();
+    return add_3cycle_rows() > 0;
+}
+
+bool highs_lp::check_3cycles_topsort() {
+    clear_buckets();
+
+    std::vector<vertex_t> ordering;
+    std::vector<std::pair<vertex_t, vertex_t>> backarcs;
+    build_restr_graph_ordering(  //
+        get_column_values(), unsettled_pairs(), params.tol_integer,
+        restriction_graph(), ordering, backarcs);
+    std::vector<vertex_t> positions;
+    inverse(ordering, positions);
+
+    for (const auto &[a, b] : backarcs) {
+        assert(positions[b] < positions[a]);
+
+        vertex_t u, v;
+        if (a < b) {
+            u = a, v = b;
+        } else {
+            u = b, v = a;
+        }
+
+        for (std::size_t k = positions[b] + 1u; k < positions[a]; ++k) {
+            const vertex_t w = ordering[k];
+            if (w < u)
+                check_3cycle(w, u, v);
+            else if (w < v)
+                check_3cycle(u, w, v);
+            else
+                check_3cycle(u, v, w);
+        }
+
+        for (std::size_t k = positions[a] + 1u; k < n_free; ++k) {
+            const vertex_t w = ordering[k];
+            if (w < u)
+                check_3cycle(w, u, v);
+            else if (w < v)
+                check_3cycle(u, w, v);
+            else
+                check_3cycle(u, v, w);
         }
     }
 

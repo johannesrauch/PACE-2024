@@ -110,7 +110,7 @@ class highs_lp : public highs_base {
      * @return true if violated constraints found
      * @return false otherwise
      */
-    bool cut();
+    bool cut(bool backarcs_explicit = false);
 
     inline void set_simplex_iteration_limit(const int32_t max_simplex_iter) {
         status =
@@ -293,6 +293,7 @@ class highs_lp : public highs_base {
     bool check_3cycles();
     bool check_3cycles_depr();
     bool check_3cycles_backarcs();
+    bool check_3cycles_topsort();
 
     /**
      * @brief clears auxiliary vectors for adding rows

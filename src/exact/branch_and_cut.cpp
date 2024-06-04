@@ -9,12 +9,40 @@ namespace pace {
 void branch_and_cut::build_ordering(std::vector<vertex_t> &ordering) {
     assert(lp_solver_ptr->is_integral());
 #ifndef NDEBUG
-    const bool acyclic =
+    std::vector<std::pair<vertex_t, vertex_t>> backarcs;
+    digraph &restr_graph = restriction_graph();
+    build_restr_graph_ordering(  //
+        lp_solver_ptr->get_column_values(), unsettled_pairs(),
+        lp_solver_ptr->get_tol_integer(), restr_graph,  //
+        ordering, backarcs);
+    if (backarcs.size() > 0) {
+        PACE_DEBUG_PRINTF("ordering:\n");
+        PACE_DEBUG_PRINTF_VECTOR(ordering);
+        PACE_DEBUG_PRINTF("backarcs:\n");
+        PACE_DEBUG_PRINTF_VECTOR(backarcs);
+        const auto &[a, b] = backarcs[0];
+        for (const vertex_t u : restr_graph.get_neighbors(b)) {
+            for (const vertex_t v : restr_graph.get_neighbors(u)) {
+                if (v == a) {
+                    PACE_DEBUG_PRINTF("%u->%u->%u->%u\n", a, b, u, v);
+                    std::vector<vertex_t> abu = {a, b, u};
+                    std::sort(abu.begin(), abu.end());
+                    const auto [xy, yz, xz] =
+                        flat_indices(n_free, n_free_2, abu[0], abu[1], abu[2]);
+                    PACE_DEBUG_PRINTF("xy=%1.1f, yz=%1.1f, xz=%1.1f\n",
+                                      lp_solver_ptr->get_variable_value(xy),
+                                      lp_solver_ptr->get_variable_value(yz),
+                                      lp_solver_ptr->get_variable_value(xz));
+                }
+            }
+        }
+    }
+    assert(backarcs.size() == 0);
+#else
+    build_restr_graph_ordering(
+        lp_solver_ptr->get_column_values(), unsettled_pairs(),
+        lp_solver_ptr->get_tol_integer(), restriction_graph(), ordering);
 #endif
-        build_restr_graph_ordering(  //
-            lp_solver_ptr->get_column_values(), unsettled_pairs(), lp_solver_ptr->get_tol_integer(),
-            restriction_graph(), ordering);
-    assert(acyclic);
 
     crossing_number_t n_crossings =
         lp_solver_ptr->get_rounded_objective_value();

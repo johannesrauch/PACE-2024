@@ -1,6 +1,8 @@
 #ifndef PACE_LOG_DEBUG_PRINTF_HPP
 #define PACE_LOG_DEBUG_PRINTF_HPP
 
+#include <vector>
+
 #include "exact/info_structs.hpp"
 #include "fmt/printf.hpp"
 #include "utils/time.hpp"
@@ -22,6 +24,22 @@ void printf_graph(  //
     const std::size_t n0, const std::size_t n1, const std::size_t m);
 
 void printf_summary(const branch_and_cut_info& info);
+
+template <typename T>
+static void printf_vector(const std::vector<T>& vec) {
+    for (const T& v : vec) {
+        fmt::printf("%s ", v);
+    }
+    fmt::printf("\n");
+}
+
+template <typename T>
+static void printf_vector(const std::vector<std::pair<T, T>>& vec) {
+    for (const std::pair<T, T>& v : vec) {
+        fmt::printf("(%s,%s) ", v.first, v.second);
+    }
+    fmt::printf("\n");
+}
 
 };  // namespace test
 
@@ -103,6 +121,17 @@ void printf_summary(const branch_and_cut_info& info);
 #else
 #define PACE_DEBUG_PRINTF_SUMMARY(...) \
     do {                               \
+    } while (false)
+#endif
+
+#ifdef PACE_DEBUG_PRINT
+#define PACE_DEBUG_PRINTF_VECTOR(vec)   \
+    do {                                \
+        pace::test::printf_vector(vec); \
+    } while (false)
+#else
+#define PACE_DEBUG_PRINTF_VECTOR(...) \
+    do {                              \
     } while (false)
 #endif
 
