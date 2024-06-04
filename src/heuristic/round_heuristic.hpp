@@ -29,12 +29,13 @@ class round_heuristic : public instance_view {
 
     crossing_number_t operator()(highs_lp &lp, std::vector<vertex_t> &ordering) {
         const std::vector<double> &column_values = lp.get_column_values();
+        const double tol = lp.get_tol_integer();
         n_restr_graphs_generated = 0;
         n_cycles = 0;
-        crossing_number_t n_crossings = generate_ordering(column_values, ordering);
+        crossing_number_t n_crossings = generate_ordering(column_values, tol, ordering);
 
         for (uint8_t i = 1; i < params.n_lookahead; ++i) {
-            const crossing_number_t candidate = generate_ordering(column_values, another_ordering);
+            const crossing_number_t candidate = generate_ordering(column_values, tol, another_ordering);
             if (candidate < n_crossings) {
                 i = 0;
                 n_crossings = candidate;
@@ -53,8 +54,8 @@ class round_heuristic : public instance_view {
 
    private:
     crossing_number_t  //
-    generate_ordering(const std::vector<double> &column_values, std::vector<vertex_t> &ordering) {
-        build_restr_graph(column_values, unsettled_pairs(), restriction_graph());
+    generate_ordering(const std::vector<double> &column_values, const double &tol, std::vector<vertex_t> &ordering) {
+        build_restr_graph_rd(column_values, unsettled_pairs(), tol, restriction_graph());
         n_cycles += topological_sort_rd(restriction_graph(), ordering);
         ++n_restr_graphs_generated;
         return shift_h(ordering);

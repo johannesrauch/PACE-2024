@@ -12,7 +12,7 @@ void branch_and_cut::build_ordering(std::vector<vertex_t> &ordering) {
     const bool acyclic =
 #endif
         build_restr_graph_ordering(  //
-            lp_solver_ptr->get_column_values(), unsettled_pairs(),
+            lp_solver_ptr->get_column_values(), unsettled_pairs(), lp_solver_ptr->get_tol_integer(),
             restriction_graph(), ordering);
     assert(acyclic);
 

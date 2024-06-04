@@ -190,6 +190,8 @@ class highs_lp : public highs_base {
 
     const highs_lp_info &get_info() { return info; }
 
+    double get_tol_integer() { return params.tol_integer; }
+
     //
     // information methods
     //

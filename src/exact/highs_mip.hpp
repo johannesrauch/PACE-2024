@@ -34,7 +34,7 @@ class highs_mip : public highs_base {
             const bool acyclic =
 #endif
                 build_restr_graph_ordering(  //
-                    solver.getSolution().col_value, unsettled_pairs(), restriction_graph(), ordering);
+                    solver.getSolution().col_value, unsettled_pairs(), 1e-6, restriction_graph(), ordering);
             assert(acyclic);
         } else {
             topological_sort(restriction_graph(), ordering);

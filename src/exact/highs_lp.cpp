@@ -43,7 +43,7 @@ highs_lp::highs_lp(instance &instance_, highs_lp_params params)
 
 bool highs_lp::cut() {
     n_old_rows = get_n_rows();
-    bool success = check_3cycles();
+    bool success = check_3cycles_backarcs();
     return success;
 }
 
