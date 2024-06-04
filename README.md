@@ -1,27 +1,23 @@
 # PACE
-This project includes code for [PACE 2024](https://pacechallenge.org/2024/).
-That is, this project implements exact solvers and heuristics to solve the One-Sided Crossing Minimization problem.
-Its main executables are the exact solver `weberknecht` (also used for the parameterized track) and the heuristic solver `weberknecht_h`.
+This repository provides exact and heuristic solvers for the One-Sided Crossing Minimization problem of [PACE 2024](https://pacechallenge.org/2024/).
+
+Its main executables are the exact solver `weberknecht` (for the exact and parameterized track) and the heuristic solver `weberknecht_h` (for the heuristic track).
 
 ## Dependencies
-- Modern C++ compiler; we use `c++17`.
-- `CMake`, version >= 3.15.
-- [HiGHS](https://github.com/ERGO-Code/HiGHS).
-- [`fmt/printf.hpp`](https://github.com/afborchert/fmt/blob/master/printf.hpp) (copy included in this project).
+- Modern C++ compiler, we use the `c++17` language standard.
+- `cmake`, version >= 3.15.
+- [HiGHS](https://github.com/ERGO-Code/HiGHS) (MIT License).
+- [`fmt/printf.hpp`](https://github.com/afborchert/fmt/blob/master/printf.hpp) (MIT License, copy included in this project).
 
 ## Building
 Currently only linux builds are supported.
+Windows and macOS builds may work too, but we did not test it.
 
 ### Installing HiGHS
-You may clone [HiGHS](https://github.com/ERGO-Code/HiGHS) and install it in `/usr/local`.
-Alternatively, uncomment the line
-```
-#add_subdirectory(highs)
-```
-in the root `CMakeLists.txt` file. 
-In this case, [HiGHS](https://github.com/ERGO-Code/HiGHS) is set up locally in the project folder.
+`cmake` installs [HiGHS](https://github.com/ERGO-Code/HiGHS) automatically in the project folder.
+Note that `cmake ..` may take a while since it clones the repository.
 
-### Building `weberknecht` and `weberknecht_h`
+### Building the executables `weberknecht` and `weberknecht_h`
 The command-chain is
 ```
 mkdir build
@@ -31,7 +27,7 @@ cmake --build .
 ```
 This creates the executables `weberknecht` and `weberknecht_h` in `build`.
 
-### Building Tests
+### Building the tests
 
 For testing, execute
 ```
@@ -39,6 +35,22 @@ cmake -DPACE_BUILD_TESTS=ON ..
 ```
 instead `cmake ..`.
 The test executables are built in `build/test`.
+
+### Building with debug print
+
+For testing, execute
+```
+cmake -DPACE_DEBUG_PRINT=ON ..
+```
+instead `cmake ..`.
+
+## Running
+
+After building, the executables are in the `build` folder.
+Both `weberknecht` and `weberknecht_h` expect input over stdio, e.g.
+```
+./weberknecht < path/to/instance/42.gr
+```
 
 ## Contributing
 You are welcome to contribute.
@@ -68,12 +80,12 @@ Please use the namespace `pace` for the project.
 Johannes Rauch.
 
 ## License
-[GPLv3](https://www.gnu.org/licenses/gpl-3.0.html).
+See `LICENSE.md`.
 
 ## Project Status
 Mostly done; some minor work in progress.
 
-### Possible Future Work
-Unfortunately, HiGHS does not (yet) support lazy constraint callbacks in its MIP solver.
+Some workable points:
+- Unfortunately, HiGHS does not (yet) support lazy constraint callbacks in its MIP solver.
 Therefore, this project implements a specialized branch and cut MIP solver using the HiGHS LP solver, which is not ideal.
 Once this feature is introduced in HiGHS, it might be worthwile to use it.
