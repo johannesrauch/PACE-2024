@@ -1,4 +1,4 @@
-# PACE
+# PACE 2024
 This repository provides exact and heuristic solvers for the One-Sided Crossing Minimization problem of [PACE 2024](https://pacechallenge.org/2024/).
 
 Its main executables are the exact solver `weberknecht` (for the exact and parameterized track) and the heuristic solver `weberknecht_h` (for the heuristic track).
