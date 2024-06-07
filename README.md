@@ -3,6 +3,8 @@ This repository provides exact and heuristic solvers for the One-Sided Crossing 
 
 Its main executables are the exact solver `weberknecht` (for the exact and parameterized track) and the heuristic solver `weberknecht_h` (for the heuristic track).
 
+The solver description is `docs/main.pdf`.
+
 ## Dependencies
 - Modern C++ compiler, we use the `c++17` language standard.
 - `cmake`, version >= 3.15.
