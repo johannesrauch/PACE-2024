@@ -113,7 +113,7 @@ void highs_lp::resolve() {
         ++info.n_solve_iters;
         reset_row_info();
         if (get_rounded_objective_value() >= upper_bound) break;
-    } while (cut(true));
+    } while (cut());
 
     params.max_new_rows = max_new_rows;
 }
