@@ -145,7 +145,7 @@ This is essentially the approximation algorithm of Nagamochi~\cite{nagamochi2005
 \textbf{Informed Heuristics.}
 The informed heuristics get a fractional solution of the linear program relaxation of \eqref{mip} as an additional input.
 \begin{itemize}
-\item The \emph{sort heuristic} works like the uninformed heuristics.
+\item The \emph{sort heuristic} works like a uninformed heuristics.
 The score for vertex $v \in B$ is $s(v) = \sum_{u \in B, u < v} x_{u,v} + \sum_{u \in B, v < u} (1 - x_{v, u})$.
 \item Classical \emph{randomized rounding heuristic}.
 \item \emph{Relaxation induced neighborhood search}~\cite{danna2005exploring}.
