@@ -40,7 +40,7 @@ The test executables are built in `build/test`.
 
 ### Building with debug print
 
-For testing, execute
+For a build with debug prints, execute
 ```
 cmake -DPACE_DEBUG_PRINT=ON ..
 ```
